@@ -708,6 +708,10 @@
       cursor: pointer;
       font: inherit;
       font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+      vertical-align: middle;
     }
     .month-picker-trigger:focus-visible {
       outline: 2px solid rgba(255,255,255,0.45);
@@ -4990,13 +4994,34 @@ async function analyzeImportFile(){
     if(importContext.users.length === 0){
       list.innerHTML = `<div class="text-gray-400 font-bold">No se detectaron usuarios.</div>`;
     } else {
-      list.innerHTML = importContext.users.map(u => {
+      list.innerHTML = importContext.users.map((u, idx) => {
         const matchedProfile = nameMatchMap[u];
-        const matchLabel = matchedProfile ? ` <span style="color:#1e40af;font-size:10px;">→ usa perfil: ${escapeHTML(matchedProfile)}</span>` : '';
+        if(matchedProfile){
+          const radioName = `impUnify_${idx}`;
+          return `
+          <div class="p-2 rounded-xl bg-blue-50 border border-blue-200 mb-1">
+            <div class="flex items-start gap-2">
+              <input class="impUserChk mt-1 flex-shrink-0" type="checkbox" value="${escapeHTML(u)}" checked>
+              <div class="min-w-0">
+                <div class="font-black text-[11px] text-gray-900">${escapeHTML(u)}</div>
+                <div class="text-[10px] text-blue-700 font-bold mt-0.5">⚠️ Similar a perfil existente: <strong>${escapeHTML(matchedProfile)}</strong></div>
+                <div class="flex gap-4 mt-1">
+                  <label class="flex items-center gap-1 text-[10px] font-bold cursor-pointer text-blue-800">
+                    <input type="radio" name="${radioName}" value="unify" checked
+                      data-import-name="${escapeHTML(u)}" data-existing="${escapeHTML(matchedProfile)}"> Unificar con perfil existente
+                  </label>
+                  <label class="flex items-center gap-1 text-[10px] font-bold cursor-pointer text-gray-700">
+                    <input type="radio" name="${radioName}" value="new"> Crear perfil nuevo
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>`;
+        }
         return `
         <label class="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-50 cursor-pointer" style="color: #111827;">
           <input class="impUserChk" type="checkbox" value="${escapeHTML(u)}" checked>
-          <span class="font-black">${escapeHTML(u)}${matchLabel}</span>
+          <span class="font-black">${escapeHTML(u)}</span>
         </label>`;
       }).join('');
     }
@@ -5027,9 +5052,14 @@ function runImportSelected(){
   
   const { rows, headerIdx, nameCol, empCol, dayCols, monthIndex0, year } = importContext;
 
-  // Resolver nombres fuzzy: si hay match con perfil existente, usar el perfil existente
+  // Resolver nombres: respetar la decisión del usuario (unificar vs crear nuevo)
   const nameMatchMap = (importContext && importContext.nameMatchMap) || {};
-  const resolvedNames = selected.map(u => nameMatchMap[u] || u);
+  const resolvedNames = selected.map(u => {
+    if(!nameMatchMap[u]) return u;
+    // Buscar el radio "unify" marcado para este usuario
+    const unifyRadio = document.querySelector(`input[type="radio"][data-import-name="${CSS.escape(u)}"][value="unify"]`);
+    return (unifyRadio && unifyRadio.checked) ? nameMatchMap[u] : u;
+  });
 
   // Asegurar que los usuarios existen
   resolvedNames.forEach(u => ensureUserExists(u));
@@ -5057,8 +5087,9 @@ function runImportSelected(){
     const name = safeNameCell(row[nameCol]).toUpperCase();
     if(!selected.includes(name)) continue;
 
-    // Resolver a perfil existente si hay coincidencia fuzzy
-    const resolvedName = nameMatchMap[name] || name;
+    // Resolver nombre según decisión del usuario (unificar o crear nuevo)
+    const unifyRadioRow = document.querySelector(`input[type="radio"][data-import-name="${CSS.escape(name)}"][value="unify"]`);
+    const resolvedName = (nameMatchMap[name] && unifyRadioRow && unifyRadioRow.checked) ? nameMatchMap[name] : name;
     const userKey = ensureUserExists(resolvedName);
     const user = db.users[userKey];
     if (!user) continue;
@@ -5951,15 +5982,20 @@ async function pullFromCloud(){
 async function pushToCloud(){
   if(!isCloudEnabled()) throw new Error("No hay sesión en la nube.");
   markLocalUpdated();
+  const nowISO = new Date().toISOString();
   const payload = {
     user_id: sbUser.id,
     data: db,
-    updated_at: new Date().toISOString()
+    updated_at: nowISO
   };
   const {error} = await sb
     .from('shifter_state')
     .upsert(payload, { onConflict: 'user_id' });
   if(error) throw error;
+  // Registrar el timestamp subido para evitar re-preguntar al próximo arranque
+  db._meta = db._meta || {};
+  db._meta.lastSyncedCloudTS = nowISO;
+  _origSaveDB();
 }
 
 // Merge inteligente: cloud gana en mes actual y futuro, local conserva meses pasados
@@ -6008,11 +6044,14 @@ async function smartInitialSync(){
   smartSyncPromise = (async () => {
     db._meta = db._meta || {};
     const localTS = db._meta.updated_at ? Date.parse(db._meta.updated_at) : 0;
+    // lastSyncedCloudTS: timestamp de la versión de la nube con la que sincronizamos por última vez
+    const lastSyncedCloudTS = db._meta.lastSyncedCloudTS ? Date.parse(db._meta.lastSyncedCloudTS) : null;
     const localDbSnapshot = JSON.parse(JSON.stringify(db));
 
     try{
       const row = await pullFromCloud();
       if(!row){
+        // No hay datos en la nube: subir local y registrar timestamp
         await pushToCloud();
         remoteConflictPending = false;
         lastRemotePayload = null;
@@ -6026,21 +6065,51 @@ async function smartInitialSync(){
       const cloudTS = row.updated_at ? Date.parse(row.updated_at) : 0;
       const localHasData = hasMeaningfulLocalData(localDbSnapshot);
 
-      if(localHasData){
-        const choice = await openSyncDecisionModal();
-        if(choice === 'merge'){
-          const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
-          applyCloudDb(mergedDb);
-        }else if(choice === 'cloud'){
-          applyCloudDb(row.data);
-        }else if(choice === 'keep-local'){
-          localCloudUploadPending = true;
-        }
-      }else{
-        if(cloudTS >= localTS){
-          applyCloudDb(row.data);
+      // Detectar si hubo cambios reales desde la última sincronización exitosa
+      const cloudChangedSinceLastSync = lastSyncedCloudTS === null
+        ? (cloudTS > 0)
+        : (cloudTS > lastSyncedCloudTS);
+      const localChangedSinceLastSync = lastSyncedCloudTS === null
+        ? localHasData
+        : (localTS > lastSyncedCloudTS);
+
+      if(!cloudChangedSinceLastSync && !localChangedSinceLastSync){
+        // Nada cambió desde la última sincronización: continuar sin preguntar
+        cloudInitReady = true;
+        lastSyncTime = new Date();
+        updateSyncStatusUI();
+        subscribeRealtime();
+        return;
+      }
+
+      if(cloudChangedSinceLastSync && !localChangedSinceLastSync){
+        // Solo la nube tiene cambios nuevos: aplicar automáticamente sin preguntar
+        applyCloudDb(row.data);
+        db._meta.lastSyncedCloudTS = row.updated_at;
+        _origSaveDB();
+      } else if(!cloudChangedSinceLastSync && localChangedSinceLastSync){
+        // Solo el local tiene cambios: marcar como pendiente de subir
+        localCloudUploadPending = true;
+      } else {
+        // Ambos tienen cambios (conflicto real): preguntar al usuario
+        if(localHasData){
+          const choice = await openSyncDecisionModal();
+          if(choice === 'merge'){
+            const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
+            applyCloudDb(mergedDb);
+            db._meta.lastSyncedCloudTS = row.updated_at;
+            _origSaveDB();
+          }else if(choice === 'cloud'){
+            applyCloudDb(row.data);
+            db._meta.lastSyncedCloudTS = row.updated_at;
+            _origSaveDB();
+          }else if(choice === 'keep-local'){
+            localCloudUploadPending = true;
+          }
         }else{
-          localCloudUploadPending = true;
+          applyCloudDb(row.data);
+          db._meta.lastSyncedCloudTS = row.updated_at;
+          _origSaveDB();
         }
       }
 
