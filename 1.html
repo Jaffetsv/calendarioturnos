@@ -690,8 +690,14 @@
     }
     .month-nav-btn:hover { background: rgba(255,255,255,0.16); }
     .month-nav-btn svg { width: 19px; height: 19px; display: block; }
-    #currentMonthLabel,
-.month-picker-trigger {
+    #currentMonthLabel {
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: 0.01em;
+    }
+    .month-picker-trigger {
       border: none;
       background: transparent;
       color: inherit;
@@ -712,17 +718,16 @@
     }
     .month-year-row {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       justify-content: center;
       gap: 8px;
       min-width: 0;
-      flex-wrap: nowrap;
     }
     .month-year-sep {
-      font-size: 24px;
+      font-size: 15px;
       line-height: 1;
-      font-weight: 900;
-      color: #ffffff;
+      font-weight: 800;
+      color: rgba(255,255,255,0.52);
       flex-shrink: 0;
     }
     .month-today-btn {
@@ -753,26 +758,6 @@
       #bottomTabs {
         min-height: 66px;
       }
-    }
-
-    /* Ajuste del calendario para que todos los días quepan sin espacio sobrante */
-    #view-calendar {
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-    #weekHeader {
-      flex: 0 0 auto;
-    }
-    #calendar {
-      flex: 1 1 auto;
-      min-height: 0;
-      align-content: stretch;
-      grid-auto-rows: var(--calendar-row-height, 1fr);
-    }
-    .day-cell {
-      min-height: var(--calendar-row-height, 1fr) !important;
-      height: var(--calendar-row-height, auto);
     }
 
     /* Ocultar tabs viejos (reemplazados por bottom tabs) */
