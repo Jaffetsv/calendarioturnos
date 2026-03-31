@@ -562,23 +562,14 @@
     }
     .btab {
       flex: 1; padding: 10px 4px 12px;
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
       font-size: 10px; font-weight: 900; color: #9ca3af;
       background: none; border: none; cursor: pointer; transition: color 0.15s;
       text-transform: uppercase; letter-spacing: 0.04em;
-      position: relative;
     }
-    .btab .btab-icon { width: 22px; height: 22px; display: block; }
-    .btab .btab-icon svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .btab .btab-icon { font-size: 20px; line-height: 1; }
     .btab.btab-active { color: #2563eb; }
-    .btab.btab-active::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 20%; right: 20%;
-      height: 3px;
-      background: #2563eb;
-      border-radius: 0 0 3px 3px;
-    }
+    .btab.btab-active .btab-icon { transform: scale(1.12); }
 
     /* Espacio para el tab bar inferior */
     body { padding-bottom: 64px; }
@@ -636,7 +627,11 @@
       border: 1px solid rgba(255,255,255,0.15) !important;
     }
 
-    /* Navegación de mes: estilos en el HTML inline */
+    /* Navegación de mes más compacta */
+    #monthNav {
+      padding: 6px 10px !important;
+      border-radius: 16px !important;
+    }
 
     /* Ocultar tabs viejos (reemplazados por bottom tabs) */
     #oldTabBar { display: none !important; }
@@ -665,64 +660,40 @@
       class="flex-1 min-w-0 bg-transparent text-white border border-white/20 rounded-xl px-2 py-1.5 text-[12px] font-black appearance-none">
     </select>
 
-    <!-- Modo edición: pastilla discreta -->
-    <span id="editDot" class="hidden w-2.5 h-2.5 rounded-full bg-gray-500 flex-shrink-0"></span>
-    <span id="editPill" title="Modo vista" class="hidden text-[9px] font-black uppercase px-2 py-0.5 rounded-full flex-shrink-0" style="background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);"></span>
+    <!-- Modo edición dot -->
+    <span id="editDot" title="Modo vista — toca el menú para activar edición" class="w-2.5 h-2.5 rounded-full bg-gray-500 flex-shrink-0"></span>
 
     <!-- Menú hamburguesa -->
     <button id="menuBtn" onclick="toggleMenu()" class="bg-white/15 hover:bg-white/25 w-9 h-9 rounded-xl text-[18px] transition-colors flex-shrink-0 flex items-center justify-center" aria-label="Menú">☰</button>
   </div>
 
-  <!-- Estado de sync + edición: fila pequeña debajo del top bar -->
-  <div class="flex items-center gap-2 pl-8 mt-0.5">
-    <div id="syncStatusBar" class="hidden text-[9px] font-bold text-gray-400 truncate flex-1"></div>
-  </div>
+  <!-- Estado de sync: sólo texto pequeño debajo cuando hay sesión -->
+  <div id="syncStatusBar" class="hidden mt-0.5 text-[9px] font-bold text-gray-400 pl-8 truncate"></div>
 
   <!-- Indicadores legacy (hidden, mantenidos para compatibilidad con JS) -->
-  <p id="editStatus" style="display:none !important;">Modo Vista</p>
-  <p id="cloudStatus" style="display:none !important;">Nube: OFF</p>
+  <p id="editStatus" class="hidden">Modo Vista</p>
+  <p id="cloudStatus" class="hidden">Nube: OFF</p>
 </div>
 
-<!-- Month/year nav -->
-<div style="padding:6px 8px 0;">
-  <div id="monthNav" style="background:#1e3a5f;border-radius:14px;display:flex;align-items:center;padding:0 6px;gap:4px;height:52px;">
-
-    <!-- Flecha anterior -->
-    <button onclick="changeMonth(-1)" aria-label="Mes anterior"
-      style="flex-shrink:0;width:34px;height:36px;background:rgba(255,255,255,0.1);border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+<!-- Month/year nav: compacto y protagonista -->
+<div class="px-2 pt-1.5 pb-0">
+  <div id="monthNav" class="flex items-center justify-between bg-gradient-to-r from-blue-900 to-slate-800 rounded-2xl px-1 py-1.5 shadow-inner">
+    <button onclick="changeMonth(-1)" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors flex-shrink-0" aria-label="Mes anterior">
+      <span class="text-xl font-black text-white leading-none">‹</span>
     </button>
 
-    <!-- Centro: 2 filas bien definidas -->
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1;">
-
-      <!-- Fila 1: Mes (grande) — span visible + select oculto superpuesto -->
-      <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;" onclick="document.getElementById('selectMonth').focus();">
-        <span id="monthLabel" style="font-size:17px;font-weight:900;color:#fff;pointer-events:none;white-space:nowrap;">Mes</span>
-        <select id="selectMonth" onchange="jumpToDate();updateMonthDisplay();"
-          style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:16px;"></select>
-      </div>
-
-      <!-- Fila 2: Año (tenue) + botón Hoy -->
-      <div style="display:flex;align-items:center;gap:6px;margin-top:1px;">
-        <div style="position:relative;display:inline-flex;align-items:center;cursor:pointer;" onclick="document.getElementById('selectYear').focus();">
-          <span id="yearLabel" style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);pointer-events:none;white-space:nowrap;">2026</span>
-          <select id="selectYear" onchange="jumpToDate();updateMonthDisplay();"
-            style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;font-size:14px;"></select>
-        </div>
-        <button onclick="goToday()"
-          style="background:rgba(255,255,255,0.14);border:none;color:rgba(255,255,255,0.9);padding:2px 9px;border-radius:20px;font-size:9px;font-weight:900;text-transform:uppercase;cursor:pointer;letter-spacing:0.04em;white-space:nowrap;">Hoy</button>
-      </div>
+    <div class="flex items-center gap-2 flex-1 justify-center">
+      <select id="selectMonth" onchange="jumpToDate()" class="bg-transparent border-none p-0 text-base font-black text-white text-center appearance-none cursor-pointer"></select>
+      <span class="text-white/60 font-bold">/</span>
+      <select id="selectYear" onchange="jumpToDate()" class="bg-transparent border-none p-0 text-base font-black text-white text-center appearance-none cursor-pointer"></select>
+      <button onclick="goToday()" class="ml-1 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-[10px] font-black uppercase transition-colors">Hoy</button>
     </div>
 
-    <div id="currentMonthDisplay" style="display:none;"></div>
+    <div id="currentMonthDisplay" class="hidden"></div>
 
-    <!-- Flecha siguiente -->
-    <button onclick="changeMonth(1)" aria-label="Mes siguiente"
-      style="flex-shrink:0;width:34px;height:36px;background:rgba(255,255,255,0.1);border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    <button onclick="changeMonth(1)" class="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors flex-shrink-0" aria-label="Mes siguiente">
+      <span class="text-xl font-black text-white leading-none">›</span>
     </button>
-
   </div>
 </div>
 
@@ -785,29 +756,29 @@
 <!-- Tabs inferiores (nuevos, mobile-first) -->
 <div id="bottomTabs">
   <button class="btab btab-active" id="btab-calendar" onclick="showView('calendar')">
-    <span class="btab-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+    <span class="btab-icon">📅</span>
     <span>Calendario</span>
   </button>
   <button class="btab" id="btab-summary" onclick="showView('summary')">
-    <span class="btab-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+    <span class="btab-icon">📊</span>
     <span>Resumen</span>
   </button>
   <button class="btab" id="btab-settings" onclick="showView('settings')">
-    <span class="btab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+    <span class="btab-icon">⚙️</span>
     <span>Ajustes</span>
   </button>
 </div>
 
 <!-- Calendar -->
 <div id="view-calendar" class="view-section view-active">
-  <div class="grid grid-cols-7 text-center text-[11px] font-bold py-2 bg-white text-gray-400 border-b border-gray-100">
-    <div>LUN</div>
+  <div class="grid grid-cols-7 text-center text-[11px] font-black py-3 bg-gradient-to-r from-blue-50 to-gray-50 text-gray-600 border-b">
+    <div class="text-blue-600 font-black">LUN</div>
     <div>MAR</div>
     <div>MIÉ</div>
     <div>JUE</div>
     <div>VIE</div>
-    <div class="text-blue-400">SÁB</div>
-    <div class="text-red-400">DOM</div>
+    <div class="text-blue-600 font-black">SÁB</div>
+    <div class="text-red-600 font-black">DOM</div>
   </div>
   <div id="calendar" class="calendar-grid"></div>
 </div>
@@ -2067,16 +2038,9 @@ function initSelectors(){
 function updateMonthDisplay(){
   const y = current.getFullYear();
   const m = current.getMonth();
-
-  // Actualizar labels visibles del nav
-  const monthLabel = document.getElementById('monthLabel');
-  const yearLabel = document.getElementById('yearLabel');
-  if(monthLabel) monthLabel.textContent = MONTHS[m];
-  if(yearLabel) yearLabel.textContent = y;
-
   const display = document.getElementById('currentMonthDisplay');
   if (display) display.textContent = `${MONTHS[m]} ${y}`;
-
+  
   const monthSelect = document.getElementById('selectMonth');
   const yearSelect = document.getElementById('selectYear');
   if (monthSelect) monthSelect.value = m;
@@ -2221,38 +2185,25 @@ function updateUIEditMode(){
   const editStatus = document.getElementById('editStatus');
   const unlockBtn = document.getElementById('unlockBtn');
   
-  if (!configContent || !lockedMessage || !unlockBtn) return;
+  if (!configContent || !lockedMessage || !editStatus || !unlockBtn) return;
   
   if(isEditMode()){
     configContent.classList.remove('hidden');
     lockedMessage.classList.add('hidden');
-    if(editStatus){ editStatus.textContent = "MODO EDICIÓN ACTIVADO"; editStatus.style.display = 'none'; }
+    editStatus.textContent = "MODO EDICIÓN ACTIVADO";
+    editStatus.className = "text-[10px] font-black uppercase text-emerald-400";
     unlockBtn.textContent = "🔒 Bloquear";
     unlockBtn.className = "bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-colors";
   } else {
     configContent.classList.add('hidden');
     lockedMessage.classList.remove('hidden');
-    if(editStatus){ editStatus.textContent = "MODO VISTA"; editStatus.style.display = 'none'; }
+    editStatus.textContent = "MODO VISTA";
+    editStatus.className = "text-[10px] font-black uppercase text-gray-400";
     unlockBtn.textContent = "🔓 Editar";
     unlockBtn.className = "bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-colors";
   }
 
-  // Pastilla discreta en top bar (reemplaza el dot grande + texto verde)
-  const editPill = document.getElementById('editPill');
-  if(editPill){
-    const editing = isEditMode();
-    editPill.classList.remove('hidden');
-    if(editing){
-      editPill.textContent = 'Edición';
-      editPill.style.background = 'rgba(34,197,94,0.22)';
-      editPill.style.color = '#86efac';
-    } else {
-      editPill.textContent = '';
-      editPill.classList.add('hidden');
-    }
-  }
-
-  // Dot de modo edición (compatibilidad)
+  // Dot de modo edición en top bar
   const editDot = document.getElementById('editDot');
   if(editDot){
     const editing = isEditMode();
@@ -5752,7 +5703,7 @@ async function smartInitialSync(){
   try{
     const row = await pullFromCloud();
     if(!row){
-      // Caso 1: Sin datos en nube → sube datos locales silenciosamente ✓
+      // Sin datos en nube: primer push
       await pushToCloud();
       cloudInitReady = true;
       updateSyncStatusUI();
@@ -5760,132 +5711,30 @@ async function smartInitialSync(){
     }
 
     const cloudTS = row.updated_at ? Date.parse(row.updated_at) : 0;
-    const hasLocalData = localTS > 0;
 
-    if(cloudTS > localTS && hasLocalData){
-      // Caso 2: Nube más nueva Y el usuario ya tiene datos locales → preguntar con 3 opciones
-      showSyncConflictDialog(row, localDbSnapshot);
-      // Arrancar polling aunque el usuario no haya decidido aún
-      cloudInitReady = true;
-      updateSyncStatusUI();
-      subscribeRealtime();
-      startSyncPolling();
-    }else if(cloudTS > localTS && !hasLocalData){
-      // Nube más nueva pero no hay datos locales relevantes → aplicar nube silenciosamente
+    if(cloudTS > localTS){
+      // Nube más reciente: merge inteligente
       const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
       db = mergedDb;
       try{
-        _origSaveDB();
+        _origSaveDB(); // guardar sin disparar cloud push ni markLocalUpdated
         safeInitAfterCloudReplace();
       }catch(e){ console.error(e); }
-      lastSyncTime = new Date();
-      cloudInitReady = true;
-      updateSyncStatusUI();
-      subscribeRealtime();
-      startSyncPolling();
     }else if(localTS > cloudTS){
-      // Caso 3: Tus datos son más nuevos → sube silenciosamente ✓
+      // Local más reciente: subir
       await pushToCloud();
-      lastSyncTime = new Date();
-      cloudInitReady = true;
-      updateSyncStatusUI();
-      subscribeRealtime();
-      startSyncPolling();
-    }else{
-      // Iguales: nada
-      lastSyncTime = new Date();
-      cloudInitReady = true;
-      updateSyncStatusUI();
-      subscribeRealtime();
-      startSyncPolling();
     }
-  }catch(e){
-    console.error('smartInitialSync error:', e);
+    // iguales: nada
+
+    lastSyncTime = new Date();
     cloudInitReady = true;
     updateSyncStatusUI();
+    subscribeRealtime();
+  }catch(e){
+    console.error('smartInitialSync error:', e);
+    cloudInitReady = true; // permitir operación normal aunque falle sync
+    updateSyncStatusUI();
   }
-}
-
-function showSyncConflictDialog(cloudRow, localDbSnapshot){
-  // Crear modal de conflicto con 3 opciones
-  let dlg = document.getElementById('syncConflictDialog');
-  if(dlg) dlg.remove();
-
-  const cloudDate = cloudRow.updated_at ? new Date(cloudRow.updated_at).toLocaleString('es',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : 'desconocida';
-  const localDate = localDbSnapshot._meta?.updated_at ? new Date(localDbSnapshot._meta.updated_at).toLocaleString('es',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : 'desconocida';
-
-  dlg = document.createElement('div');
-  dlg.id = 'syncConflictDialog';
-  dlg.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);';
-  dlg.innerHTML = `
-    <div style="background:#fff;border-radius:24px;padding:24px;max-width:360px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
-      <div style="text-align:center;margin-bottom:16px;">
-        <div style="width:48px;height:48px;background:linear-gradient(135deg,#6366f1,#3b82f6);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        </div>
-        <h3 style="font-size:15px;font-weight:900;color:#111827;margin-bottom:6px;">Datos en conflicto</h3>
-        <p style="font-size:11px;color:#6b7280;font-weight:600;line-height:1.45;">La nube tiene cambios más recientes. ¿Qué deseas hacer?</p>
-        <div style="display:flex;gap:8px;margin-top:10px;justify-content:center;font-size:10px;font-weight:700;color:#9ca3af;">
-          <span>☁️ Nube: ${escapeHTML(cloudDate)}</span>
-          <span>·</span>
-          <span>💾 Local: ${escapeHTML(localDate)}</span>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <button id="scMerge" style="background:linear-gradient(135deg,#6366f1,#3b82f6);border:none;color:#fff;padding:14px;border-radius:14px;font-weight:900;font-size:12px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:2px;">
-          <span>🔀 Fusionar <span style="background:rgba(255,255,255,0.2);font-size:9px;padding:1px 6px;border-radius:8px;margin-left:4px;vertical-align:middle;">Recomendado</span></span>
-          <span style="font-size:10px;font-weight:600;opacity:0.85;">Combina datos respetando tus meses anteriores</span>
-        </button>
-        <button id="scCloud" style="background:#f8fafc;border:1.5px solid #e5e7eb;color:#374151;padding:14px;border-radius:14px;font-weight:900;font-size:12px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:2px;">
-          <span>☁️ Usar nube</span>
-          <span style="font-size:10px;font-weight:600;color:#6b7280;">Reemplaza todo con los datos de la nube</span>
-        </button>
-        <button id="scLocal" style="background:#f8fafc;border:1.5px solid #e5e7eb;color:#374151;padding:14px;border-radius:14px;font-weight:900;font-size:12px;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:2px;">
-          <span>💾 Conservar mis datos</span>
-          <span style="font-size:10px;font-weight:600;color:#6b7280;">Sube tus datos locales a la nube</span>
-        </button>
-      </div>
-    </div>`;
-  document.body.appendChild(dlg);
-
-  document.getElementById('scMerge').onclick = async () => {
-    dlg.remove();
-    try{
-      const mergedDb = mergeSmartPull(cloudRow.data, localDbSnapshot);
-      db = mergedDb;
-      _origSaveDB();
-      safeInitAfterCloudReplace();
-      lastSyncTime = new Date();
-      cloudInitReady = true;
-      updateSyncStatusUI();
-      subscribeRealtime();
-      toast && toast('✓ Datos fusionados correctamente');
-    }catch(e){ console.error(e); }
-  };
-  document.getElementById('scCloud').onclick = async () => {
-    dlg.remove();
-    try{
-      db = cloudRow.data || db;
-      _origSaveDB();
-      safeInitAfterCloudReplace();
-      lastSyncTime = new Date();
-      cloudInitReady = true;
-      updateSyncStatusUI();
-      subscribeRealtime();
-      toast && toast('☁️ Datos de la nube aplicados');
-    }catch(e){ console.error(e); }
-  };
-  document.getElementById('scLocal').onclick = async () => {
-    dlg.remove();
-    try{
-      await pushToCloud();
-      lastSyncTime = new Date();
-      cloudInitReady = true;
-      updateSyncStatusUI();
-      subscribeRealtime();
-      toast && toast('💾 Tus datos fueron enviados a la nube');
-    }catch(e){ console.error(e); }
-  };
 }
 
 function safeInitAfterCloudReplace(){
@@ -5928,67 +5777,11 @@ async function manualSyncNow(){
     return;
   }
   try{
-    updateSyncStatusUI('pending');
-    const row = await pullFromCloud();
-    const localDbSnapshot = JSON.parse(JSON.stringify(db));
-    db._meta = db._meta || {};
-    const localTS = db._meta.updated_at ? Date.parse(db._meta.updated_at) : 0;
-
-    if(!row){
-      // Sin datos en nube → subir sin preguntar
-      await pushToCloud();
-      lastSyncTime = new Date();
-      updateSyncStatusUI('synced');
-      toast && toast('☁️ Datos subidos a la nube');
-      return;
-    }
-
-    const cloudTS = row.updated_at ? Date.parse(row.updated_at) : 0;
-
-    if(cloudTS === localTS){
-      lastSyncTime = new Date();
-      updateSyncStatusUI('synced');
-      toast && toast('✓ Todo está sincronizado');
-      return;
-    }
-
-    // Hay diferencias → mostrar diálogo de conflicto
-    showSyncConflictDialog(row, localDbSnapshot);
-
+    await smartInitialSync();
+    alert("Sincronización completada.");
   }catch(e){
-    updateSyncStatusUI('error');
-    toast ? toast('Error al sincronizar: ' + (e.message||e)) : alert('Error: ' + (e.message||e));
+    alert("Error sincronizando: " + (e.message||e));
   }
-}
-
-// Polling periódico: cada 2 min verifica si hay cambios en nube
-let _syncPollTimer = null;
-function startSyncPolling(){
-  if(_syncPollTimer) clearInterval(_syncPollTimer);
-  _syncPollTimer = setInterval(async () => {
-    if(!isCloudEnabled() || !cloudInitReady) return;
-    try{
-      const row = await pullFromCloud();
-      if(!row) return;
-      const cloudTS = row.updated_at ? Date.parse(row.updated_at) : 0;
-      db._meta = db._meta || {};
-      const localTS = db._meta.updated_at ? Date.parse(db._meta.updated_at) : 0;
-      // Si nube tiene algo más nuevo que lo que el usuario ya vio, mostrar banner
-      const lastKnownCloudTS = window._lastKnownCloudTS || 0;
-      if(cloudTS > localTS && cloudTS > lastKnownCloudTS){
-        window._lastKnownCloudTS = cloudTS;
-        const remoteTS = row.updated_at
-          ? new Date(row.updated_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})
-          : null;
-        showCloudUpdateBanner(
-          'Cambios detectados en la nube',
-          remoteTS
-            ? `La nube fue actualizada a las ${remoteTS}. ¿Deseas aplicar los cambios?`
-            : 'La nube tiene datos más recientes. ¿Deseas aplicar los cambios?'
-        );
-      }
-    }catch(e){ /* silencioso en polling */ }
-  }, 2 * 60 * 1000); // cada 2 minutos
 }
 
 async function pullFromCloudUI(){
@@ -6083,55 +5876,37 @@ function subscribeRealtime(){
         table: 'shifter_state',
         filter: `user_id=eq.${sbUser.id}`
       }, (payload) => {
-        // Otro dispositivo hizo un push — siempre mostrar banner, nunca aplicar silenciosamente
-        if(!payload.new) return;
-        const remoteDevice = payload.new?.data?._meta?.device_id;
-        const myDevice = getDeviceId();
-        // Si no hay device_id en el payload, asumir que es de otro dispositivo
-        if(!remoteDevice || remoteDevice !== myDevice){
-          const remoteTS = payload.new?.updated_at
-            ? new Date(payload.new.updated_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})
-            : null;
-          showCloudUpdateBanner(
-            'Cambios desde otro dispositivo',
-            remoteTS
-              ? `Actualización recibida a las ${remoteTS}. ¿Deseas aplicar los cambios?`
-              : 'Otro dispositivo actualizó el calendario. ¿Deseas traer los últimos cambios?'
-          );
+        // Otro dispositivo hizo un push
+        if(payload.new && payload.new.data && payload.new.data._meta){
+          const remoteDevice = payload.new.data._meta.device_id;
+          const myDevice = getDeviceId();
+          if(remoteDevice !== myDevice){
+            showCloudUpdateBanner();
+          }
         }
       })
-      .subscribe((status) => {
-        if(status === 'SUBSCRIBED'){
-          console.log('[Shifter] Realtime activo — protección entre dispositivos ON');
-        }
-      });
+      .subscribe();
   }catch(e){ console.warn('Realtime subscribe error:', e); }
 }
 
-function showCloudUpdateBanner(title, description){
-  // Siempre pregunta al usuario — nunca silencioso
-  title = title || 'Cambios desde otro dispositivo';
-  description = description || 'Otro dispositivo actualizó el calendario. ¿Deseas traer los últimos cambios?';
-
+function showCloudUpdateBanner(){
+  // Mostrar banner o toast para notificar cambios remotos
   let banner = document.getElementById('cloudUpdateBanner');
   if(!banner){
     banner = document.createElement('div');
     banner.id = 'cloudUpdateBanner';
-    banner.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:#1e40af;color:#fff;padding:14px 18px;border-radius:18px;box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.15);display:flex;gap:14px;align-items:flex-start;max-width:92vw;min-width:260px;';
+    banner.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:#1e40af;color:#fff;padding:12px 20px;border-radius:16px;font-size:12px;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,0.3);display:flex;gap:10px;align-items:center;max-width:90vw;';
+    banner.innerHTML = `
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:900;margin-bottom:3px;">📱 Cambios desde otro dispositivo</div>
+        <div style="font-size:10px;opacity:0.85;font-weight:700;">Otro dispositivo actualizó el calendario. ¿Deseas traer los últimos cambios?</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button onclick="pullLatestAndDismissBanner()" style="background:#22c55e;border:none;color:#fff;padding:8px 14px;border-radius:10px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">✓ Actualizar</button>
+        <button onclick="dismissCloudBanner()" style="background:rgba(255,255,255,0.15);border:none;color:rgba(255,255,255,0.8);padding:6px 14px;border-radius:10px;font-weight:900;cursor:pointer;font-size:11px;">✕ Ignorar</button>
+      </div>`;
     document.body.appendChild(banner);
   }
-  banner.innerHTML = `
-    <div style="flex:1;min-width:0;">
-      <div style="font-size:13px;font-weight:900;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.18-5.6"/></svg>
-        ${escapeHTML(title)}
-      </div>
-      <div style="font-size:10px;opacity:0.85;font-weight:600;line-height:1.4;">${escapeHTML(description)}</div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;min-width:90px;">
-      <button onclick="pullLatestAndDismissBanner()" style="background:#22c55e;border:none;color:#fff;padding:8px 14px;border-radius:10px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;letter-spacing:0.02em;">✓ Actualizar</button>
-      <button onclick="dismissCloudBanner()" style="background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.85);padding:7px 14px;border-radius:10px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">✕ Ignorar</button>
-    </div>`;
   banner.style.display = 'flex';
 }
 
