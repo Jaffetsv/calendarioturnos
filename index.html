@@ -276,6 +276,10 @@
       display: none;
     }
     
+    .view-section.view-active {
+      display: block !important;
+    }
+    
     .view-active {
       display: block !important;
     }
@@ -555,11 +559,10 @@
       position: fixed;
       bottom: 0; left: 0; right: 0;
       display: flex;
-      background: rgba(255,255,255,0.98);
-      border-top: 1px solid #dbe3ef;
-      z-index: 100;
-      box-shadow: 0 -10px 28px rgba(15,23,42,0.10);
-      backdrop-filter: blur(14px);
+      background: #ffffff;
+      border-top: 1px solid #e5e7eb;
+      z-index: 200;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
     }
     .btab {
       position: relative;
@@ -617,6 +620,12 @@
       font-weight: 900;
       color: #6b7280;
       background: #ffffff;
+    }
+    #weekHeader .wday-sat {
+      color: #2563eb;
+    }
+    #weekHeader .wday-sun {
+      color: #dc2626;
     }
 
     /* Celdas del calendario: notas más legibles */
@@ -694,9 +703,11 @@
 .month-picker-trigger {
       border: none;
       background: transparent;
-      color: inherit;
+      color: #ffffff;
       padding: 0;
       cursor: pointer;
+      font: inherit;
+      font-weight: 900;
     }
     .month-picker-trigger:focus-visible {
       outline: 2px solid rgba(255,255,255,0.45);
@@ -830,11 +841,11 @@
     <div class="flex flex-1 min-w-0 flex-col items-center justify-center text-center">
       <div class="month-year-row">
         <button type="button" id="monthTriggerBtn" class="month-picker-trigger truncate" onclick="openMonthPicker()" aria-label="Seleccionar mes">
-          <span id="currentMonthLabel" class="truncate">Marzo</span>
+          <span id="currentMonthLabel" class="truncate" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1;display:inline-block;">Marzo</span>
         </button>
         <span class="month-year-sep" aria-hidden="true">/</span>
         <button type="button" id="yearTriggerBtn" class="month-picker-trigger" onclick="openYearPicker()" aria-label="Seleccionar año">
-          <span id="currentYearLabel">2026</span>
+          <span id="currentYearLabel" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1;display:inline-block;">2026</span>
         </button>
       </div>
       <div class="mt-1 flex items-center justify-center">
@@ -942,8 +953,8 @@
     <div class="wday">MIÉ</div>
     <div class="wday">JUE</div>
     <div class="wday">VIE</div>
-    <div class="wday">SÁB</div>
-    <div class="wday">DOM</div>
+    <div class="wday wday-sat">SÁB</div>
+    <div class="wday wday-sun">DOM</div>
   </div>
   <div id="calendar" class="calendar-grid"></div>
 </div>
@@ -2269,37 +2280,34 @@ function openYearPicker(){
 // =========================================================
 // View Management
 // =========================================================
-function showView(v){
-  // Ocultar todas las vistas
-  document.querySelectorAll('.view-section').forEach(s => {
-    s.classList.remove('view-active');
+function showView(view){
+  const valid = ['calendar','summary','settings'];
+  const target = valid.includes(view) ? view : 'calendar';
+
+  document.querySelectorAll('.view-section').forEach(el => {
+    el.classList.remove('view-active');
+    el.style.display = 'none';
   });
-  
-  // Quitar active de todas las tabs
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    b.classList.remove('tab-active');
-  });
-  
-  // Mostrar vista seleccionada
-  const viewElement = document.getElementById(`view-${v}`);
-  const tabElement = document.getElementById(`tab-${v}`);
-  
-  if (viewElement) viewElement.classList.add('view-active');
-  if (tabElement) tabElement.classList.add('tab-active');
-  
-  if(v === 'summary'){
-    renderSummaryCategories();
-    calcSummary();
-  }
-  
-  if(v === 'settings'){
-    updateUIEditMode();
+
+  const activeView = document.getElementById('view-' + target);
+  if (activeView) {
+    activeView.classList.add('view-active');
+    activeView.style.display = 'block';
   }
 
-  // Actualizar btabs inferiores
-  document.querySelectorAll('.btab').forEach(b => b.classList.remove('btab-active'));
-  const bt = document.getElementById('btab-'+v);
-  if(bt) bt.classList.add('btab-active');
+  document.querySelectorAll('#bottomTabs .btab').forEach(btn => btn.classList.remove('btab-active'));
+  const activeBtn = document.getElementById('btab-' + target);
+  if (activeBtn) activeBtn.classList.add('btab-active');
+
+  document.querySelectorAll('#oldTabBar .tab-btn').forEach(btn => btn.classList.remove('tab-active'));
+  const oldBtn = document.getElementById('tab-' + target);
+  if (oldBtn) oldBtn.classList.add('tab-active');
+
+  if (target === 'calendar') {
+    requestAnimationFrame(() => {
+      if (typeof fitCalendarToViewport === 'function') fitCalendarToViewport();
+    });
+  }
 }
 
 
