@@ -2232,9 +2232,10 @@ function updateMonthDisplay(){
   if (yearSelect) yearSelect.value = y;
 }
 
-function changeMonth(v){ 
-  current.setMonth(current.getMonth() + v); 
-  updateMonthDisplay(); 
+function changeMonth(v){
+  // Usar new Date(y, m, 1) para evitar overflow cuando el día actual es 29-31
+  current = new Date(current.getFullYear(), current.getMonth() + v, 1);
+  updateMonthDisplay();
   render();
   renderSummaryCategories();
   calcSummary();
@@ -2244,9 +2245,8 @@ function jumpToDate(){
   const monthSelect = document.getElementById('selectMonth');
   const yearSelect = document.getElementById('selectYear');
   if (monthSelect && yearSelect) {
-    current.setMonth(parseInt(monthSelect.value));
-    current.setFullYear(parseInt(yearSelect.value));
-    updateMonthDisplay(); 
+    current = new Date(parseInt(yearSelect.value), parseInt(monthSelect.value), 1);
+    updateMonthDisplay();
     render();
     renderSummaryCategories();
     calcSummary();
