@@ -672,6 +672,7 @@
       background: #1e3a5f !important;
       border-radius: 22px !important;
       box-shadow: 0 14px 28px rgba(30,58,95,0.20);
+      min-height: 96px;
     }
     .month-nav-btn {
       width: 40px;
@@ -696,13 +697,38 @@
       color: #ffffff;
       letter-spacing: 0.01em;
     }
+    .month-picker-trigger {
+      border: none;
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      cursor: pointer;
+    }
+    .month-picker-trigger:focus-visible {
+      outline: 2px solid rgba(255,255,255,0.45);
+      outline-offset: 4px;
+      border-radius: 10px;
+    }
     #currentYearLabel {
-      font-size: 11px;
+      font-size: 13px;
       line-height: 1;
       font-weight: 800;
-      color: rgba(255,255,255,0.65);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      color: rgba(255,255,255,0.68);
+      letter-spacing: 0.04em;
+    }
+    .month-year-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .month-year-sep {
+      font-size: 15px;
+      line-height: 1;
+      font-weight: 800;
+      color: rgba(255,255,255,0.52);
+      flex-shrink: 0;
     }
     .month-today-btn {
       border: none;
@@ -718,6 +744,21 @@
       transition: background 0.18s ease;
     }
     .month-today-btn:hover { background: rgba(255,255,255,0.22); }
+
+    @media (max-width: 640px) {
+      #view-calendar {
+        min-height: calc(100vh - 210px);
+      }
+      .calendar-grid {
+        grid-auto-rows: minmax(132px, 1fr);
+      }
+      .day-cell {
+        min-height: 132px !important;
+      }
+      #bottomTabs {
+        min-height: 66px;
+      }
+    }
 
     /* Ocultar tabs viejos (reemplazados por bottom tabs) */
     #oldTabBar { display: none !important; }
@@ -772,9 +813,16 @@
     </button>
 
     <div class="flex flex-1 min-w-0 flex-col items-center justify-center text-center">
-      <div id="currentMonthLabel" class="truncate">Marzo</div>
-      <div class="mt-0.5 flex items-center gap-2">
-        <div id="currentYearLabel">2026</div>
+      <div class="month-year-row">
+        <button type="button" id="monthTriggerBtn" class="month-picker-trigger truncate" onclick="openMonthPicker()" aria-label="Seleccionar mes">
+          <span id="currentMonthLabel" class="truncate">Marzo</span>
+        </button>
+        <span class="month-year-sep" aria-hidden="true">/</span>
+        <button type="button" id="yearTriggerBtn" class="month-picker-trigger" onclick="openYearPicker()" aria-label="Seleccionar año">
+          <span id="currentYearLabel">2026</span>
+        </button>
+      </div>
+      <div class="mt-1 flex items-center justify-center">
         <button onclick="goToday()" class="month-today-btn">Hoy</button>
       </div>
       <div id="currentMonthDisplay" class="hidden"></div>
@@ -2183,6 +2231,26 @@ function goToday(){
   calcSummary();
 }
 
+function openMonthPicker(){
+  const el = document.getElementById('selectMonth');
+  if(!el) return;
+  if(typeof el.showPicker === 'function'){
+    try{ el.showPicker(); return; }catch(e){}
+  }
+  el.focus();
+  el.click();
+}
+
+function openYearPicker(){
+  const el = document.getElementById('selectYear');
+  if(!el) return;
+  if(typeof el.showPicker === 'function'){
+    try{ el.showPicker(); return; }catch(e){}
+  }
+  el.focus();
+  el.click();
+}
+
 // =========================================================
 // View Management
 // =========================================================
@@ -2479,9 +2547,8 @@ let suppressClickUntil = 0;
     } else {
       const shift = SHIFTS[info.s] || {color: 'L', label: 'L'};
       const noteText = (info.n || '').toString().trim();
-      const hideLibreNote = (info.s === 'L' && noteText.toUpperCase() === 'LIBRE');
       cell.innerHTML = `<div class="shift-label ${shiftBgClass(shift.color)}" style="${shiftBgStyle(shift.color)}">${escapeHTML(shift.label)}</div>`;
-      if (noteText && !hideLibreNote) {
+      if (noteText) {
         cell.innerHTML += `<div class="note-text">${escapeHTML(noteText)}</div>`;
       }
     }
@@ -5330,7 +5397,6 @@ function buildExportHTML(userKey, locality, year, monthIndex0, todayStr, catHour
     } else {
       const shift = SHIFTS[info.s] || {color: 'L', label: 'L'};
       const noteText = (info.n || '').toString().trim();
-      const hideLibreNote = (info.s === 'L' && noteText.toUpperCase() === 'LIBRE');
       dayHTML = `
         <div style="height:100px;background:${getColorValue(shift.color)};position:relative;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;border:1px solid #e5e7eb;">
           ${escapeHTML(shift.label)}
@@ -5338,7 +5404,7 @@ function buildExportHTML(userKey, locality, year, monthIndex0, todayStr, catHour
             ${d}
           </div>
           ${isHoliday ? `<div style="position:absolute;top:2px;left:2px;font-size:8px;font-weight:900;color:#dc2626;background:rgba(254,226,226,0.9);padding:1px 4px;border-radius:4px;">A</div>` : ''}
-          ${noteText && !hideLibreNote ? `<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:900;background:rgba(255,255,255,0.95);padding:3px 6px;border-radius:4px;white-space:nowrap;max-width:90%;overflow:visible;border:1px solid rgba(0,0,0,0.1);">
+          ${noteText ? `<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:900;background:rgba(255,255,255,0.95);padding:3px 6px;border-radius:4px;white-space:nowrap;max-width:90%;overflow:visible;border:1px solid rgba(0,0,0,0.1);">
             ${escapeHTML(noteText)}
           </div>` : ''}
         </div>
@@ -5529,6 +5595,8 @@ let remoteConflictPending = false;
 let lastRemotePayload = null;
 let syncDecisionResolver = null;
 let smartSyncPromise = null;
+let cloudUploadDecisionResolver = null;
+let localCloudUploadPending = false;
 
 function getDeviceId(){
   try{
@@ -5569,6 +5637,8 @@ function applyCloudDb(newDb, {clearRemotePending=true} = {}){
     lastRemotePayload = null;
     dismissCloudBanner();
   }
+  localCloudUploadPending = false;
+  dismissLocalUploadBanner();
   updateSyncStatusUI();
 }
 
@@ -5589,6 +5659,26 @@ function resolveSyncDecision(choice){
   const resolver = syncDecisionResolver;
   syncDecisionResolver = null;
   closeSyncDecisionModal();
+  if(resolver) resolver(choice);
+}
+
+function openLocalUploadDecisionModal(){
+  return new Promise(resolve => {
+    cloudUploadDecisionResolver = resolve;
+    const modal = document.getElementById('cloudUploadDecisionModal');
+    if(modal) modal.classList.add('active');
+  });
+}
+
+function closeLocalUploadDecisionModal(){
+  const modal = document.getElementById('cloudUploadDecisionModal');
+  if(modal) modal.classList.remove('active');
+}
+
+function resolveLocalUploadDecision(choice){
+  const resolver = cloudUploadDecisionResolver;
+  cloudUploadDecisionResolver = null;
+  closeLocalUploadDecisionModal();
   if(resolver) resolver(choice);
 }
 
@@ -5744,10 +5834,11 @@ async function authPrimaryAction(){
       const {data, error} = await sb.auth.signInWithPassword({ email, password: pass });
       if(error) return setAuthMessage(error.message, true);
       sbSession = data.session; sbUser = data.user;
-      setAuthMessage("Sesión iniciada. Sincronizando...");
+      setAuthMessage("Sesión iniciada. Revisando sincronización...");
       await smartInitialSync();
-      setAuthMessage("Sesión iniciada y sincronizada.");
+      setAuthMessage(localCloudUploadPending ? "Sesión iniciada. Tus cambios quedaron locales hasta que decidas subirlos." : "Sesión iniciada y sincronizada.");
       refreshCloudUI();
+      if(localCloudUploadPending) showLocalUploadBanner();
     }else if(currentAuthTab==='signup'){
       if(!pass || pass.length < 6) return setAuthMessage("Contraseña mínima: 6 caracteres.", true);
       if(pass !== pass2) return setAuthMessage("La confirmación no coincide.", true);
@@ -5756,9 +5847,10 @@ async function authPrimaryAction(){
       // Si email confirmations están activos, session puede ser null
       if(data.session){
         sbSession = data.session; sbUser = data.user;
-        setAuthMessage("Cuenta creada e iniciada. Sincronizando...");
+        setAuthMessage("Cuenta creada e iniciada. Revisando sincronización...");
         await smartInitialSync();
-        setAuthMessage("Cuenta creada y sincronizada.");
+        setAuthMessage(localCloudUploadPending ? "Cuenta creada. Tus cambios quedaron locales hasta que decidas subirlos." : "Cuenta creada y sincronizada.");
+        if(localCloudUploadPending) showLocalUploadBanner();
       }else{
         setAuthMessage("Cuenta creada. Revisa tu correo para confirmar e inicia sesión.", false);
       }
@@ -5881,25 +5973,23 @@ async function smartInitialSync(){
       const cloudTS = row.updated_at ? Date.parse(row.updated_at) : 0;
       const localHasData = hasMeaningfulLocalData(localDbSnapshot);
 
-      if(cloudTS > localTS){
-        if(localHasData){
-          const choice = await openSyncDecisionModal();
-          if(choice === 'merge'){
-            const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
-            applyCloudDb(mergedDb);
-            await pushToCloud();
-          }else if(choice === 'cloud'){
-            applyCloudDb(row.data);
-          }else if(choice === 'keep-local'){
-            await pushToCloud();
-          }
-        }else{
+      if(localHasData){
+        const choice = await openSyncDecisionModal();
+        if(choice === 'merge'){
+          const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
+          applyCloudDb(mergedDb);
+        }else if(choice === 'cloud'){
           applyCloudDb(row.data);
+        }else if(choice === 'keep-local'){
+          localCloudUploadPending = true;
         }
-      }else if(localTS > cloudTS){
-        await pushToCloud();
+      }else{
+        if(cloudTS >= localTS){
+          applyCloudDb(row.data);
+        }else{
+          localCloudUploadPending = true;
+        }
       }
-      // iguales: nada
 
       remoteConflictPending = false;
       lastRemotePayload = null;
@@ -5938,24 +6028,15 @@ function safeInitAfterCloudReplace(){
 
 function scheduleCloudPush(){
   if(!isCloudEnabled()) return;
-  if(!cloudInitReady) return; // no empujar durante la sincronización inicial
+  if(!cloudInitReady) return;
   if(remoteConflictPending){
     updateSyncStatusUI('pending-remote');
     showCloudUpdateBanner();
     return;
   }
-  if(cloudDebounceTimer) clearTimeout(cloudDebounceTimer);
-  updateSyncStatusUI('pending');
-  cloudDebounceTimer = setTimeout(async ()=>{
-    try{
-      await pushToCloud();
-      lastSyncTime = new Date();
-      updateSyncStatusUI('synced');
-    }catch(e){
-      console.warn("Cloud push failed:", e);
-      updateSyncStatusUI('error');
-    }
-  }, 1500);
+  localCloudUploadPending = true;
+  updateSyncStatusUI('pending-local');
+  showLocalUploadBanner();
 }
 
 async function manualSyncNow(){
@@ -5968,9 +6049,15 @@ async function manualSyncNow(){
     if(typeof toast === 'function') toast('Hay cambios pendientes de otro dispositivo. Decide primero qué hacer.');
     return;
   }
+  if(localCloudUploadPending){
+    showLocalUploadBanner();
+    if(typeof toast === 'function') toast('Tienes cambios locales pendientes de decidir.');
+    return;
+  }
   try{
     await smartInitialSync();
-    alert("Sincronización completada.");
+    updateSyncStatusUI();
+    alert("Revisión de sincronización completada.");
   }catch(e){
     alert("Error sincronizando: " + (e.message||e));
   }
@@ -5982,9 +6069,7 @@ async function pullFromCloudUI(){
     const row = await pullFromCloud();
     if(!row){ return alert("No hay datos en la nube aún."); }
     if(!confirm("Esto reemplazará tus datos locales por los de la nube. ¿Continuar?")) return;
-    db = row.data || db;
-    saveDB();
-    safeInitAfterCloudReplace();
+    applyCloudDb(row.data || db);
     alert("Datos de la nube aplicados.");
   }catch(e){
     alert("Error: " + (e.message||e));
@@ -5995,6 +6080,10 @@ async function pushToCloudUI(){
   if(!isCloudEnabled()) return openAuthModal();
   try{
     await pushToCloud();
+    localCloudUploadPending = false;
+    dismissLocalUploadBanner();
+    lastSyncTime = new Date();
+    updateSyncStatusUI('synced');
     alert("Datos enviados a la nube.");
   }catch(e){
     alert("Error: " + (e.message||e));
@@ -6012,7 +6101,7 @@ saveDB = function(){
 };
 
 function updateSyncStatusUI(state){
-  // state: 'offline' | 'pending' | 'synced' | 'error' | 'pending-remote'
+  // state: 'offline' | 'pending' | 'synced' | 'error' | 'pending-remote' | 'pending-local'
   const dot = document.getElementById('syncDot');
   const statusBar = document.getElementById('syncStatusBar');
   const statusMetaRow = document.getElementById('statusMetaRow');
@@ -6032,6 +6121,7 @@ function updateSyncStatusUI(state){
     dot.title = !isLogged ? 'Sin sesión — toca para iniciar' :
                 isRemotePending ? 'Hay cambios pendientes de otro dispositivo' :
                 state === 'pending' ? 'Guardando en la nube...' :
+                state === 'pending-local' ? 'Cambios locales pendientes de subir' :
                 state === 'error'   ? 'Error de sincronización' :
                 ts ? `Sincronizado ${ts}` : 'Sincronizado';
   }
@@ -6039,6 +6129,7 @@ function updateSyncStatusUI(state){
   if(statusBar && statusMetaRow){
     if(isLogged){
       statusBar.textContent = isRemotePending ? 'Cambios pendientes de otro dispositivo' :
+                              state === 'pending-local' ? 'Cambios locales solo en este dispositivo' :
                               state === 'pending' ? 'Guardando...' :
                               state === 'error'   ? 'Error al sincronizar' :
                               ts ? `Sincronizado a las ${ts}` : 'Sincronizado';
@@ -6051,6 +6142,7 @@ function updateSyncStatusUI(state){
   if(drawerLine){
     drawerLine.textContent = !isLogged ? 'Sin sesión de nube — inicia sesión' :
                              isRemotePending ? 'Hay cambios pendientes de otro dispositivo' :
+                             localCloudUploadPending ? 'Tienes cambios locales pendientes de decidir' :
                              ts ? `Nube activa · ${ts}` : 'Nube activa';
   }
 
@@ -6126,6 +6218,57 @@ async function pullLatestAndDismissBanner(){
   }catch(e){
     console.warn('pullLatest error:', e);
   }
+}
+
+function showLocalUploadBanner(){
+  let banner = document.getElementById('cloudLocalBanner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'cloudLocalBanner';
+    banner.style.cssText = 'position:fixed;bottom:82px;left:50%;transform:translateX(-50%);z-index:9998;background:#0f172a;color:#fff;padding:14px 16px;border-radius:18px;font-size:12px;font-weight:900;display:flex;gap:14px;align-items:center;max-width:min(94vw,620px);width:calc(100vw - 24px);box-shadow:0 8px 32px rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);';
+    banner.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:900;margin-bottom:4px;line-height:1.2;">Cambios locales sin subir</div>
+        <div style="font-size:11px;opacity:0.88;font-weight:700;line-height:1.35;">Detecté cambios en este dispositivo. Decide si deseas enviarlos a la nube o conservarlos solo de forma local.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;align-self:stretch;">
+        <button onclick="confirmUploadLocalChanges()" style="background:#22c55e;border:none;color:#fff;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">☁️ Subir</button>
+        <button onclick="keepChangesLocalOnly()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:#fff;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">💾 Local</button>
+      </div>`;
+    document.body.appendChild(banner);
+  }
+  banner.style.display = localCloudUploadPending ? 'flex' : 'none';
+}
+
+function dismissLocalUploadBanner(){
+  const b = document.getElementById('cloudLocalBanner');
+  if(b) b.style.display = 'none';
+}
+
+async function confirmUploadLocalChanges(){
+  dismissLocalUploadBanner();
+  if(remoteConflictPending){
+    showCloudUpdateBanner();
+    return;
+  }
+  try{
+    updateSyncStatusUI('pending');
+    await pushToCloud();
+    localCloudUploadPending = false;
+    lastSyncTime = new Date();
+    updateSyncStatusUI('synced');
+    if(typeof toast === 'function') toast('Cambios enviados a la nube');
+  }catch(e){
+    console.warn('confirmUploadLocalChanges error:', e);
+    updateSyncStatusUI('error');
+  }
+}
+
+function keepChangesLocalOnly(){
+  localCloudUploadPending = false;
+  dismissLocalUploadBanner();
+  updateSyncStatusUI();
+  if(typeof toast === 'function') toast('Cambios conservados solo en este dispositivo');
 }
 
 // Iniciar supabase al cargar
@@ -6268,6 +6411,27 @@ window.addEventListener('load', () => {
 </div>
 
 <!-- Modal Auth (Supabase) -->
+
+<div id="cloudUploadDecisionModal" class="modal">
+  <div class="bg-white rounded-[28px] w-full max-w-md overflow-hidden shadow-2xl">
+    <div class="bg-slate-900 text-white px-5 py-4">
+      <div class="text-[13px] font-black uppercase tracking-[0.2em]">Cambios locales</div>
+      <div class="mt-1 text-lg font-black leading-tight">¿Qué deseas hacer con los cambios de este dispositivo?</div>
+      <div class="mt-2 text-[12px] text-white/80 font-semibold leading-relaxed">No se subirán automáticamente. Puedes enviarlos a la nube o mantenerlos solo en este dispositivo.</div>
+    </div>
+    <div class="p-5 space-y-3 bg-gray-50">
+      <button type="button" onclick="resolveLocalUploadDecision('upload')" class="w-full p-4 rounded-2xl border border-emerald-200 bg-emerald-50 text-left hover:bg-emerald-100 transition-colors">
+        <div class="font-black text-[12px] text-emerald-900">☁️ Subir a la nube</div>
+        <div class="text-[11px] text-emerald-700 font-semibold mt-1">Envía esta versión y úsala también en los demás dispositivos.</div>
+      </button>
+      <button type="button" onclick="resolveLocalUploadDecision('local')" class="w-full p-4 rounded-2xl border border-slate-200 bg-white text-left hover:bg-slate-50 transition-colors">
+        <div class="font-black text-[12px] text-slate-900">💾 Dejar solo local</div>
+        <div class="text-[11px] text-slate-600 font-semibold mt-1">Conserva los cambios en este dispositivo sin subirlos todavía.</div>
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="authModal" class="modal">
   <div class="bg-white w-full max-w-md rounded-3xl md:rounded-[40px] overflow-hidden shadow-2xl border border-gray-100 mx-2">
     <div class="bg-gradient-to-r from-indigo-600 to-sky-600 text-white text-center py-4 font-black text-sm uppercase tracking-widest relative">
