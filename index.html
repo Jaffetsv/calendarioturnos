@@ -2471,6 +2471,34 @@ function switchUser(){
 // =========================================================
 // Calendar Rendering
 // =========================================================
+
+function fitCalendarToViewport(){
+  const view = document.getElementById('view-calendar');
+  const grid = document.getElementById('calendar');
+  const weekHeader = document.getElementById('weekHeader');
+  const bottomTabs = document.getElementById('bottomTabs');
+  if (!view || !grid || !weekHeader || !bottomTabs) return;
+
+  const totalCells = grid.children.length;
+  const rows = Math.max(1, Math.ceil(totalCells / 7));
+  const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+
+  const viewTop = view.getBoundingClientRect().top;
+  const weekHeaderH = weekHeader.getBoundingClientRect().height || 0;
+  const bottomTabsH = bottomTabs.getBoundingClientRect().height || 0;
+
+  const available = Math.floor(viewportH - viewTop - weekHeaderH - bottomTabsH - 8);
+  if (available <= 0) return;
+
+  const rowGap = 1;
+  const totalGaps = Math.max(0, rows - 1) * rowGap;
+  const rowHeight = Math.max(68, Math.floor((available - totalGaps) / rows));
+  const gridHeight = rows * rowHeight + totalGaps;
+
+  document.documentElement.style.setProperty('--calendar-row-height', rowHeight + 'px');
+  document.documentElement.style.setProperty('--calendar-grid-height', gridHeight + 'px');
+}
+
 function render(){
   const grid = document.getElementById('calendar');
   if (!grid) return;
@@ -2524,6 +2552,8 @@ function render(){
     const cell = createDayCell(i, true, null, SHIFTS, user, key);
     grid.appendChild(cell);
   }
+
+  requestAnimationFrame(fitCalendarToViewport);
 }
 
 function createDayCell(dayNum, isOffMonth, info, SHIFTS, user, key, isToday = false){
