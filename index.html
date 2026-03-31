@@ -1518,6 +1518,59 @@
   </div>
 </div>
 
+<!-- Modal Fusionar Perfiles -->
+<div id="mergeProfilesModal" class="modal">
+  <div class="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-gray-100 mx-2" style="max-height:90vh;overflow-y:auto;">
+    <div class="bg-[#1e3a5f] text-white px-5 py-4 flex items-center justify-between">
+      <div>
+        <div class="font-black text-[13px] uppercase tracking-widest">🔗 Fusionar perfiles</div>
+        <div class="text-[11px] text-white/70 mt-0.5">Une dos perfiles en uno solo, conservando todos los meses</div>
+      </div>
+      <button onclick="closeMergeModal()" class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-lg flex-shrink-0">✕</button>
+    </div>
+    <div class="p-5 space-y-4">
+
+      <div>
+        <div class="text-[10px] font-black uppercase text-gray-500 mb-1">Perfil origen (será eliminado)</div>
+        <select id="mergeSourceSel" onchange="renderMergePreview()" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-[12px] font-bold text-gray-900"></select>
+      </div>
+
+      <div class="text-center text-gray-400 text-lg select-none">⬇ se fusiona hacia ⬇</div>
+
+      <div>
+        <div class="text-[10px] font-black uppercase text-gray-500 mb-1">Perfil destino (el que permanece)</div>
+        <select id="mergeTargetSel" onchange="renderMergePreview()" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-[12px] font-bold text-gray-900"></select>
+      </div>
+
+      <div>
+        <div class="text-[10px] font-black uppercase text-gray-500 mb-1">Nombre final del perfil fusionado</div>
+        <select id="mergeKeepNameSel" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-[12px] font-bold text-gray-900"></select>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3">
+        <div class="text-[10px] font-black uppercase text-amber-800 mb-2">Cuando un mismo día tiene datos en ambos perfiles</div>
+        <div class="space-y-1.5">
+          <label class="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
+            <input type="radio" name="mergeConflict" value="target" checked> Conservar los del perfil destino
+          </label>
+          <label class="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
+            <input type="radio" name="mergeConflict" value="source"> Conservar los del perfil origen
+          </label>
+        </div>
+      </div>
+
+      <div id="mergePreview" class="bg-gray-50 border border-gray-200 rounded-2xl p-3 text-[11px] font-bold text-gray-600">
+        Selecciona dos perfiles para ver el resumen.
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="closeMergeModal()" class="flex-1 p-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-[11px] font-black uppercase">Cancelar</button>
+        <button onclick="executeMerge()" class="flex-1 p-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase">🔗 Fusionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Profiles - CORREGIDO: Nombres visibles en selects -->
 <div id="profilesModal" class="modal">
   <div class="bg-white w-full max-w-3xl rounded-3xl md:rounded-[40px] p-4 md:p-6 lg:p-8 shadow-2xl mx-2">
@@ -4337,59 +4390,96 @@ function createProfile(){
 function renderProfilesList(){
   const container = document.getElementById('profilesList');
   if (!container) return;
-  
+
   container.innerHTML = '';
-  
+
+  // --- Alertas de perfiles similares ---
+  const similar = detectSimilarProfiles();
+  if(similar.length){
+    let warn = `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-3">
+      <div class="font-black text-[11px] text-amber-800 mb-2">⚠️ Perfiles posiblemente duplicados:</div>`;
+    similar.forEach(p => {
+      warn += `<div class="flex items-center justify-between gap-2 mb-1 flex-wrap">
+        <span class="text-[10px] text-amber-900 font-bold">"${escapeHTML(p.a)}" ↔ "${escapeHTML(p.b)}"
+          <span class="text-amber-600">(${escapeHTML(p.reason)})</span>
+        </span>
+        <button onclick="openMergeModal(${JSON.stringify(p.a)})"
+          class="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-black uppercase flex-shrink-0">
+          🔗 Fusionar
+        </button>
+      </div>`;
+    });
+    warn += '</div>';
+    container.innerHTML += warn;
+  }
+
+  // --- Tarjetas de perfil ---
+  const MN = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const keys = Object.keys(db.users).sort();
-  
+
   keys.forEach(u => {
     const user = db.users[u];
     const isCurrent = (u === db.current);
-    
+
+    // Resumen de meses con datos
+    const months = _profileMonthSet(u);
+    const monthCount = months.size;
+    const monthSummary = monthCount === 0
+      ? '<span class="text-gray-400">Sin datos</span>'
+      : [...months].sort().slice(-3).map(ym => {
+          const [y,m] = ym.split('-');
+          return `${MN[parseInt(m)-1]}&nbsp;${y}`;
+        }).join(' · ') + (monthCount > 3 ? ` <span class="text-gray-400">+${monthCount-3} más</span>` : '');
+
     container.innerHTML += `
       <div class="border border-gray-200 rounded-2xl p-3 ${isCurrent ? 'bg-blue-50 border-blue-200' : ''}">
-        <div class="flex items-center justify-between gap-2">
-          <div>
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
             <div class="font-black text-gray-900 text-[12px]">
-              ${escapeHTML(u)} ${isCurrent ? '<span class="ml-2 text-[9px] font-black text-blue-600">(Actual)</span>' : ''}
+              ${escapeHTML(u)}${isCurrent ? ' <span class="text-[9px] font-black text-blue-600">(Actual)</span>' : ''}
             </div>
-            <div class="text-[10px] font-bold text-gray-500">
-              Localidad: <span class="font-black text-gray-800">${escapeHTML(user.locality || 'San Salvador')}</span>
+            <div class="text-[10px] font-bold text-gray-500 mt-0.5">
+              📍 ${escapeHTML(user.locality || 'San Salvador')}
+              &nbsp;·&nbsp; 📅 ${monthSummary}
             </div>
           </div>
-          <div class="flex gap-2">
-            <button onclick="setCurrentProfile('${u}')" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase">
-              Usar
-            </button>
+          <div class="flex gap-1.5 flex-wrap justify-end flex-shrink-0">
+            <button onclick="setCurrentProfile(${JSON.stringify(u)})"
+              class="px-2 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase">Usar</button>
             ${u === 'ADMIN' ? '' : `
-              <button onclick="deleteProfile('${u}')" class="px-3 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-black uppercase">
-                Eliminar
-              </button>
+              <button onclick="openMergeModal(${JSON.stringify(u)})"
+                class="px-2 py-1.5 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-700 text-[10px] font-black uppercase">🔗</button>
+              <button onclick="deleteProfile(${JSON.stringify(u)})"
+                class="px-2 py-1.5 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-black uppercase">✕</button>
             `}
           </div>
         </div>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
           <div class="md:col-span-2">
             <div class="text-[9px] font-black text-gray-400 uppercase mb-1">Renombrar perfil</div>
-            <input id="p-name-${cssSafe(u)}" value="${escapeHTML(u)}" class="w-full bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900" ${u === 'ADMIN' ? 'disabled' : ''}/>
+            <input id="p-name-${cssSafe(u)}" value="${escapeHTML(u)}"
+              class="w-full bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900"
+              ${u === 'ADMIN' ? 'disabled' : ''}/>
           </div>
           <div>
             <div class="text-[9px] font-black text-gray-400 uppercase mb-1">PIN</div>
-            <input id="p-pin-${cssSafe(u)}" value="${escapeHTML(user.pin || '0000')}" maxlength="4" class="w-full bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900"/>
+            <input id="p-pin-${cssSafe(u)}" value="${escapeHTML(user.pin || '0000')}" maxlength="4"
+              class="w-full bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900"/>
           </div>
           <div class="md:col-span-3">
             <div class="text-[9px] font-black text-gray-400 uppercase mb-1">Localidad</div>
             <select id="p-loc-${cssSafe(u)}" class="w-full bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900">
               ${db.localities
                 .filter(l => l.toUpperCase() !== 'GENERAL')
-                .map(l => `<option value="${escapeHTML(l)}" ${(user.locality || 'San Salvador') === l ? 'selected' : ''}>${escapeHTML(l)}</option>`)
+                .map(l => `<option value="${escapeHTML(l)}" ${(user.locality||'San Salvador')===l?'selected':''}>${escapeHTML(l)}</option>`)
                 .join('')}
             </select>
           </div>
           <div class="md:col-span-3">
-            <button onclick="saveProfileEdits('${u}')" class="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase text-[11px]">
-              💾 Guardar cambios de este perfil
+            <button onclick="saveProfileEdits(${JSON.stringify(u)})"
+              class="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase text-[11px]">
+              💾 Guardar cambios
             </button>
           </div>
         </div>
@@ -4457,6 +4547,171 @@ function saveProfileEdits(u){
   renderProfilesList();
   render();
   alert("Perfil actualizado.");
+}
+
+// =========================================================
+// Profile Merge Functions
+// =========================================================
+
+function detectSimilarProfiles(){
+  const users = Object.keys(db.users);
+  const pairs = [];
+  for(let i = 0; i < users.length; i++){
+    for(let j = i+1; j < users.length; j++){
+      const a = users[i], b = users[j];
+      const na = normalizeName(a), nb = normalizeName(b);
+      if(na === nb){
+        pairs.push({a, b, reason: 'Mismo nombre (diferente acentuación)'});
+      } else {
+        const aw = na.split(' ').filter(w => w.length > 2);
+        const bw = nb.split(' ').filter(w => w.length > 2);
+        if(aw.length === 0 || bw.length === 0) continue;
+        const common = aw.filter(w => bw.includes(w)).length;
+        const score = common / Math.max(aw.length, bw.length);
+        if(score >= 0.7){
+          pairs.push({a, b, reason: `${Math.round(score*100)}% de palabras coinciden`});
+        }
+      }
+    }
+  }
+  return pairs;
+}
+
+function _profileMonthSet(userKey){
+  const user = db.users[userKey];
+  const months = new Set();
+  Object.keys(user?.data || {}).forEach(k => {
+    const p = k.split('-');
+    if(p.length >= 2) months.add(`${p[0]}-${String(parseInt(p[1])).padStart(2,'0')}`);
+  });
+  return months;
+}
+
+function openMergeModal(sourceUser){
+  if(!isEditMode()) return alert("Activa modo edición.");
+  const modal = document.getElementById('mergeProfilesModal');
+  if(!modal) return;
+
+  const users = Object.keys(db.users).sort();
+  const sourceSel = document.getElementById('mergeSourceSel');
+  const targetSel = document.getElementById('mergeTargetSel');
+
+  sourceSel.innerHTML = users.map(u =>
+    `<option value="${escapeHTML(u)}" ${u === sourceUser ? 'selected':''}>${escapeHTML(u)}</option>`
+  ).join('');
+
+  // Default target: first user that is not the source
+  const defaultTarget = users.find(u => u !== sourceUser) || '';
+  targetSel.innerHTML = users.map(u =>
+    `<option value="${escapeHTML(u)}" ${u === defaultTarget ? 'selected':''}>${escapeHTML(u)}</option>`
+  ).join('');
+
+  renderMergePreview();
+  modal.classList.add('active');
+}
+
+function closeMergeModal(){
+  const modal = document.getElementById('mergeProfilesModal');
+  if(modal) modal.classList.remove('active');
+}
+
+function _updateMergeKeepNameSelect(){
+  const src = document.getElementById('mergeSourceSel')?.value;
+  const tgt = document.getElementById('mergeTargetSel')?.value;
+  const keepSel = document.getElementById('mergeKeepNameSel');
+  if(!keepSel) return;
+  const opts = [tgt, src].filter(Boolean).filter((v,i,a) => a.indexOf(v) === i);
+  keepSel.innerHTML = opts.map(u => `<option value="${escapeHTML(u)}">${escapeHTML(u)}</option>`).join('');
+}
+
+function renderMergePreview(){
+  const src = document.getElementById('mergeSourceSel')?.value;
+  const tgt = document.getElementById('mergeTargetSel')?.value;
+  const preview = document.getElementById('mergePreview');
+  _updateMergeKeepNameSelect();
+
+  if(!src || !tgt || src === tgt){
+    if(preview) preview.innerHTML = '<span class="text-amber-600 font-bold">Selecciona dos perfiles distintos.</span>';
+    return;
+  }
+  if(!db.users[src] || !db.users[tgt]){
+    if(preview) preview.innerHTML = '<span class="text-red-600 font-bold">Perfil no encontrado.</span>';
+    return;
+  }
+
+  const srcMonths = _profileMonthSet(src);
+  const tgtMonths = _profileMonthSet(tgt);
+  const allMonths = [...new Set([...srcMonths, ...tgtMonths])].sort();
+  const conflicts = allMonths.filter(m => srcMonths.has(m) && tgtMonths.has(m));
+  const srcOnly   = allMonths.filter(m => srcMonths.has(m) && !tgtMonths.has(m));
+  const tgtOnly   = allMonths.filter(m => !srcMonths.has(m) && tgtMonths.has(m));
+  const MN = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const fmt = ym => { const [y,m] = ym.split('-'); return `${MN[parseInt(m)-1]} ${y}`; };
+
+  let html = '<div class="space-y-2">';
+  html += `<div class="font-black text-gray-800">Resumen de fusión:</div>`;
+  html += '<div class="text-[10px] space-y-1 leading-relaxed">';
+  if(srcOnly.length)   html += `<div>📥 Solo en <b>${escapeHTML(src)}</b>: ${srcOnly.map(fmt).join(', ')}</div>`;
+  if(tgtOnly.length)   html += `<div>📁 Solo en <b>${escapeHTML(tgt)}</b>: ${tgtOnly.map(fmt).join(', ')}</div>`;
+  if(conflicts.length) html += `<div class="text-amber-700">⚠️ Conflicto (ambos tienen datos): ${conflicts.map(fmt).join(', ')}</div>`;
+  if(!allMonths.length) html += `<div class="text-gray-400">Ninguno de los dos tiene datos de calendario todavía.</div>`;
+  html += '</div>';
+  html += `<div class="text-[10px] text-red-600 font-bold pt-1">El perfil "<b>${escapeHTML(src)}</b>" será eliminado tras fusionar.</div>`;
+  html += '</div>';
+  if(preview) preview.innerHTML = html;
+}
+
+function executeMerge(){
+  if(!isEditMode()) return alert("Activa modo edición.");
+  const src  = document.getElementById('mergeSourceSel')?.value;
+  const tgt  = document.getElementById('mergeTargetSel')?.value;
+  const keepName = document.getElementById('mergeKeepNameSel')?.value?.trim()?.toUpperCase();
+  const conflictStrategy = document.querySelector('input[name="mergeConflict"]:checked')?.value || 'target';
+
+  if(!src || !tgt) return alert("Selecciona los perfiles.");
+  if(src === tgt)  return alert("Selecciona dos perfiles distintos.");
+  if(!db.users[src] || !db.users[tgt]) return alert("Perfil no encontrado.");
+  if(!confirm(`¿Fusionar "${src}" → "${tgt}"?\n\nEl perfil "${src}" será eliminado. Esta acción no se puede deshacer.`)) return;
+
+  const srcUser = db.users[src];
+  const tgtUser = db.users[tgt];
+
+  // Fusionar datos de calendario
+  Object.entries(srcUser.data || {}).forEach(([dateKey, dayData]) => {
+    if(conflictStrategy === 'source' || !tgtUser.data[dateKey]){
+      tgtUser.data[dateKey] = JSON.parse(JSON.stringify(dayData));
+    }
+  });
+
+  // Fusionar turnos configurados: añadir al destino los que no existan
+  Object.entries(srcUser.config || {}).forEach(([shiftKey, shiftDef]) => {
+    if(!tgtUser.config[shiftKey]){
+      tgtUser.config[shiftKey] = JSON.parse(JSON.stringify(shiftDef));
+    }
+  });
+
+  let finalName = tgt;
+
+  // Si el nombre elegido es el del origen, renombrar el destino
+  if(keepName && keepName !== tgt && keepName === src){
+    db.users[src] = tgtUser;       // copiar datos del destino al nombre del origen
+    delete db.users[tgt];
+    if(db.current === tgt) db.current = src;
+    finalName = src;
+  } else {
+    // Eliminar origen
+    delete db.users[src];
+    if(db.current === src) db.current = tgt;
+    finalName = tgt;
+  }
+
+  saveDB();
+  closeMergeModal();
+  updateUserDropdown();
+  updateUserInitial();
+  render();
+  renderProfilesList();
+  alert(`✅ Fusión completada. Perfil final: "${finalName}".`);
 }
 
 // =========================================================
