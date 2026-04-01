@@ -39,6 +39,7 @@
   <!-- Scripts con atributos async/defer -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" async></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
@@ -708,10 +709,6 @@
       cursor: pointer;
       font: inherit;
       font-weight: 900;
-      display: inline-flex;
-      align-items: center;
-      line-height: 1;
-      vertical-align: middle;
     }
     .month-picker-trigger:focus-visible {
       outline: 2px solid rgba(255,255,255,0.45);
@@ -775,6 +772,7 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+      overflow: hidden;
     }
     #weekHeader {
       flex: 0 0 auto;
@@ -903,6 +901,7 @@
       <div class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2">Datos</div>
       <button onclick="openProfilesModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px] mb-2">👤 Perfiles de usuario</button>
       <button onclick="openImportModal(); closeMenu();" class="w-full p-3 bg-sky-700 hover:bg-sky-800 rounded-xl font-black text-[11px] mb-2">📥 Importar Excel</button>
+      <button onclick="openImageImportModal(); closeMenu();" class="w-full p-3 bg-violet-700 hover:bg-violet-800 rounded-xl font-black text-[11px] mb-2">📷 Importar desde Imagen</button>
       <button onclick="showExportModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px]">📋 Exportar calendario</button>
     </div>
 
@@ -1518,59 +1517,6 @@
   </div>
 </div>
 
-<!-- Modal Fusionar Perfiles -->
-<div id="mergeProfilesModal" class="modal">
-  <div class="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-gray-100 mx-2" style="max-height:90vh;overflow-y:auto;">
-    <div class="bg-[#1e3a5f] text-white px-5 py-4 flex items-center justify-between">
-      <div>
-        <div class="font-black text-[13px] uppercase tracking-widest">🔗 Fusionar perfiles</div>
-        <div class="text-[11px] text-white/70 mt-0.5">Une dos perfiles en uno solo, conservando todos los meses</div>
-      </div>
-      <button onclick="closeMergeModal()" class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25 flex items-center justify-center text-lg flex-shrink-0">✕</button>
-    </div>
-    <div class="p-5 space-y-4">
-
-      <div>
-        <div class="text-[10px] font-black uppercase text-gray-500 mb-1">Perfil origen (será eliminado)</div>
-        <select id="mergeSourceSel" onchange="renderMergePreview()" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-[12px] font-bold text-gray-900"></select>
-      </div>
-
-      <div class="text-center text-gray-400 text-lg select-none">⬇ se fusiona hacia ⬇</div>
-
-      <div>
-        <div class="text-[10px] font-black uppercase text-gray-500 mb-1">Perfil destino (el que permanece)</div>
-        <select id="mergeTargetSel" onchange="renderMergePreview()" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-[12px] font-bold text-gray-900"></select>
-      </div>
-
-      <div>
-        <div class="text-[10px] font-black uppercase text-gray-500 mb-1">Nombre final del perfil fusionado</div>
-        <select id="mergeKeepNameSel" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2 text-[12px] font-bold text-gray-900"></select>
-      </div>
-
-      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3">
-        <div class="text-[10px] font-black uppercase text-amber-800 mb-2">Cuando un mismo día tiene datos en ambos perfiles</div>
-        <div class="space-y-1.5">
-          <label class="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
-            <input type="radio" name="mergeConflict" value="target" checked> Conservar los del perfil destino
-          </label>
-          <label class="flex items-center gap-2 text-[11px] font-bold text-gray-700 cursor-pointer">
-            <input type="radio" name="mergeConflict" value="source"> Conservar los del perfil origen
-          </label>
-        </div>
-      </div>
-
-      <div id="mergePreview" class="bg-gray-50 border border-gray-200 rounded-2xl p-3 text-[11px] font-bold text-gray-600">
-        Selecciona dos perfiles para ver el resumen.
-      </div>
-
-      <div class="flex gap-2">
-        <button onclick="closeMergeModal()" class="flex-1 p-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-[11px] font-black uppercase">Cancelar</button>
-        <button onclick="executeMerge()" class="flex-1 p-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase">🔗 Fusionar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Modal Profiles - CORREGIDO: Nombres visibles en selects -->
 <div id="profilesModal" class="modal">
   <div class="bg-white w-full max-w-3xl rounded-3xl md:rounded-[40px] p-4 md:p-6 lg:p-8 shadow-2xl mx-2">
@@ -1579,7 +1525,8 @@
         <h3 class="font-black uppercase text-base md:text-lg">👤 Gestión de Perfiles</h3>
         <p class="text-[11px] text-gray-500 font-bold">Crear, editar, asignar localidad o eliminar perfiles.</p>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="detectDuplicateProfiles()" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase whitespace-nowrap">🔍 Detectar duplicados</button>
         <button onclick="deleteAllProfilesExceptAdmin()" class="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase whitespace-nowrap">🧹 Eliminar todos (dejar ADMIN)</button>
         <button onclick="closeProfilesModal()" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase whitespace-nowrap">Cerrar</button>
       </div>
@@ -1608,6 +1555,80 @@
         </div>
         <div id="profilesList" class="max-h-[300px] md:max-h-[360px] overflow-y-auto space-y-2"></div>
       </div>
+    </div>
+
+    <!-- Sección de duplicados -->
+    <div id="duplicateProfilesSection" class="hidden mt-4 bg-amber-50 border border-amber-200 rounded-3xl p-4">
+      <h4 class="text-[12px] font-black text-amber-800 uppercase mb-3">⚠️ Perfiles Duplicados Detectados</h4>
+      <div id="duplicateProfilesList" class="space-y-3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Importar desde Imagen -->
+<div id="imageImportModal" class="modal">
+  <div class="bg-white w-full max-w-2xl rounded-3xl md:rounded-[40px] p-4 md:p-6 shadow-2xl mx-2 max-h-[90vh] overflow-y-auto overscroll-contain">
+    <div class="w-14 h-14 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 mx-auto mb-4 flex items-center justify-center">
+      <span class="text-white text-2xl">📷</span>
+    </div>
+    <h3 class="font-black text-center uppercase text-base mb-1">Importar desde Imagen</h3>
+    <p class="text-[11px] text-gray-500 font-bold text-center mb-4">Sube una foto o captura del calendario. El OCR leerá los turnos del texto visible.</p>
+
+    <div class="space-y-4">
+      <!-- Selector de mes/año -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 block mb-1">Mes</label>
+          <select id="imgImportMonth" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 block mb-1">Año</label>
+          <select id="imgImportYear" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
+        </div>
+      </div>
+
+      <!-- Archivo de imagen -->
+      <div>
+        <label class="text-[11px] font-bold text-gray-600 block mb-2">Imagen (JPG, PNG, BMP, TIFF)</label>
+        <input type="file" id="imageImportFile" accept="image/*" class="w-full bg-gray-50 border-gray-200"
+          onchange="previewImportImage(this)">
+      </div>
+
+      <!-- Preview -->
+      <div id="imgPreviewBox" class="hidden">
+        <img id="imgPreview" class="w-full rounded-2xl border border-gray-200 max-h-48 object-contain bg-gray-50"/>
+      </div>
+
+      <!-- Botón OCR -->
+      <button onclick="runImageOCR()" class="w-full p-3 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black uppercase text-[11px]">
+        🔎 Leer imagen (OCR)
+      </button>
+
+      <!-- Estado OCR -->
+      <div id="ocrStatus" class="text-[11px] font-bold text-center text-gray-500 hidden"></div>
+
+      <!-- Resultados -->
+      <div id="ocrResultsBox" class="hidden bg-gray-50 border border-gray-200 rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-[11px] font-black text-gray-700 uppercase">Turnos detectados</p>
+          <span id="ocrDetectedCount" class="text-[10px] font-bold text-gray-500"></span>
+        </div>
+        <div id="ocrResultsList" class="max-h-[200px] overflow-y-auto space-y-1 mb-3"></div>
+
+        <!-- Texto crudo OCR (colapsable) -->
+        <details class="mt-2">
+          <summary class="text-[10px] font-black text-gray-400 uppercase cursor-pointer">Ver texto OCR crudo</summary>
+          <pre id="ocrRawText" class="text-[9px] text-gray-500 font-mono mt-2 whitespace-pre-wrap max-h-32 overflow-y-auto bg-white border border-gray-100 rounded-xl p-2"></pre>
+        </details>
+
+        <button onclick="applyOCRResults()" class="w-full mt-3 p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase text-[11px]">
+          🚀 Aplicar turnos detectados
+        </button>
+      </div>
+
+      <button onclick="closeImageImportModal()" class="w-full p-3 text-gray-400 font-bold uppercase text-[10px] hover:text-gray-600">
+        Cancelar
+      </button>
     </div>
   </div>
 </div>
@@ -2285,10 +2306,9 @@ function updateMonthDisplay(){
   if (yearSelect) yearSelect.value = y;
 }
 
-function changeMonth(v){
-  // Usar new Date(y, m, 1) para evitar overflow cuando el día actual es 29-31
-  current = new Date(current.getFullYear(), current.getMonth() + v, 1);
-  updateMonthDisplay();
+function changeMonth(v){ 
+  current.setMonth(current.getMonth() + v); 
+  updateMonthDisplay(); 
   render();
   renderSummaryCategories();
   calcSummary();
@@ -2298,8 +2318,9 @@ function jumpToDate(){
   const monthSelect = document.getElementById('selectMonth');
   const yearSelect = document.getElementById('selectYear');
   if (monthSelect && yearSelect) {
-    current = new Date(parseInt(yearSelect.value), parseInt(monthSelect.value), 1);
-    updateMonthDisplay();
+    current.setMonth(parseInt(monthSelect.value));
+    current.setFullYear(parseInt(yearSelect.value));
+    updateMonthDisplay(); 
     render();
     renderSummaryCategories();
     calcSummary();
@@ -2349,8 +2370,11 @@ function showView(view){
   const activeView = document.getElementById('view-' + target);
   if (activeView) {
     activeView.classList.add('view-active');
-    activeView.style.display = 'block';
+    activeView.style.display = target === 'calendar' ? 'flex' : 'block';
   }
+
+  // Lock body scroll on calendar to prevent page scrolling
+  document.body.style.overflowY = target === 'calendar' ? 'hidden' : '';
 
   document.querySelectorAll('#bottomTabs .btab').forEach(btn => btn.classList.remove('btab-active'));
   const activeBtn = document.getElementById('btab-' + target);
@@ -4390,96 +4414,59 @@ function createProfile(){
 function renderProfilesList(){
   const container = document.getElementById('profilesList');
   if (!container) return;
-
+  
   container.innerHTML = '';
-
-  // --- Alertas de perfiles similares ---
-  const similar = detectSimilarProfiles();
-  if(similar.length){
-    let warn = `<div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-3">
-      <div class="font-black text-[11px] text-amber-800 mb-2">⚠️ Perfiles posiblemente duplicados:</div>`;
-    similar.forEach(p => {
-      warn += `<div class="flex items-center justify-between gap-2 mb-1 flex-wrap">
-        <span class="text-[10px] text-amber-900 font-bold">"${escapeHTML(p.a)}" ↔ "${escapeHTML(p.b)}"
-          <span class="text-amber-600">(${escapeHTML(p.reason)})</span>
-        </span>
-        <button onclick="openMergeModal(${JSON.stringify(p.a)})"
-          class="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-black uppercase flex-shrink-0">
-          🔗 Fusionar
-        </button>
-      </div>`;
-    });
-    warn += '</div>';
-    container.innerHTML += warn;
-  }
-
-  // --- Tarjetas de perfil ---
-  const MN = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  
   const keys = Object.keys(db.users).sort();
-
+  
   keys.forEach(u => {
     const user = db.users[u];
     const isCurrent = (u === db.current);
-
-    // Resumen de meses con datos
-    const months = _profileMonthSet(u);
-    const monthCount = months.size;
-    const monthSummary = monthCount === 0
-      ? '<span class="text-gray-400">Sin datos</span>'
-      : [...months].sort().slice(-3).map(ym => {
-          const [y,m] = ym.split('-');
-          return `${MN[parseInt(m)-1]}&nbsp;${y}`;
-        }).join(' · ') + (monthCount > 3 ? ` <span class="text-gray-400">+${monthCount-3} más</span>` : '');
-
+    
     container.innerHTML += `
       <div class="border border-gray-200 rounded-2xl p-3 ${isCurrent ? 'bg-blue-50 border-blue-200' : ''}">
-        <div class="flex items-start justify-between gap-2">
-          <div class="min-w-0">
+        <div class="flex items-center justify-between gap-2">
+          <div>
             <div class="font-black text-gray-900 text-[12px]">
-              ${escapeHTML(u)}${isCurrent ? ' <span class="text-[9px] font-black text-blue-600">(Actual)</span>' : ''}
+              ${escapeHTML(u)} ${isCurrent ? '<span class="ml-2 text-[9px] font-black text-blue-600">(Actual)</span>' : ''}
             </div>
-            <div class="text-[10px] font-bold text-gray-500 mt-0.5">
-              📍 ${escapeHTML(user.locality || 'San Salvador')}
-              &nbsp;·&nbsp; 📅 ${monthSummary}
+            <div class="text-[10px] font-bold text-gray-500">
+              Localidad: <span class="font-black text-gray-800">${escapeHTML(user.locality || 'San Salvador')}</span>
             </div>
           </div>
-          <div class="flex gap-1.5 flex-wrap justify-end flex-shrink-0">
-            <button onclick="setCurrentProfile(${JSON.stringify(u)})"
-              class="px-2 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase">Usar</button>
+          <div class="flex gap-2">
+            <button onclick="setCurrentProfile('${u}')" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase">
+              Usar
+            </button>
             ${u === 'ADMIN' ? '' : `
-              <button onclick="openMergeModal(${JSON.stringify(u)})"
-                class="px-2 py-1.5 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-700 text-[10px] font-black uppercase">🔗</button>
-              <button onclick="deleteProfile(${JSON.stringify(u)})"
-                class="px-2 py-1.5 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-black uppercase">✕</button>
+              <button onclick="deleteProfile('${u}')" class="px-3 py-2 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-black uppercase">
+                Eliminar
+              </button>
             `}
           </div>
         </div>
-
+        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
           <div class="md:col-span-2">
             <div class="text-[9px] font-black text-gray-400 uppercase mb-1">Renombrar perfil</div>
-            <input id="p-name-${cssSafe(u)}" value="${escapeHTML(u)}"
-              class="w-full bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900"
-              ${u === 'ADMIN' ? 'disabled' : ''}/>
+            <input id="p-name-${cssSafe(u)}" value="${escapeHTML(u)}" class="w-full bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900" ${u === 'ADMIN' ? 'disabled' : ''}/>
           </div>
           <div>
             <div class="text-[9px] font-black text-gray-400 uppercase mb-1">PIN</div>
-            <input id="p-pin-${cssSafe(u)}" value="${escapeHTML(user.pin || '0000')}" maxlength="4"
-              class="w-full bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900"/>
+            <input id="p-pin-${cssSafe(u)}" value="${escapeHTML(user.pin || '0000')}" maxlength="4" class="w-full bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900"/>
           </div>
           <div class="md:col-span-3">
             <div class="text-[9px] font-black text-gray-400 uppercase mb-1">Localidad</div>
             <select id="p-loc-${cssSafe(u)}" class="w-full bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900">
               ${db.localities
                 .filter(l => l.toUpperCase() !== 'GENERAL')
-                .map(l => `<option value="${escapeHTML(l)}" ${(user.locality||'San Salvador')===l?'selected':''}>${escapeHTML(l)}</option>`)
+                .map(l => `<option value="${escapeHTML(l)}" ${(user.locality || 'San Salvador') === l ? 'selected' : ''}>${escapeHTML(l)}</option>`)
                 .join('')}
             </select>
           </div>
           <div class="md:col-span-3">
-            <button onclick="saveProfileEdits(${JSON.stringify(u)})"
-              class="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase text-[11px]">
-              💾 Guardar cambios
+            <button onclick="saveProfileEdits('${u}')" class="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase text-[11px]">
+              💾 Guardar cambios de este perfil
             </button>
           </div>
         </div>
@@ -4549,169 +4536,79 @@ function saveProfileEdits(u){
   alert("Perfil actualizado.");
 }
 
-// =========================================================
-// Profile Merge Functions
-// =========================================================
-
-function detectSimilarProfiles(){
+function detectDuplicateProfiles(){
   const users = Object.keys(db.users);
-  const pairs = [];
-  for(let i = 0; i < users.length; i++){
-    for(let j = i+1; j < users.length; j++){
-      const a = users[i], b = users[j];
-      const na = normalizeName(a), nb = normalizeName(b);
-      if(na === nb){
-        pairs.push({a, b, reason: 'Mismo nombre (diferente acentuación)'});
-      } else {
-        const aw = na.split(' ').filter(w => w.length > 2);
-        const bw = nb.split(' ').filter(w => w.length > 2);
-        if(aw.length === 0 || bw.length === 0) continue;
-        const common = aw.filter(w => bw.includes(w)).length;
-        const score = common / Math.max(aw.length, bw.length);
-        if(score >= 0.7){
-          pairs.push({a, b, reason: `${Math.round(score*100)}% de palabras coinciden`});
-        }
-      }
-    }
-  }
-  return pairs;
-}
-
-function _profileMonthSet(userKey){
-  const user = db.users[userKey];
-  const months = new Set();
-  Object.keys(user?.data || {}).forEach(k => {
-    const p = k.split('-');
-    if(p.length >= 2) months.add(`${p[0]}-${String(parseInt(p[1])).padStart(2,'0')}`);
+  const groups = {};
+  users.forEach(u => {
+    const norm = normalizeName(u);
+    if(!groups[norm]) groups[norm] = [];
+    groups[norm].push(u);
   });
-  return months;
-}
+  const duplicates = Object.values(groups).filter(g => g.length > 1);
 
-function openMergeModal(sourceUser){
-  if(!isEditMode()) return alert("Activa modo edición.");
-  const modal = document.getElementById('mergeProfilesModal');
-  if(!modal) return;
+  const section = document.getElementById('duplicateProfilesSection');
+  const list = document.getElementById('duplicateProfilesList');
+  section.classList.remove('hidden');
 
-  const users = Object.keys(db.users).sort();
-  const sourceSel = document.getElementById('mergeSourceSel');
-  const targetSel = document.getElementById('mergeTargetSel');
-
-  sourceSel.innerHTML = users.map(u =>
-    `<option value="${escapeHTML(u)}" ${u === sourceUser ? 'selected':''}>${escapeHTML(u)}</option>`
-  ).join('');
-
-  // Default target: first user that is not the source
-  const defaultTarget = users.find(u => u !== sourceUser) || '';
-  targetSel.innerHTML = users.map(u =>
-    `<option value="${escapeHTML(u)}" ${u === defaultTarget ? 'selected':''}>${escapeHTML(u)}</option>`
-  ).join('');
-
-  renderMergePreview();
-  modal.classList.add('active');
-}
-
-function closeMergeModal(){
-  const modal = document.getElementById('mergeProfilesModal');
-  if(modal) modal.classList.remove('active');
-}
-
-function _updateMergeKeepNameSelect(){
-  const src = document.getElementById('mergeSourceSel')?.value;
-  const tgt = document.getElementById('mergeTargetSel')?.value;
-  const keepSel = document.getElementById('mergeKeepNameSel');
-  if(!keepSel) return;
-  const opts = [tgt, src].filter(Boolean).filter((v,i,a) => a.indexOf(v) === i);
-  keepSel.innerHTML = opts.map(u => `<option value="${escapeHTML(u)}">${escapeHTML(u)}</option>`).join('');
-}
-
-function renderMergePreview(){
-  const src = document.getElementById('mergeSourceSel')?.value;
-  const tgt = document.getElementById('mergeTargetSel')?.value;
-  const preview = document.getElementById('mergePreview');
-  _updateMergeKeepNameSelect();
-
-  if(!src || !tgt || src === tgt){
-    if(preview) preview.innerHTML = '<span class="text-amber-600 font-bold">Selecciona dos perfiles distintos.</span>';
-    return;
-  }
-  if(!db.users[src] || !db.users[tgt]){
-    if(preview) preview.innerHTML = '<span class="text-red-600 font-bold">Perfil no encontrado.</span>';
+  if(duplicates.length === 0){
+    list.innerHTML = '<p class="text-[11px] text-amber-700 font-bold">No se encontraron perfiles duplicados.</p>';
     return;
   }
 
-  const srcMonths = _profileMonthSet(src);
-  const tgtMonths = _profileMonthSet(tgt);
-  const allMonths = [...new Set([...srcMonths, ...tgtMonths])].sort();
-  const conflicts = allMonths.filter(m => srcMonths.has(m) && tgtMonths.has(m));
-  const srcOnly   = allMonths.filter(m => srcMonths.has(m) && !tgtMonths.has(m));
-  const tgtOnly   = allMonths.filter(m => !srcMonths.has(m) && tgtMonths.has(m));
-  const MN = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const fmt = ym => { const [y,m] = ym.split('-'); return `${MN[parseInt(m)-1]} ${y}`; };
-
-  let html = '<div class="space-y-2">';
-  html += `<div class="font-black text-gray-800">Resumen de fusión:</div>`;
-  html += '<div class="text-[10px] space-y-1 leading-relaxed">';
-  if(srcOnly.length)   html += `<div>📥 Solo en <b>${escapeHTML(src)}</b>: ${srcOnly.map(fmt).join(', ')}</div>`;
-  if(tgtOnly.length)   html += `<div>📁 Solo en <b>${escapeHTML(tgt)}</b>: ${tgtOnly.map(fmt).join(', ')}</div>`;
-  if(conflicts.length) html += `<div class="text-amber-700">⚠️ Conflicto (ambos tienen datos): ${conflicts.map(fmt).join(', ')}</div>`;
-  if(!allMonths.length) html += `<div class="text-gray-400">Ninguno de los dos tiene datos de calendario todavía.</div>`;
-  html += '</div>';
-  html += `<div class="text-[10px] text-red-600 font-bold pt-1">El perfil "<b>${escapeHTML(src)}</b>" será eliminado tras fusionar.</div>`;
-  html += '</div>';
-  if(preview) preview.innerHTML = html;
+  list.innerHTML = duplicates.map(group => {
+    const options = group.map(n =>
+      `<option value="${escapeHTML(n)}">${escapeHTML(n)}</option>`
+    ).join('');
+    const groupId = 'dup_' + normalizeName(group[0]).replace(/\s+/g,'_');
+    return `
+      <div class="bg-white border border-amber-300 rounded-2xl p-3">
+        <p class="text-[11px] font-black text-amber-900 mb-2">
+          Mismo nombre: ${group.map(n => `<strong>${escapeHTML(n)}</strong>`).join(' / ')}
+        </p>
+        <div class="flex flex-wrap gap-2 items-center">
+          <div class="flex-1 min-w-0">
+            <label class="text-[9px] font-black text-gray-500 uppercase">Origen (se eliminará)</label>
+            <select id="${groupId}_src" class="w-full bg-white border-gray-200 rounded-xl text-[11px] font-bold">${options}</select>
+          </div>
+          <div class="flex-1 min-w-0">
+            <label class="text-[9px] font-black text-gray-500 uppercase">Destino (se conserva)</label>
+            <select id="${groupId}_tgt" class="w-full bg-white border-gray-200 rounded-xl text-[11px] font-bold">${options}</select>
+          </div>
+          <button onclick="mergeProfiles(document.getElementById('${groupId}_src').value, document.getElementById('${groupId}_tgt').value)"
+            class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[10px] font-black uppercase whitespace-nowrap mt-4">
+            🔀 Fusionar
+          </button>
+        </div>
+      </div>`;
+  }).join('');
 }
 
-function executeMerge(){
-  if(!isEditMode()) return alert("Activa modo edición.");
-  const src  = document.getElementById('mergeSourceSel')?.value;
-  const tgt  = document.getElementById('mergeTargetSel')?.value;
-  const keepName = document.getElementById('mergeKeepNameSel')?.value?.trim()?.toUpperCase();
-  const conflictStrategy = document.querySelector('input[name="mergeConflict"]:checked')?.value || 'target';
+function mergeProfiles(source, target){
+  if(!source || !target) return alert("Selecciona origen y destino.");
+  if(source === target) return alert("El origen y destino no pueden ser el mismo perfil.");
+  if(!db.users[source] || !db.users[target]) return alert("Uno de los perfiles no existe.");
+  if(!confirm(`¿Fusionar "${source}" → "${target}"?\n\nLos días de "${source}" se copiarán a "${target}" donde no haya turno asignado.\nLuego "${source}" será eliminado.`)) return;
 
-  if(!src || !tgt) return alert("Selecciona los perfiles.");
-  if(src === tgt)  return alert("Selecciona dos perfiles distintos.");
-  if(!db.users[src] || !db.users[tgt]) return alert("Perfil no encontrado.");
-  if(!confirm(`¿Fusionar "${src}" → "${tgt}"?\n\nEl perfil "${src}" será eliminado. Esta acción no se puede deshacer.`)) return;
+  const srcData = db.users[source].data || {};
+  const tgtData = db.users[target].data || {};
 
-  const srcUser = db.users[src];
-  const tgtUser = db.users[tgt];
-
-  // Fusionar datos de calendario
-  Object.entries(srcUser.data || {}).forEach(([dateKey, dayData]) => {
-    if(conflictStrategy === 'source' || !tgtUser.data[dateKey]){
-      tgtUser.data[dateKey] = JSON.parse(JSON.stringify(dayData));
+  Object.keys(srcData).forEach(key => {
+    if(!tgtData[key] || !tgtData[key].shift){
+      tgtData[key] = srcData[key];
     }
   });
+  db.users[target].data = tgtData;
 
-  // Fusionar turnos configurados: añadir al destino los que no existan
-  Object.entries(srcUser.config || {}).forEach(([shiftKey, shiftDef]) => {
-    if(!tgtUser.config[shiftKey]){
-      tgtUser.config[shiftKey] = JSON.parse(JSON.stringify(shiftDef));
-    }
-  });
-
-  let finalName = tgt;
-
-  // Si el nombre elegido es el del origen, renombrar el destino
-  if(keepName && keepName !== tgt && keepName === src){
-    db.users[src] = tgtUser;       // copiar datos del destino al nombre del origen
-    delete db.users[tgt];
-    if(db.current === tgt) db.current = src;
-    finalName = src;
-  } else {
-    // Eliminar origen
-    delete db.users[src];
-    if(db.current === src) db.current = tgt;
-    finalName = tgt;
-  }
+  if(db.current === source) db.current = target;
+  delete db.users[source];
 
   saveDB();
-  closeMergeModal();
   updateUserDropdown();
   updateUserInitial();
   render();
   renderProfilesList();
-  alert(`✅ Fusión completada. Perfil final: "${finalName}".`);
+  detectDuplicateProfiles();
+  alert(`Fusión completada. "${source}" fue combinado en "${target}".`);
 }
 
 // =========================================================
@@ -4745,6 +4642,203 @@ function closeImportModalAndRefresh(){
   render();
   renderSummaryCategories();
   calcSummary();
+}
+
+// =========================================================
+// Image Import (OCR con Tesseract.js)
+// =========================================================
+let ocrDetectedShifts = [];
+
+function openImageImportModal(){
+  const modal = document.getElementById('imageImportModal');
+  if(!modal) return;
+
+  // Populate month/year selects
+  const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const mSel = document.getElementById('imgImportMonth');
+  const ySel = document.getElementById('imgImportYear');
+  mSel.innerHTML = months.map((m,i) => `<option value="${i}" ${i===current.getMonth()?'selected':''}>${m}</option>`).join('');
+  ySel.innerHTML = [-2,-1,0,1,2].map(d => {
+    const y = current.getFullYear()+d;
+    return `<option value="${y}" ${d===0?'selected':''}>${y}</option>`;
+  }).join('');
+
+  // Reset UI
+  document.getElementById('imageImportFile').value = '';
+  document.getElementById('imgPreviewBox').classList.add('hidden');
+  document.getElementById('ocrStatus').classList.add('hidden');
+  document.getElementById('ocrResultsBox').classList.add('hidden');
+  document.getElementById('ocrRawText').textContent = '';
+  document.getElementById('ocrResultsList').innerHTML = '';
+  ocrDetectedShifts = [];
+
+  modal.classList.add('active');
+}
+
+function closeImageImportModal(){
+  const modal = document.getElementById('imageImportModal');
+  if(modal) modal.classList.remove('active');
+}
+
+function previewImportImage(input){
+  const preview = document.getElementById('imgPreview');
+  const box = document.getElementById('imgPreviewBox');
+  if(input.files && input.files[0]){
+    preview.src = URL.createObjectURL(input.files[0]);
+    box.classList.remove('hidden');
+  }
+}
+
+async function runImageOCR(){
+  const fileInput = document.getElementById('imageImportFile');
+  if(!fileInput.files || !fileInput.files[0]) return alert("Selecciona una imagen primero.");
+
+  if(typeof Tesseract === 'undefined') return alert("La librería OCR aún está cargando. Espera un momento y vuelve a intentarlo.");
+
+  const status = document.getElementById('ocrStatus');
+  const resultsBox = document.getElementById('ocrResultsBox');
+  status.classList.remove('hidden');
+  status.textContent = 'Iniciando OCR...';
+  resultsBox.classList.add('hidden');
+  ocrDetectedShifts = [];
+
+  try {
+    const result = await Tesseract.recognize(
+      fileInput.files[0],
+      'spa+eng',
+      { logger: m => {
+        if(m.status === 'recognizing text'){
+          status.textContent = `Leyendo imagen: ${Math.round(m.progress * 100)}%`;
+        }
+      }}
+    );
+
+    status.textContent = 'OCR completado. Analizando turnos...';
+    const rawText = result.data.text;
+    document.getElementById('ocrRawText').textContent = rawText;
+
+    parseOCRShifts(rawText);
+  } catch(e){
+    status.textContent = 'Error OCR: ' + e.message;
+  }
+}
+
+function parseOCRShifts(text){
+  const user = db.users[db.current];
+  if(!user) return;
+  const shiftKeys = Object.keys(user.config).map(k => k.toUpperCase());
+
+  const year  = parseInt(document.getElementById('imgImportYear').value);
+  const month = parseInt(document.getElementById('imgImportMonth').value) + 1;
+  const lastDay = new Date(year, month, 0).getDate();
+
+  ocrDetectedShifts = [];
+
+  // Strategy 1: lines like "1 M", "15 T", "3  L" (day + space + shift code)
+  const lines = text.split(/[\n\r]+/);
+  lines.forEach(line => {
+    const clean = line.trim();
+    // Match: one or two digits, optional whitespace/separator, then letters (shift code)
+    const m = clean.match(/^(\d{1,2})[\s\-:.]+([A-Za-záéíóúÁÉÍÓÚüÜñÑ]+)/);
+    if(m){
+      const day = parseInt(m[1]);
+      const code = m[2].toUpperCase().trim();
+      if(day >= 1 && day <= lastDay && shiftKeys.includes(code)){
+        ocrDetectedShifts.push({ day, shift: code });
+      }
+    }
+  });
+
+  // Strategy 2: scan entire text for patterns "DIA:TURNO" or "DIA/TURNO"
+  if(ocrDetectedShifts.length === 0){
+    const matches = [...text.matchAll(/\b(\d{1,2})[:\/-]([A-Za-záéíóúÁÉÍÓÚüÜñÑ]{1,4})\b/g)];
+    matches.forEach(m => {
+      const day = parseInt(m[1]);
+      const code = m[2].toUpperCase();
+      if(day >= 1 && day <= lastDay && shiftKeys.includes(code)){
+        ocrDetectedShifts.push({ day, shift: code });
+      }
+    });
+  }
+
+  // Deduplicate (keep first occurrence per day)
+  const seen = new Set();
+  ocrDetectedShifts = ocrDetectedShifts.filter(e => {
+    if(seen.has(e.day)) return false;
+    seen.add(e.day);
+    return true;
+  }).sort((a,b) => a.day - b.day);
+
+  const status = document.getElementById('ocrStatus');
+  const resultsBox = document.getElementById('ocrResultsBox');
+  const list = document.getElementById('ocrResultsList');
+  const count = document.getElementById('ocrDetectedCount');
+
+  resultsBox.classList.remove('hidden');
+  count.textContent = `${ocrDetectedShifts.length} turno(s)`;
+
+  if(ocrDetectedShifts.length === 0){
+    status.textContent = 'No se detectaron turnos en la imagen. Revisa el texto OCR crudo.';
+    list.innerHTML = '<p class="text-[11px] text-gray-400">No se encontraron pares día-turno reconocibles.</p>';
+    return;
+  }
+
+  status.textContent = `Se detectaron ${ocrDetectedShifts.length} turno(s). Revisa y aplica.`;
+
+  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  list.innerHTML = ocrDetectedShifts.map((e, i) => {
+    const shiftCfg = user.config[e.shift] || {};
+    const color = shiftCfg.color ? `background:${getColorValue(shiftCfg.color)};` : '';
+    return `
+      <div class="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-1.5">
+        <span class="text-[11px] font-black text-gray-700 w-16">${monthNames[month-1]} ${e.day}</span>
+        <span class="px-2 py-0.5 rounded-lg text-[11px] font-black" style="${color}color:#111">${e.shift}</span>
+        <button onclick="ocrDetectedShifts.splice(${i},1); parseOCRRenderList();" class="ml-auto text-[10px] text-red-400 hover:text-red-600 font-black">✕</button>
+      </div>`;
+  }).join('');
+}
+
+function parseOCRRenderList(){
+  // Re-render list after manual removal
+  const user = db.users[db.current];
+  const month = parseInt(document.getElementById('imgImportMonth').value) + 1;
+  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const list = document.getElementById('ocrResultsList');
+  const count = document.getElementById('ocrDetectedCount');
+  count.textContent = `${ocrDetectedShifts.length} turno(s)`;
+  list.innerHTML = ocrDetectedShifts.map((e, i) => {
+    const shiftCfg = (user.config[e.shift]) || {};
+    const color = shiftCfg.color ? `background:${getColorValue(shiftCfg.color)};` : '';
+    return `
+      <div class="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-1.5">
+        <span class="text-[11px] font-black text-gray-700 w-16">${monthNames[month-1]} ${e.day}</span>
+        <span class="px-2 py-0.5 rounded-lg text-[11px] font-black" style="${color}color:#111">${e.shift}</span>
+        <button onclick="ocrDetectedShifts.splice(${i},1); parseOCRRenderList();" class="ml-auto text-[10px] text-red-400 hover:text-red-600 font-black">✕</button>
+      </div>`;
+  }).join('');
+}
+
+function applyOCRResults(){
+  if(ocrDetectedShifts.length === 0) return alert("No hay turnos detectados para aplicar.");
+  const year  = parseInt(document.getElementById('imgImportYear').value);
+  const month = parseInt(document.getElementById('imgImportMonth').value) + 1;
+  const user = db.users[db.current];
+  if(!user) return;
+
+  let applied = 0;
+  ocrDetectedShifts.forEach(e => {
+    const key = dayKey(year, month, e.day);
+    user.data[key] = user.data[key] || {};
+    user.data[key].shift = e.shift;
+    applied++;
+  });
+
+  saveDB();
+  render();
+  renderSummaryCategories();
+  calcSummary();
+  closeImageImportModal();
+  alert(`Se aplicaron ${applied} turno(s) al calendario de ${db.current}.`);
 }
 
 function selectAllImportUsers(flag){
@@ -5249,34 +5343,13 @@ async function analyzeImportFile(){
     if(importContext.users.length === 0){
       list.innerHTML = `<div class="text-gray-400 font-bold">No se detectaron usuarios.</div>`;
     } else {
-      list.innerHTML = importContext.users.map((u, idx) => {
+      list.innerHTML = importContext.users.map(u => {
         const matchedProfile = nameMatchMap[u];
-        if(matchedProfile){
-          const radioName = `impUnify_${idx}`;
-          return `
-          <div class="p-2 rounded-xl bg-blue-50 border border-blue-200 mb-1">
-            <div class="flex items-start gap-2">
-              <input class="impUserChk mt-1 flex-shrink-0" type="checkbox" value="${escapeHTML(u)}" checked>
-              <div class="min-w-0">
-                <div class="font-black text-[11px] text-gray-900">${escapeHTML(u)}</div>
-                <div class="text-[10px] text-blue-700 font-bold mt-0.5">⚠️ Similar a perfil existente: <strong>${escapeHTML(matchedProfile)}</strong></div>
-                <div class="flex gap-4 mt-1">
-                  <label class="flex items-center gap-1 text-[10px] font-bold cursor-pointer text-blue-800">
-                    <input type="radio" name="${radioName}" value="unify" checked
-                      data-import-name="${escapeHTML(u)}" data-existing="${escapeHTML(matchedProfile)}"> Unificar con perfil existente
-                  </label>
-                  <label class="flex items-center gap-1 text-[10px] font-bold cursor-pointer text-gray-700">
-                    <input type="radio" name="${radioName}" value="new"> Crear perfil nuevo
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>`;
-        }
+        const matchLabel = matchedProfile ? ` <span style="color:#1e40af;font-size:10px;">→ usa perfil: ${escapeHTML(matchedProfile)}</span>` : '';
         return `
         <label class="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-50 cursor-pointer" style="color: #111827;">
           <input class="impUserChk" type="checkbox" value="${escapeHTML(u)}" checked>
-          <span class="font-black">${escapeHTML(u)}</span>
+          <span class="font-black">${escapeHTML(u)}${matchLabel}</span>
         </label>`;
       }).join('');
     }
@@ -5307,14 +5380,9 @@ function runImportSelected(){
   
   const { rows, headerIdx, nameCol, empCol, dayCols, monthIndex0, year } = importContext;
 
-  // Resolver nombres: respetar la decisión del usuario (unificar vs crear nuevo)
+  // Resolver nombres fuzzy: si hay match con perfil existente, usar el perfil existente
   const nameMatchMap = (importContext && importContext.nameMatchMap) || {};
-  const resolvedNames = selected.map(u => {
-    if(!nameMatchMap[u]) return u;
-    // Buscar el radio "unify" marcado para este usuario
-    const unifyRadio = document.querySelector(`input[type="radio"][data-import-name="${CSS.escape(u)}"][value="unify"]`);
-    return (unifyRadio && unifyRadio.checked) ? nameMatchMap[u] : u;
-  });
+  const resolvedNames = selected.map(u => nameMatchMap[u] || u);
 
   // Asegurar que los usuarios existen
   resolvedNames.forEach(u => ensureUserExists(u));
@@ -5342,9 +5410,8 @@ function runImportSelected(){
     const name = safeNameCell(row[nameCol]).toUpperCase();
     if(!selected.includes(name)) continue;
 
-    // Resolver nombre según decisión del usuario (unificar o crear nuevo)
-    const unifyRadioRow = document.querySelector(`input[type="radio"][data-import-name="${CSS.escape(name)}"][value="unify"]`);
-    const resolvedName = (nameMatchMap[name] && unifyRadioRow && unifyRadioRow.checked) ? nameMatchMap[name] : name;
+    // Resolver a perfil existente si hay coincidencia fuzzy
+    const resolvedName = nameMatchMap[name] || name;
     const userKey = ensureUserExists(resolvedName);
     const user = db.users[userKey];
     if (!user) continue;
@@ -6237,20 +6304,15 @@ async function pullFromCloud(){
 async function pushToCloud(){
   if(!isCloudEnabled()) throw new Error("No hay sesión en la nube.");
   markLocalUpdated();
-  const nowISO = new Date().toISOString();
   const payload = {
     user_id: sbUser.id,
     data: db,
-    updated_at: nowISO
+    updated_at: new Date().toISOString()
   };
   const {error} = await sb
     .from('shifter_state')
     .upsert(payload, { onConflict: 'user_id' });
   if(error) throw error;
-  // Registrar el timestamp subido para evitar re-preguntar al próximo arranque
-  db._meta = db._meta || {};
-  db._meta.lastSyncedCloudTS = nowISO;
-  _origSaveDB();
 }
 
 // Merge inteligente: cloud gana en mes actual y futuro, local conserva meses pasados
@@ -6299,14 +6361,11 @@ async function smartInitialSync(){
   smartSyncPromise = (async () => {
     db._meta = db._meta || {};
     const localTS = db._meta.updated_at ? Date.parse(db._meta.updated_at) : 0;
-    // lastSyncedCloudTS: timestamp de la versión de la nube con la que sincronizamos por última vez
-    const lastSyncedCloudTS = db._meta.lastSyncedCloudTS ? Date.parse(db._meta.lastSyncedCloudTS) : null;
     const localDbSnapshot = JSON.parse(JSON.stringify(db));
 
     try{
       const row = await pullFromCloud();
       if(!row){
-        // No hay datos en la nube: subir local y registrar timestamp
         await pushToCloud();
         remoteConflictPending = false;
         lastRemotePayload = null;
@@ -6320,51 +6379,21 @@ async function smartInitialSync(){
       const cloudTS = row.updated_at ? Date.parse(row.updated_at) : 0;
       const localHasData = hasMeaningfulLocalData(localDbSnapshot);
 
-      // Detectar si hubo cambios reales desde la última sincronización exitosa
-      const cloudChangedSinceLastSync = lastSyncedCloudTS === null
-        ? (cloudTS > 0)
-        : (cloudTS > lastSyncedCloudTS);
-      const localChangedSinceLastSync = lastSyncedCloudTS === null
-        ? localHasData
-        : (localTS > lastSyncedCloudTS);
-
-      if(!cloudChangedSinceLastSync && !localChangedSinceLastSync){
-        // Nada cambió desde la última sincronización: continuar sin preguntar
-        cloudInitReady = true;
-        lastSyncTime = new Date();
-        updateSyncStatusUI();
-        subscribeRealtime();
-        return;
-      }
-
-      if(cloudChangedSinceLastSync && !localChangedSinceLastSync){
-        // Solo la nube tiene cambios nuevos: aplicar automáticamente sin preguntar
-        applyCloudDb(row.data);
-        db._meta.lastSyncedCloudTS = row.updated_at;
-        _origSaveDB();
-      } else if(!cloudChangedSinceLastSync && localChangedSinceLastSync){
-        // Solo el local tiene cambios: marcar como pendiente de subir
-        localCloudUploadPending = true;
-      } else {
-        // Ambos tienen cambios (conflicto real): preguntar al usuario
-        if(localHasData){
-          const choice = await openSyncDecisionModal();
-          if(choice === 'merge'){
-            const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
-            applyCloudDb(mergedDb);
-            db._meta.lastSyncedCloudTS = row.updated_at;
-            _origSaveDB();
-          }else if(choice === 'cloud'){
-            applyCloudDb(row.data);
-            db._meta.lastSyncedCloudTS = row.updated_at;
-            _origSaveDB();
-          }else if(choice === 'keep-local'){
-            localCloudUploadPending = true;
-          }
-        }else{
+      if(localHasData){
+        const choice = await openSyncDecisionModal();
+        if(choice === 'merge'){
+          const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
+          applyCloudDb(mergedDb);
+        }else if(choice === 'cloud'){
           applyCloudDb(row.data);
-          db._meta.lastSyncedCloudTS = row.updated_at;
-          _origSaveDB();
+        }else if(choice === 'keep-local'){
+          localCloudUploadPending = true;
+        }
+      }else{
+        if(cloudTS >= localTS){
+          applyCloudDb(row.data);
+        }else{
+          localCloudUploadPending = true;
         }
       }
 
