@@ -973,7 +973,7 @@
       <p class="text-[11px] md:text-xs font-black uppercase opacity-90 mb-1">Días de Descanso</p>
       <h2 id="total-off" class="text-3xl md:text-4xl font-black mb-2">0</h2>
       <div class="flex flex-wrap justify-center gap-3 text-[11px] font-black w-full max-w-3xl mx-auto">
-        <div class="bg-white/20 px-3 py-2 rounded-2xl w-44 md:w-48"><div class="opacity-95">Libres</div><div id="free-days" class="text-xl md:text-2xl font-black leading-none">0</div></div>
+        <div class="bg-white/20 px-3 py-2 rounded-2xl w-44 md:w-48"><div class="opacity-95">Libres</div><div id="free-days" class="text-xl md:text-2xl font-black leading-none">0</div><div id="free-hours" class="text-[10px] font-bold opacity-80 mt-0.5">0 hrs</div></div>
         <div class="bg-white/20 px-3 py-2 rounded-2xl w-44 md:w-48"><div class="opacity-95">Vacaciones</div><div id="vac-days" class="text-xl md:text-2xl font-black leading-none">0</div></div>
 <div class="bg-white/20 px-3 py-2 rounded-2xl w-44 md:w-48"><div class="opacity-95">Asuetos Trab.</div><div id="holiday-worked" class="text-xl md:text-2xl font-black leading-none">0</div></div>
       </div>
@@ -2940,6 +2940,10 @@ if (d.mode === 'mixto') {
   const avg = workedDays > 0 ? totalHours / workedDays : 0;
   const avgEl = document.getElementById('avg-hours');
   if (avgEl) avgEl.textContent = `${avg.toFixed(1)}h`;
+
+  // Horas libres: cada día libre = 8h
+  const freeHoursEl = document.getElementById('free-hours');
+  if (freeHoursEl) freeHoursEl.textContent = `${freeDays * 8} hrs`;
 }
 
 // =========================================================
@@ -6005,21 +6009,14 @@ let cloudUploadDecisionResolver = null;
 let localCloudUploadPending = false;
 
 // --- Persistencia de estado sync en localStorage ---
-const LSKEY_CLOUD_TS_ACK = 'shifter_cloud_ts_ack';     // último cloudTS reconocido (aceptado o ignorado)
-const LSKEY_LOCAL_PENDING = 'shifter_local_pending';    // cambios locales pendientes de subir
+// Guardamos el string raw del updated_at de la nube para comparación exacta sin problemas de precisión
+const LSKEY_CLOUD_TS_ACK = 'shifter_sync_cloud_ts_ack'; // último cloudTS reconocido (string ISO)
+const LSKEY_LOCAL_PENDING = 'shifter_local_pending';
 
-function getLastAckCloudTS(){
-  return parseInt(localStorage.getItem(LSKEY_CLOUD_TS_ACK) || '0', 10);
-}
-function saveLastAckCloudTS(ts){
-  try{ localStorage.setItem(LSKEY_CLOUD_TS_ACK, String(ts || 0)); }catch(e){}
-}
-function getLocalPendingPersisted(){
-  return localStorage.getItem(LSKEY_LOCAL_PENDING) === 'true';
-}
-function setLocalPendingPersisted(val){
-  try{ localStorage.setItem(LSKEY_LOCAL_PENDING, val ? 'true' : 'false'); }catch(e){}
-}
+function getLastAckCloudTS(){ try{ return localStorage.getItem(LSKEY_CLOUD_TS_ACK) || ''; }catch(e){ return ''; } }
+function saveLastAckCloudTS(ts){ try{ if(ts) localStorage.setItem(LSKEY_CLOUD_TS_ACK, String(ts)); }catch(e){} }
+function getLocalPendingPersisted(){ return localStorage.getItem(LSKEY_LOCAL_PENDING) === 'true'; }
+function setLocalPendingPersisted(val){ try{ localStorage.setItem(LSKEY_LOCAL_PENDING, val ? 'true' : 'false'); }catch(e){} }
 
 function getDeviceId(){
   try{
@@ -6052,10 +6049,16 @@ function hasMeaningfulLocalData(snapshot){
 
 function applyCloudDb(newDb, {clearRemotePending=true, cloudTS=null} = {}){
   db = JSON.parse(JSON.stringify(newDb || db));
+  // Alinear _meta con el TS reconocido para que al recargar local === nube
+  if(cloudTS){
+    db._meta = db._meta || {};
+    db._meta.updated_at = cloudTS;
+    db._meta.device_id  = getDeviceId();
+    saveLastAckCloudTS(cloudTS);
+  }
   _origSaveDB();
   safeInitAfterCloudReplace();
   lastSyncTime = new Date();
-  if(cloudTS) saveLastAckCloudTS(typeof cloudTS === 'string' ? Date.parse(cloudTS) : cloudTS);
   if(clearRemotePending){
     remoteConflictPending = false;
     lastRemotePayload = null;
@@ -6322,19 +6325,19 @@ async function pullFromCloud(){
 
 async function pushToCloud(){
   if(!isCloudEnabled()) throw new Error("No hay sesión en la nube.");
-  markLocalUpdated();
-  const payload = {
-    user_id: sbUser.id,
-    data: db,
-    updated_at: new Date().toISOString()
-  };
+  // Un solo timestamp para _meta Y para la columna → nunca quedan desfasados
+  const now = new Date().toISOString();
+  db._meta = db._meta || {};
+  db._meta.updated_at = now;
+  db._meta.device_id  = getDeviceId();
+  const payload = { user_id: sbUser.id, data: db, updated_at: now };
   const {error} = await sb
     .from('shifter_state')
     .upsert(payload, { onConflict: 'user_id' });
   if(error) throw error;
-  // Marcar que la nube ahora tiene exactamente lo que acabamos de subir
-  saveLastAckCloudTS(Date.parse(payload.updated_at));
+  saveLastAckCloudTS(now);      // guardar string exacto
   setLocalPendingPersisted(false);
+  _origSaveDB();                 // persistir db con _meta actualizado sin re-disparar push
 }
 
 // Merge inteligente: cloud gana en mes actual y futuro, local conserva meses pasados
@@ -6398,64 +6401,66 @@ async function smartInitialSync(){
         return;
       }
 
-      const cloudTS    = row.updated_at ? Date.parse(row.updated_at) : 0;
-      const lastAckTS  = getLastAckCloudTS();         // último cloudTS que el usuario procesó
-      const hasPending = getLocalPendingPersisted();  // hay cambios locales no subidos
-      const firstSync  = lastAckTS === 0;             // nunca se ha sincronizado antes
-      const localHasData = hasMeaningfulLocalData(localDbSnapshot);
-      const cloudIsNewer = cloudTS > lastAckTS;
+      // Comparar el TS interno del dato (guardado en _meta), no el updated_at de la columna
+      // porque Supabase puede redondear el timestamp de la columna ligeramente.
+      const cloudInternalTS = row.data?._meta?.updated_at || row.updated_at || '';
+      const lastAckTS       = getLastAckCloudTS();   // string ISO del último TS procesado
+      const hasPending      = getLocalPendingPersisted();
+      const firstSync       = !lastAckTS;
+      const localHasData    = hasMeaningfulLocalData(localDbSnapshot);
+      // ¿La nube tiene algo distinto a lo que ya procesamos?
+      const cloudIsNew      = cloudInternalTS && cloudInternalTS !== lastAckTS;
 
-      if(firstSync && localHasData){
-        // Primera vez: hay data local y en la nube → preguntar
+      if(!cloudIsNew && !hasPending){
+        // Exactamente igual a lo que ya procesamos → ya sincronizado, nada que hacer
+
+      }else if(firstSync && localHasData){
+        // Primera vez con datos en ambos lados → preguntar
         const choice = await openSyncDecisionModal();
         if(choice === 'merge'){
           const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
-          applyCloudDb(mergedDb, {cloudTS: row.updated_at});
+          applyCloudDb(mergedDb, {cloudTS: cloudInternalTS});
         }else if(choice === 'cloud'){
-          applyCloudDb(row.data, {cloudTS: row.updated_at});
+          applyCloudDb(row.data, {cloudTS: cloudInternalTS});
         }else{
-          // keep-local: recordar el cloudTS visto pero no aplicar
-          saveLastAckCloudTS(cloudTS);
+          saveLastAckCloudTS(cloudInternalTS);
           localCloudUploadPending = true;
           setLocalPendingPersisted(true);
         }
 
       }else if(firstSync && !localHasData){
-        // Primera vez sin data local → aplicar nube directamente
-        applyCloudDb(row.data, {cloudTS: row.updated_at});
+        // Primera vez, local vacío → aplicar nube directamente sin preguntar
+        applyCloudDb(row.data, {cloudTS: cloudInternalTS});
 
-      }else if(!firstSync && cloudIsNewer && hasPending){
-        // CONFLICTO REAL: la nube cambió Y hay cambios locales pendientes
+      }else if(cloudIsNew && hasPending){
+        // Conflicto real: nube cambió Y hay cambios locales → preguntar
         const choice = await openSyncDecisionModal();
         if(choice === 'merge'){
           const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
-          applyCloudDb(mergedDb, {cloudTS: row.updated_at});
+          applyCloudDb(mergedDb, {cloudTS: cloudInternalTS});
         }else if(choice === 'cloud'){
-          applyCloudDb(row.data, {cloudTS: row.updated_at});
+          applyCloudDb(row.data, {cloudTS: cloudInternalTS});
         }else{
-          saveLastAckCloudTS(cloudTS);
+          saveLastAckCloudTS(cloudInternalTS);
           localCloudUploadPending = true;
           setLocalPendingPersisted(true);
         }
 
-      }else if(!firstSync && cloudIsNewer && !hasPending){
-        // La nube tiene datos nuevos pero sin conflicto local → banner no bloqueante
+      }else if(cloudIsNew && !hasPending){
+        // Nube cambió, sin conflicto local → banner discreto, no modal bloqueante
         remoteConflictPending = true;
         lastRemotePayload = row;
         showCloudUpdateBanner();
         updateSyncStatusUI('pending-remote');
 
-      }else if(!firstSync && !cloudIsNewer && hasPending){
-        // Nube sin cambios, pero hay datos locales pendientes → mostrar banner de subida
+      }else if(!cloudIsNew && hasPending){
+        // Nube igual, pero hay pendientes locales → banner de subida
         localCloudUploadPending = true;
         updateSyncStatusUI('pending-local');
         showLocalUploadBanner();
-
       }
-      // else: !firstSync && !cloudIsNewer && !hasPending → ya sincronizado, no hacer nada
 
-      remoteConflictPending = (!firstSync && cloudIsNewer && !hasPending) ? remoteConflictPending : false;
-      if(!remoteConflictPending) lastRemotePayload = null;
+      if(!remoteConflictPending){ lastRemotePayload = null; }
       lastSyncTime = new Date();
       cloudInitReady = true;
       updateSyncStatusUI();
@@ -6668,11 +6673,10 @@ function showCloudUpdateBanner(){
 function dismissCloudBanner(){
   const b = document.getElementById('cloudUpdateBanner');
   if(b) b.style.display = 'none';
-  // Reconocer el cloudTS actual para no volver a mostrar el banner al reabrir
-  // (salvo que haya cambios AÚN MÁS nuevos)
+  // Guardar el TS de la nube como reconocido para no volver a mostrar al recargar
   if(lastRemotePayload){
-    const ts = lastRemotePayload?.updated_at || lastRemotePayload?.data?._meta?.updated_at;
-    if(ts) saveLastAckCloudTS(Date.parse(ts));
+    const ts = lastRemotePayload?.data?._meta?.updated_at || lastRemotePayload?.updated_at || '';
+    if(ts) saveLastAckCloudTS(ts);
   }
   remoteConflictPending = false;
   lastRemotePayload = null;
@@ -6684,12 +6688,13 @@ async function pullLatestAndDismissBanner(){
   try{
     const row = await pullFromCloud();
     if(!row) return;
+    const cloudInternalTS = row.data?._meta?.updated_at || row.updated_at || '';
     const localDbSnapshot = JSON.parse(JSON.stringify(db));
     const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
-    applyCloudDb(mergedDb, {cloudTS: row.updated_at});
+    applyCloudDb(mergedDb, {cloudTS: cloudInternalTS});
     remoteConflictPending = false;
     lastRemotePayload = null;
-    toast && toast('Datos actualizados desde la nube');
+    toast && toast('✓ Datos actualizados desde la nube');
   }catch(e){
     console.warn('pullLatest error:', e);
   }
