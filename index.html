@@ -1518,8 +1518,8 @@
 </div>
 
 <!-- Modal Profiles - CORREGIDO: Nombres visibles en selects -->
-<div id="profilesModal" class="modal">
-  <div class="bg-white w-full max-w-3xl rounded-3xl md:rounded-[40px] p-4 md:p-6 lg:p-8 shadow-2xl mx-2">
+<div id="profilesModal" class="modal" style="overflow-y:auto;">
+  <div class="bg-white w-full max-w-3xl rounded-3xl md:rounded-[40px] p-4 md:p-6 lg:p-8 shadow-2xl mx-2 my-auto">
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
       <div>
         <h3 class="font-black uppercase text-base md:text-lg">👤 Gestión de Perfiles</h3>
@@ -6004,6 +6004,23 @@ let smartSyncPromise = null;
 let cloudUploadDecisionResolver = null;
 let localCloudUploadPending = false;
 
+// --- Persistencia de estado sync en localStorage ---
+const LSKEY_CLOUD_TS_ACK = 'shifter_cloud_ts_ack';     // último cloudTS reconocido (aceptado o ignorado)
+const LSKEY_LOCAL_PENDING = 'shifter_local_pending';    // cambios locales pendientes de subir
+
+function getLastAckCloudTS(){
+  return parseInt(localStorage.getItem(LSKEY_CLOUD_TS_ACK) || '0', 10);
+}
+function saveLastAckCloudTS(ts){
+  try{ localStorage.setItem(LSKEY_CLOUD_TS_ACK, String(ts || 0)); }catch(e){}
+}
+function getLocalPendingPersisted(){
+  return localStorage.getItem(LSKEY_LOCAL_PENDING) === 'true';
+}
+function setLocalPendingPersisted(val){
+  try{ localStorage.setItem(LSKEY_LOCAL_PENDING, val ? 'true' : 'false'); }catch(e){}
+}
+
 function getDeviceId(){
   try{
     const k='shifter_device_id';
@@ -6033,17 +6050,19 @@ function hasMeaningfulLocalData(snapshot){
   }
 }
 
-function applyCloudDb(newDb, {clearRemotePending=true} = {}){
+function applyCloudDb(newDb, {clearRemotePending=true, cloudTS=null} = {}){
   db = JSON.parse(JSON.stringify(newDb || db));
   _origSaveDB();
   safeInitAfterCloudReplace();
   lastSyncTime = new Date();
+  if(cloudTS) saveLastAckCloudTS(typeof cloudTS === 'string' ? Date.parse(cloudTS) : cloudTS);
   if(clearRemotePending){
     remoteConflictPending = false;
     lastRemotePayload = null;
     dismissCloudBanner();
   }
   localCloudUploadPending = false;
+  setLocalPendingPersisted(false);
   dismissLocalUploadBanner();
   updateSyncStatusUI();
 }
@@ -6313,6 +6332,9 @@ async function pushToCloud(){
     .from('shifter_state')
     .upsert(payload, { onConflict: 'user_id' });
   if(error) throw error;
+  // Marcar que la nube ahora tiene exactamente lo que acabamos de subir
+  saveLastAckCloudTS(Date.parse(payload.updated_at));
+  setLocalPendingPersisted(false);
 }
 
 // Merge inteligente: cloud gana en mes actual y futuro, local conserva meses pasados
@@ -6360,12 +6382,12 @@ async function smartInitialSync(){
 
   smartSyncPromise = (async () => {
     db._meta = db._meta || {};
-    const localTS = db._meta.updated_at ? Date.parse(db._meta.updated_at) : 0;
     const localDbSnapshot = JSON.parse(JSON.stringify(db));
 
     try{
       const row = await pullFromCloud();
       if(!row){
+        // No hay datos en la nube → subir lo local
         await pushToCloud();
         remoteConflictPending = false;
         lastRemotePayload = null;
@@ -6376,36 +6398,71 @@ async function smartInitialSync(){
         return;
       }
 
-      const cloudTS = row.updated_at ? Date.parse(row.updated_at) : 0;
+      const cloudTS    = row.updated_at ? Date.parse(row.updated_at) : 0;
+      const lastAckTS  = getLastAckCloudTS();         // último cloudTS que el usuario procesó
+      const hasPending = getLocalPendingPersisted();  // hay cambios locales no subidos
+      const firstSync  = lastAckTS === 0;             // nunca se ha sincronizado antes
       const localHasData = hasMeaningfulLocalData(localDbSnapshot);
+      const cloudIsNewer = cloudTS > lastAckTS;
 
-      if(localHasData){
+      if(firstSync && localHasData){
+        // Primera vez: hay data local y en la nube → preguntar
         const choice = await openSyncDecisionModal();
         if(choice === 'merge'){
           const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
-          applyCloudDb(mergedDb);
+          applyCloudDb(mergedDb, {cloudTS: row.updated_at});
         }else if(choice === 'cloud'){
-          applyCloudDb(row.data);
-        }else if(choice === 'keep-local'){
-          localCloudUploadPending = true;
-        }
-      }else{
-        if(cloudTS >= localTS){
-          applyCloudDb(row.data);
+          applyCloudDb(row.data, {cloudTS: row.updated_at});
         }else{
+          // keep-local: recordar el cloudTS visto pero no aplicar
+          saveLastAckCloudTS(cloudTS);
           localCloudUploadPending = true;
+          setLocalPendingPersisted(true);
         }
-      }
 
-      remoteConflictPending = false;
-      lastRemotePayload = null;
+      }else if(firstSync && !localHasData){
+        // Primera vez sin data local → aplicar nube directamente
+        applyCloudDb(row.data, {cloudTS: row.updated_at});
+
+      }else if(!firstSync && cloudIsNewer && hasPending){
+        // CONFLICTO REAL: la nube cambió Y hay cambios locales pendientes
+        const choice = await openSyncDecisionModal();
+        if(choice === 'merge'){
+          const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
+          applyCloudDb(mergedDb, {cloudTS: row.updated_at});
+        }else if(choice === 'cloud'){
+          applyCloudDb(row.data, {cloudTS: row.updated_at});
+        }else{
+          saveLastAckCloudTS(cloudTS);
+          localCloudUploadPending = true;
+          setLocalPendingPersisted(true);
+        }
+
+      }else if(!firstSync && cloudIsNewer && !hasPending){
+        // La nube tiene datos nuevos pero sin conflicto local → banner no bloqueante
+        remoteConflictPending = true;
+        lastRemotePayload = row;
+        showCloudUpdateBanner();
+        updateSyncStatusUI('pending-remote');
+
+      }else if(!firstSync && !cloudIsNewer && hasPending){
+        // Nube sin cambios, pero hay datos locales pendientes → mostrar banner de subida
+        localCloudUploadPending = true;
+        updateSyncStatusUI('pending-local');
+        showLocalUploadBanner();
+
+      }
+      // else: !firstSync && !cloudIsNewer && !hasPending → ya sincronizado, no hacer nada
+
+      remoteConflictPending = (!firstSync && cloudIsNewer && !hasPending) ? remoteConflictPending : false;
+      if(!remoteConflictPending) lastRemotePayload = null;
       lastSyncTime = new Date();
       cloudInitReady = true;
       updateSyncStatusUI();
       subscribeRealtime();
     }catch(e){
       console.error('smartInitialSync error:', e);
-      cloudInitReady = true; // permitir operación normal aunque falle sync
+      cloudInitReady = true;
       updateSyncStatusUI();
     }finally{
       smartSyncPromise = null;
@@ -6441,6 +6498,7 @@ function scheduleCloudPush(){
     return;
   }
   localCloudUploadPending = true;
+  setLocalPendingPersisted(true);
   updateSyncStatusUI('pending-local');
   showLocalUploadBanner();
 }
@@ -6475,7 +6533,7 @@ async function pullFromCloudUI(){
     const row = await pullFromCloud();
     if(!row){ return alert("No hay datos en la nube aún."); }
     if(!confirm("Esto reemplazará tus datos locales por los de la nube. ¿Continuar?")) return;
-    applyCloudDb(row.data || db);
+    applyCloudDb(row.data || db, {cloudTS: row.updated_at});
     alert("Datos de la nube aplicados.");
   }catch(e){
     alert("Error: " + (e.message||e));
@@ -6610,16 +6668,27 @@ function showCloudUpdateBanner(){
 function dismissCloudBanner(){
   const b = document.getElementById('cloudUpdateBanner');
   if(b) b.style.display = 'none';
+  // Reconocer el cloudTS actual para no volver a mostrar el banner al reabrir
+  // (salvo que haya cambios AÚN MÁS nuevos)
+  if(lastRemotePayload){
+    const ts = lastRemotePayload?.updated_at || lastRemotePayload?.data?._meta?.updated_at;
+    if(ts) saveLastAckCloudTS(Date.parse(ts));
+  }
+  remoteConflictPending = false;
+  lastRemotePayload = null;
 }
 
 async function pullLatestAndDismissBanner(){
-  dismissCloudBanner();
+  const b = document.getElementById('cloudUpdateBanner');
+  if(b) b.style.display = 'none';
   try{
     const row = await pullFromCloud();
     if(!row) return;
     const localDbSnapshot = JSON.parse(JSON.stringify(db));
     const mergedDb = mergeSmartPull(row.data, localDbSnapshot);
-    applyCloudDb(mergedDb);
+    applyCloudDb(mergedDb, {cloudTS: row.updated_at});
+    remoteConflictPending = false;
+    lastRemotePayload = null;
     toast && toast('Datos actualizados desde la nube');
   }catch(e){
     console.warn('pullLatest error:', e);
@@ -6659,7 +6728,7 @@ async function confirmUploadLocalChanges(){
   }
   try{
     updateSyncStatusUI('pending');
-    await pushToCloud();
+    await pushToCloud(); // guarda lastAckCloudTS y setLocalPendingPersisted(false)
     localCloudUploadPending = false;
     lastSyncTime = new Date();
     updateSyncStatusUI('synced');
@@ -6671,7 +6740,9 @@ async function confirmUploadLocalChanges(){
 }
 
 function keepChangesLocalOnly(){
+  // El usuario elige no subir: limpiar flag para no seguir preguntando
   localCloudUploadPending = false;
+  setLocalPendingPersisted(false);
   dismissLocalUploadBanner();
   updateSyncStatusUI();
   if(typeof toast === 'function') toast('Cambios conservados solo en este dispositivo');
@@ -6679,6 +6750,10 @@ function keepChangesLocalOnly(){
 
 // Iniciar supabase al cargar
 window.addEventListener('load', () => {
+  // Restaurar estado de cambios locales pendientes desde sesión anterior
+  if(getLocalPendingPersisted()){
+    localCloudUploadPending = true;
+  }
   initSupabase();
 });
 
