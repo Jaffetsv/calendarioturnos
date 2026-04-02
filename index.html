@@ -296,9 +296,81 @@
       padding: 15px;
       backdrop-filter: blur(4px);
     }
-    
+
     .modal.active {
       display: flex;
+    }
+
+    /* ===== TOAST ===== */
+    #toastContainer {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      width: max-content;
+      max-width: calc(100vw - 32px);
+    }
+    .toast-item {
+      background: #0f172a;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.1);
+      animation: toastIn 0.25s cubic-bezier(.34,1.56,.64,1) both, toastOut 0.3s ease 2.3s both;
+      white-space: nowrap;
+    }
+    @keyframes toastIn { from { opacity:0; transform:translateY(12px) scale(0.92); } to { opacity:1; transform:none; } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateY(8px); } }
+
+    /* ===== SUMMARY MEJORADO ===== */
+    .stat-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      border: 1px solid #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-card-label {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+    }
+    .stat-card-value {
+      font-size: 26px;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1;
+    }
+    .stat-card-sub {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+    }
+    .progress-bar-wrap {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 99px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.6s cubic-bezier(.34,1.56,.64,1);
     }
     
     /* Tabs */
@@ -962,36 +1034,82 @@
   <div id="calendar" class="calendar-grid"></div>
 </div>
 
-<!-- Summary - CORREGIDO: Solo categorías usadas en el mes -->
+<!-- Summary -->
 <div id="view-summary" class="view-section p-4 md:p-5 bg-gray-50 min-h-screen">
   <div class="space-y-4 md:space-y-5">
-    <div id="summary-categories" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-      <!-- Las categorías se generarán dinámicamente aquí -->
+
+    <!-- Categorías dinámicas -->
+    <div id="summary-categories" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"></div>
+
+    <!-- Tarjetas de estadísticas clave -->
+    <div class="grid grid-cols-2 gap-3">
+      <div id="statCardWorked" class="stat-card">
+        <div class="stat-card-label">Días trabajados</div>
+        <div class="stat-card-value" id="worked-days">0</div>
+        <div class="stat-card-sub">0 hrs totales</div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill bg-blue-500" id="workProgressFill" style="width:0%"></div></div>
+      </div>
+      <div id="statCardFree" class="stat-card">
+        <div class="stat-card-label">Días libres</div>
+        <div class="stat-card-value" id="free-days">0</div>
+        <div class="stat-card-sub" id="free-hours">0 hrs de descanso</div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill bg-emerald-400" id="freeProgressFill" style="width:0%"></div></div>
+      </div>
+      <div id="statCardAvg" class="stat-card">
+        <div class="stat-card-label">Promedio diario</div>
+        <div class="stat-card-value" id="avg-hours">0h</div>
+        <div class="stat-card-sub">por día trabajado</div>
+      </div>
+      <div id="statCardVac" class="stat-card">
+        <div class="stat-card-label">Vacaciones</div>
+        <div class="stat-card-value" id="vac-days">0</div>
+        <div class="stat-card-sub">días de vacaciones</div>
+      </div>
     </div>
 
-    <div class="bg-gradient-to-r from-emerald-500 to-teal-600 p-3 md:p-4 rounded-3xl text-white text-center shadow-xl">
-      <p class="text-[11px] md:text-xs font-black uppercase opacity-90 mb-1">Días de Descanso</p>
-      <h2 id="total-off" class="text-3xl md:text-4xl font-black mb-2">0</h2>
-      <div class="flex flex-wrap justify-center gap-3 text-[11px] font-black w-full max-w-3xl mx-auto">
-        <div class="bg-white/20 px-3 py-2 rounded-2xl w-44 md:w-48"><div class="opacity-95">Libres</div><div id="free-days" class="text-xl md:text-2xl font-black leading-none">0</div><div id="free-hours" class="text-[10px] font-bold opacity-80 mt-0.5">0 hrs</div></div>
-        <div class="bg-white/20 px-3 py-2 rounded-2xl w-44 md:w-48"><div class="opacity-95">Vacaciones</div><div id="vac-days" class="text-xl md:text-2xl font-black leading-none">0</div></div>
-<div class="bg-white/20 px-3 py-2 rounded-2xl w-44 md:w-48"><div class="opacity-95">Asuetos Trab.</div><div id="holiday-worked" class="text-xl md:text-2xl font-black leading-none">0</div></div>
+    <!-- Barra de progreso del mes -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-[11px] font-black text-gray-500 uppercase tracking-wide">Progreso del mes</span>
+        <span id="workProgressLabel" class="text-[11px] font-black text-blue-600">0% del mes trabajado</span>
       </div>
-      <p class="text-[11px] mt-2 font-bold opacity-90">
-        * Asueto laborado solo cuenta si aplica a la localidad del perfil.
-      </p>
+      <div class="progress-bar-wrap" style="height:8px;">
+        <div class="progress-bar-fill bg-gradient-to-r from-blue-500 to-indigo-600" id="workProgressFill2" style="width:0%"></div>
+      </div>
+      <div class="flex justify-between mt-2 text-[10px] font-bold text-gray-400">
+        <span>Localidad: <span id="profile-loc" class="text-gray-700">—</span></span>
+        <span>Total: <span id="total-days" class="text-gray-700">30</span> días · <span id="total-holidays" class="text-red-500">0</span> asuetos</span>
+      </div>
     </div>
 
-    <div class="bg-white p-5 rounded-3xl shadow-sm">
-      <h3 class="text-[13px] md:text-[14px] font-black text-gray-700 uppercase mb-4">📈 Resumen del Mes</h3>
-      <div class="space-y-2">
-        <div class="flex justify-between"><span class="text-[12px] font-bold text-gray-600">Localidad perfil:</span><span id="profile-loc" class="font-black text-gray-900 text-[13px]">San Salvador</span></div>
-        <div class="flex justify-between"><span class="text-[12px] font-bold text-gray-600">Días trabajados:</span><span id="worked-days" class="font-black text-gray-900">0</span></div>
-        <div class="flex justify-between"><span class="text-[12px] font-bold text-gray-600">Promedio diario:</span><span id="avg-hours" class="font-black text-gray-900">0.0h</span></div>
-        <div class="flex justify-between"><span class="text-[12px] font-bold text-gray-600">Total días mes:</span><span id="total-days" class="font-black text-gray-900">30</span></div>
-        <div class="flex justify-between"><span class="text-[12px] font-bold text-gray-600">Asuetos en mes:</span><span id="total-holidays" class="font-black text-red-600">0</span></div>
+    <!-- Panel descanso compacto -->
+    <div class="bg-gradient-to-r from-emerald-500 to-teal-600 p-4 rounded-3xl text-white shadow-xl">
+      <p class="text-[10px] font-black uppercase opacity-80 mb-1 tracking-widest">Días de Descanso</p>
+      <h2 id="total-off" class="text-4xl font-black mb-3">0</h2>
+      <div class="flex flex-wrap gap-2">
+        <div class="bg-white/20 backdrop-blur px-4 py-2.5 rounded-2xl flex-1 min-w-[110px]">
+          <div class="text-[9px] font-black uppercase opacity-75 mb-0.5">Libres</div>
+          <div class="text-2xl font-black leading-none" id="free-days2">0</div>
+          <div class="text-[10px] font-bold opacity-80 mt-0.5" id="free-hours2">0 hrs</div>
+        </div>
+        <div class="bg-white/20 backdrop-blur px-4 py-2.5 rounded-2xl flex-1 min-w-[110px]">
+          <div class="text-[9px] font-black uppercase opacity-75 mb-0.5">Vacaciones</div>
+          <div class="text-2xl font-black leading-none" id="vac-days2">0</div>
+        </div>
+        <div class="bg-white/20 backdrop-blur px-4 py-2.5 rounded-2xl flex-1 min-w-[110px]">
+          <div class="text-[9px] font-black uppercase opacity-75 mb-0.5">Asuetos Trab.</div>
+          <div class="text-2xl font-black leading-none" id="holiday-worked">0</div>
+        </div>
       </div>
+      <p class="text-[10px] mt-2 font-bold opacity-70">* Asueto laborado cuenta si aplica a tu localidad.</p>
     </div>
+
+    <!-- IDs legacy ocultos para compatibilidad -->
+    <div class="hidden">
+      <span id="worked-days-legacy"></span>
+      <span id="total-holidays"></span>
+    </div>
+
   </div>
 </div>
 
@@ -2855,18 +2973,17 @@ function calcSummary(){
   
   let freeDays = 0, vacDays = 0, workedDays = 0, holidayWorked = 0;
   const daysInMonth = new Date(y, m0 + 1, 0).getDate();
-  freeDays = 0;
-  
+
   const applicableHolidays = countApplicableHolidaysInMonth(y, m0, user.locality);
-  
-  // Procesar días del mes (si no hay dato, se asume LIBRE)
+
+  // Procesar días del mes
   for(let day = 1; day <= daysInMonth; day++){
     const key = dayKey(y, m1, day);
     const d = user.data[key] || buildDefaultSimpleDay(user, 'L');
     const date = new Date(y, m0, day);
-    const dow = date.getDay();
     const isHoliday = db.holidays[key] && holidayApplies(db.holidays[key].location, user.locality);
-if (d.mode === 'mixto') {
+
+    if (d.mode === 'mixto') {
       const topCat = SHIFTS[d.t]?.cat;
       const botCat = SHIFTS[d.b]?.cat;
 
@@ -2876,21 +2993,24 @@ if (d.mode === 'mixto') {
         catHours[topCat] += (d.hrsTop || 0);
         catDays[topCat]++;
         if (topCat !== 'off') workedDays++;
-        else {
-          if ((d.t || '') === 'Vacaciones') vacDays++;
-          else freeDays++;
-        }
       }
 
       if (botCat && categories[botCat]) {
         catHours[botCat] += (d.hrsBottom || 0);
         catDays[botCat]++;
         if (botCat !== 'off') workedDays++;
-        else {
-          if ((d.b || '') === 'Vacaciones') vacDays++;
-          else freeDays++;
-        }
       }
+
+      // Para días libres/vacaciones en mixto: contar el DÍA completo
+      // según si AMBAS partes son off, o sólo una
+      const topIsOff = !topCat || topCat === 'off';
+      const botIsOff = !botCat || botCat === 'off';
+      if (topIsOff && botIsOff) {
+        // Día completamente libre o vacaciones
+        const isVac = (d.t === 'Vacaciones') || (d.b === 'Vacaciones');
+        if (isVac) vacDays++; else freeDays++;
+      }
+      // Si sólo una mitad es off no contamos día completo libre
     } else {
       const cat = SHIFTS[d.s]?.cat;
       if (cat && categories[cat]) {
@@ -2935,15 +3055,33 @@ if (d.mode === 'mixto') {
     if (el) el.textContent = value;
   });
   
-  // Calcular promedio
+  // Calcular totales
   const totalHours = Object.values(catHours).reduce((a, b) => a + b, 0);
   const avg = workedDays > 0 ? totalHours / workedDays : 0;
   const avgEl = document.getElementById('avg-hours');
   if (avgEl) avgEl.textContent = `${avg.toFixed(1)}h`;
 
-  // Horas libres: cada día libre = 8h
+  // Horas libres: freeDays son días completos × 8h
+  const freeHours = freeDays * 8;
   const freeHoursEl = document.getElementById('free-hours');
-  if (freeHoursEl) freeHoursEl.textContent = `${freeDays * 8} hrs`;
+  if (freeHoursEl) freeHoursEl.textContent = `${freeHours} hrs`;
+
+  // Barra de progreso del mes
+  const pct = daysInMonth > 0 ? Math.round((workedDays / daysInMonth) * 100) : 0;
+  const barFill = document.getElementById('workProgressFill');
+  const barLabel = document.getElementById('workProgressLabel');
+  if (barFill) barFill.style.width = `${pct}%`;
+  if (barLabel) barLabel.textContent = `${pct}% del mes trabajado`;
+
+  // Tarjetas stat mejoradas
+  const setCard = (id, val, sub) => {
+    const el = document.getElementById(id);
+    if (el) { el.querySelector('.stat-card-value').textContent = val; if(sub) el.querySelector('.stat-card-sub').textContent = sub; }
+  };
+  setCard('statCardWorked',  workedDays,         `${totalHours.toFixed(1)} hrs totales`);
+  setCard('statCardFree',    freeDays,            `${freeHours} hrs de descanso`);
+  setCard('statCardAvg',     `${avg.toFixed(1)}h`, `promedio por día trabajado`);
+  setCard('statCardVac',     vacDays,             vacDays === 1 ? '1 día de vacaciones' : `${vacDays} días de vacaciones`);
 }
 
 // =========================================================
@@ -6751,6 +6889,103 @@ function keepChangesLocalOnly(){
   dismissLocalUploadBanner();
   updateSyncStatusUI();
   if(typeof toast === 'function') toast('Cambios conservados solo en este dispositivo');
+}
+
+// ===== TOAST =====
+function toast(msg, duration = 2600){
+  let container = document.getElementById('toastContainer');
+  if(!container){
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    document.body.appendChild(container);
+  }
+  const el = document.createElement('div');
+  el.className = 'toast-item';
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ===== MODAL SINCRONIZACIÓN MANUAL =====
+function openManualSyncModal(){
+  let modal = document.getElementById('manualSyncModal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'manualSyncModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:28px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.28);">
+        <div style="background:linear-gradient(135deg,#3b82f6,#1e40af);padding:20px 24px;color:#fff;">
+          <div style="font-size:15px;font-weight:900;margin-bottom:3px;">🔄 Sincronizar ahora</div>
+          <div style="font-size:11px;opacity:0.85;font-weight:600;">¿Qué deseas hacer con los datos?</div>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:10px;">
+          <button id="msBtnUp" style="padding:14px 16px;border-radius:16px;border:none;background:#f0fdf4;color:#166534;font-weight:900;font-size:13px;cursor:pointer;text-align:left;border:1.5px solid #bbf7d0;">
+            ☁️ Subir mis datos a la nube
+            <div style="font-size:11px;font-weight:600;color:#16a34a;margin-top:3px;">Envía lo que tienes aquí a todos tus dispositivos.</div>
+          </button>
+          <button id="msBtnDown" style="padding:14px 16px;border-radius:16px;border:none;background:#eff6ff;color:#1e40af;font-weight:900;font-size:13px;cursor:pointer;text-align:left;border:1.5px solid #bfdbfe;">
+            📥 Traer datos de la nube
+            <div style="font-size:11px;font-weight:600;color:#2563eb;margin-top:3px;">Fusiona lo de la nube conservando tus meses anteriores.</div>
+          </button>
+          <button id="msBtnCheck" style="padding:14px 16px;border-radius:16px;border:none;background:#f8fafc;color:#374151;font-weight:900;font-size:13px;cursor:pointer;text-align:left;border:1.5px solid #e2e8f0;">
+            🔍 Solo verificar estado
+            <div style="font-size:11px;font-weight:600;color:#6b7280;margin-top:3px;">Compara nube vs local sin cambiar nada todavía.</div>
+          </button>
+          <button id="msBtnCancel" style="padding:10px;border-radius:14px;border:none;background:transparent;color:#9ca3af;font-weight:700;font-size:12px;cursor:pointer;">Cancelar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    document.getElementById('msBtnUp').onclick = async () => {
+      modal.style.display = 'none';
+      try{
+        updateSyncStatusUI('pending');
+        await pushToCloud();
+        localCloudUploadPending = false;
+        lastSyncTime = new Date();
+        updateSyncStatusUI('synced');
+        toast('✓ Datos subidos a la nube correctamente');
+      }catch(e){ toast('❌ Error al subir: '+(e.message||e)); updateSyncStatusUI('error'); }
+    };
+    document.getElementById('msBtnDown').onclick = async () => {
+      modal.style.display = 'none';
+      try{
+        const row = await pullFromCloud();
+        if(!row){ toast('No hay datos en la nube aún.'); return; }
+        const cloudInternalTS = row.data?._meta?.updated_at || row.updated_at || '';
+        const snap = JSON.parse(JSON.stringify(db));
+        const merged = mergeSmartPull(row.data, snap);
+        applyCloudDb(merged, {cloudTS: cloudInternalTS});
+        toast('✓ Datos traídos y fusionados desde la nube');
+      }catch(e){ toast('❌ Error al traer: '+(e.message||e)); }
+    };
+    document.getElementById('msBtnCheck').onclick = async () => {
+      modal.style.display = 'none';
+      try{
+        const row = await pullFromCloud();
+        if(!row){ toast('La nube está vacía — sube tus datos.'); return; }
+        const cloudInternalTS = row.data?._meta?.updated_at || row.updated_at || '';
+        const lastAck = getLastAckCloudTS();
+        const isSame = cloudInternalTS && cloudInternalTS === lastAck;
+        const cloudDate = cloudInternalTS ? new Date(cloudInternalTS).toLocaleString('es',{dateStyle:'short',timeStyle:'short'}) : '?';
+        const localDate = db._meta?.updated_at ? new Date(db._meta.updated_at).toLocaleString('es',{dateStyle:'short',timeStyle:'short'}) : 'Sin timestamp';
+        toast(isSame ? `✓ Sincronizado — Nube: ${cloudDate}` : `⚠ Diferencia detectada — Nube: ${cloudDate} · Local: ${localDate}`);
+      }catch(e){ toast('❌ Error al verificar: '+(e.message||e)); }
+    };
+    document.getElementById('msBtnCancel').onclick = () => { modal.style.display = 'none'; };
+    modal.addEventListener('click', e => { if(e.target === modal) modal.style.display = 'none'; });
+  } else {
+    modal.style.display = 'flex';
+  }
+}
+
+async function manualSyncNow(){
+  if(!isCloudEnabled()){
+    openAuthModal();
+    return;
+  }
+  openManualSyncModal();
 }
 
 // Iniciar supabase al cargar
