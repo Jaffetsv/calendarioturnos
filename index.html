@@ -126,6 +126,7 @@
     /* Colores de turnos - Nombres en español */
     .bg-Mañana { background: #ffff00 !important; }
     .bg-Tarde { background: #fbcfe8 !important; }
+    .bg-CENA { background: #d8b4fe !important; border: 1px solid #c4b5fd; color: #111827 !important; }
 .bg-L { background: var(--white) !important; border: 1px solid #e5e7eb; }
     .bg-Vacaciones { background: #fed7aa !important; }
     .bg-Cumpleaños { background: #f9a8d4 !important; }
@@ -194,18 +195,22 @@
       margin: 6px auto 8px;
       width: calc(100% - 10px);
       text-align: left;
-      color: #111827;
+      color: #0f172a;
       font-weight: 700;
-      background: rgba(255,255,255,0.92);
-      border-radius: 8px;
-      padding: 6px 8px;
-      border: 1px solid rgba(0,0,0,0.10);
+      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,250,252,0.9));
+      border-radius: 7px;
+      padding: 6px 8px 6px 9px;
+      border: 1px solid rgba(15,23,42,0.10);
+      border-left: 3px solid rgba(37,99,235,0.48);
       white-space: normal;
-      overflow: visible;
+      overflow: hidden;
       text-overflow: clip;
-      line-height: 1.15;
+      line-height: 1.2;
       word-break: break-word;
-      box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 12px rgba(15,23,42,0.06);
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
     }
 
     @media (max-width: 640px) {
@@ -213,8 +218,40 @@
         font-size: 8px;
         bottom: 2px;
         width: 95%;
-        padding: 1px 3px;
+        padding: 3px 5px;
+        -webkit-line-clamp: 3;
       }
+    }
+
+    .history-item {
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 0 2px 10px rgba(15,23,42,0.04);
+    }
+    .history-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 900;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+    .image-import-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      background: #f5f3ff;
+      color: #5b21b6;
+      padding: 4px 9px;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
     }
     
     /* Notas para mixto - MEJORADO */
@@ -299,6 +336,15 @@
 
     .modal.active {
       display: flex;
+    }
+
+    .modal-scroll-shell {
+      width: 100%;
+      max-height: calc(100vh - 24px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
 
     /* ===== TOAST ===== */
@@ -791,6 +837,7 @@
       cursor: pointer;
       font: inherit;
       font-weight: 900;
+      line-height: 1.05;
     }
     .month-picker-trigger:focus-visible {
       outline: 2px solid rgba(255,255,255,0.45);
@@ -798,26 +845,31 @@
       border-radius: 10px;
     }
     #currentYearLabel {
-      font-size: 13px;
-      line-height: 1;
-      font-weight: 800;
-      color: rgba(255,255,255,0.68);
-      letter-spacing: 0.04em;
-    }
-    .month-year-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      min-width: 0;
-      flex-wrap: nowrap;
-    }
-    .month-year-sep {
       font-size: 24px;
-      line-height: 1;
+      line-height: 1.05;
       font-weight: 900;
       color: #ffffff;
+      letter-spacing: 0.01em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .month-year-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-width: 0;
+      flex-wrap: nowrap;
+      line-height: 1.05;
+    }
+    .month-year-sep {
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 800;
+      color: rgba(255,255,255,0.78);
       flex-shrink: 0;
+      transform: translateY(-1px);
     }
     .month-today-btn {
       border: none;
@@ -862,8 +914,11 @@
     #calendar {
       flex: 1 1 auto;
       min-height: 0;
+      height: var(--calendar-grid-height, auto);
+      max-height: var(--calendar-grid-height, none);
       align-content: stretch;
       grid-auto-rows: var(--calendar-row-height, 1fr);
+      overflow: hidden;
     }
     .day-cell {
       min-height: var(--calendar-row-height, 1fr) !important;
@@ -925,11 +980,11 @@
     <div class="flex flex-1 min-w-0 flex-col items-center justify-center text-center">
       <div class="month-year-row">
         <button type="button" id="monthTriggerBtn" class="month-picker-trigger truncate" onclick="openMonthPicker()" aria-label="Seleccionar mes">
-          <span id="currentMonthLabel" class="truncate" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1;display:inline-block;">Marzo</span>
+          <span id="currentMonthLabel" class="truncate" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1.05;display:inline-flex;align-items:center;">Marzo</span>
         </button>
         <span class="month-year-sep" aria-hidden="true">/</span>
         <button type="button" id="yearTriggerBtn" class="month-picker-trigger" onclick="openYearPicker()" aria-label="Seleccionar año">
-          <span id="currentYearLabel" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1;display:inline-block;">2026</span>
+          <span id="currentYearLabel" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1.05;display:inline-flex;align-items:center;">2026</span>
         </button>
       </div>
       <div class="mt-1 flex items-center justify-center">
@@ -975,7 +1030,8 @@
     <!-- EDICIÓN -->
     <div class="bg-white/5 rounded-2xl p-3 mb-2">
       <div class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2">Modo edición</div>
-      <button id="unlockBtn" onclick="toggleEditMode(); closeMenu();" class="w-full p-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-black text-[11px]">🔒 Bloquear / Desbloquear</button>
+      <button id="unlockBtn" onclick="toggleEditMode(); closeMenu();" class="w-full p-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-black text-[11px] mb-2">🔒 Bloquear / Desbloquear</button>
+      <button onclick="openBulkEditModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px]">🧩 Herramientas por rango</button>
     </div>
 
     <!-- DATOS -->
@@ -984,6 +1040,7 @@
       <button onclick="openProfilesModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px] mb-2">👤 Perfiles de usuario</button>
       <button onclick="openImportModal(); closeMenu();" class="w-full p-3 bg-sky-700 hover:bg-sky-800 rounded-xl font-black text-[11px] mb-2">📥 Importar Excel</button>
       <button onclick="openImageImportModal(); closeMenu();" class="w-full p-3 bg-violet-700 hover:bg-violet-800 rounded-xl font-black text-[11px] mb-2">📷 Importar desde Imagen</button>
+      <button onclick="openChangeHistoryModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px] mb-2">🕓 Historial / bitacora</button>
       <button onclick="showExportModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px]">📋 Exportar calendario</button>
     </div>
 
@@ -1645,66 +1702,129 @@
   </div>
 </div>
 
-<!-- Modal Profiles - CORREGIDO: Nombres visibles en selects -->
-<div id="profilesModal" class="modal" style="overflow-y:auto;">
-  <div class="bg-white w-full max-w-3xl rounded-3xl md:rounded-[40px] p-4 md:p-6 lg:p-8 shadow-2xl mx-2 my-auto">
-    <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+<!-- Modal Historial / Bitacora -->
+<div id="changeHistoryModal" class="modal">
+  <div class="bg-white w-full max-w-3xl rounded-3xl md:rounded-[40px] p-4 md:p-6 shadow-2xl mx-2 max-h-[90vh] overflow-y-auto overscroll-contain">
+    <div class="flex items-start justify-between gap-3 mb-4">
       <div>
-        <h3 class="font-black uppercase text-base md:text-lg">👤 Gestión de Perfiles</h3>
-        <p class="text-[11px] text-gray-500 font-bold">Crear, editar, asignar localidad o eliminar perfiles.</p>
+        <div class="w-12 h-12 rounded-full bg-gradient-to-r from-slate-700 to-indigo-700 mb-3 flex items-center justify-center text-white text-xl">🕓</div>
+        <h3 class="font-black uppercase text-base md:text-lg">Historial / bitacora</h3>
+        <p class="text-[11px] text-gray-500 font-bold">Cambios recientes guardados en esta base y sincronizados con la nube.</p>
       </div>
-      <div class="flex gap-2 flex-wrap">
-        <button onclick="detectDuplicateProfiles()" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase whitespace-nowrap">🔍 Detectar duplicados</button>
-        <button onclick="deleteAllProfilesExceptAdmin()" class="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase whitespace-nowrap">🧹 Eliminar todos (dejar ADMIN)</button>
-        <button onclick="closeProfilesModal()" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase whitespace-nowrap">Cerrar</button>
+      <button onclick="closeChangeHistoryModal()" class="w-10 h-10 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-black">×</button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+      <div>
+        <label class="text-[11px] font-bold text-gray-600 block mb-1">Filtro</label>
+        <select id="historyFilter" class="w-full bg-gray-50 border-gray-200 text-gray-900" onchange="renderChangeHistory()">
+          <option value="all">Todos los perfiles</option>
+          <option value="current">Perfil actual</option>
+          <option value="calendar">Solo calendario</option>
+        </select>
+      </div>
+      <div class="md:col-span-2">
+        <label class="text-[11px] font-bold text-gray-600 block mb-1">Buscar</label>
+        <input id="historySearch" type="text" placeholder="Nombre, turno, fecha, accion..." oninput="renderChangeHistory()" class="w-full bg-gray-50 border-gray-200 text-gray-900">
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-3xl p-4">
-        <h4 class="text-[12px] font-black text-gray-700 uppercase mb-3">➕ Crear perfil</h4>
-        <div class="space-y-3">
-          <input id="createName" type="text" placeholder="Nombre completo" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900">
-          <input id="createPin" type="password" placeholder="PIN (4 dígitos)" maxlength="4" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900">
-          <div>
-            <label class="text-[11px] font-bold text-gray-600 block mb-2">Localidad</label>
-            <select id="createLoc" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900"></select>
+    <div class="flex flex-col md:flex-row gap-2 mb-4">
+      <button onclick="renderChangeHistory()" class="flex-1 p-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-black uppercase text-[11px]">Actualizar</button>
+      <button onclick="exportChangeHistory()" class="flex-1 p-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[11px]">Exportar JSON</button>
+      <button onclick="trimChangeHistory(true)" class="flex-1 p-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-black uppercase text-[11px]">Limpiar antiguas</button>
+    </div>
+
+    <div id="historyStats" class="mb-3 text-[11px] font-black text-gray-500"></div>
+    <div id="historyList" class="space-y-3 max-h-[54vh] overflow-y-auto pr-1"></div>
+  </div>
+</div>
+
+<!-- Modal Profiles - CORREGIDO: Nombres visibles en selects -->
+<div id="profilesModal" class="modal" style="padding:12px;align-items:flex-start;justify-content:center;">
+  <div class="modal-scroll-shell">
+    <div class="bg-white w-full max-w-3xl rounded-3xl md:rounded-[40px] p-4 md:p-6 lg:p-8 shadow-2xl mx-auto my-3 md:my-6 max-h-[calc(100vh-24px)] overflow-y-auto overscroll-contain" style="-webkit-overflow-scrolling:touch;touch-action:pan-y;position:relative;">
+      <button onclick="closeProfilesModal()" aria-label="Cerrar" class="absolute top-3 right-3 md:top-4 md:right-4 w-11 h-11 rounded-2xl bg-gray-100 hover:bg-gray-200 border border-gray-200 flex items-center justify-center text-gray-700 text-2xl leading-none font-black">✕</button>
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3 pr-12">
+        <div>
+          <h3 class="font-black uppercase text-base md:text-lg">👤 Gestión de Perfiles</h3>
+          <p class="text-[11px] text-gray-500 font-bold">Crear, editar, asignar localidad o eliminar perfiles.</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="detectDuplicateProfiles()" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase whitespace-nowrap">🔍 Detectar duplicados</button>
+          <button onclick="deleteAllProfilesExceptAdmin()" class="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase whitespace-nowrap">🧹 Eliminar todos (dejar ADMIN)</button>
+          <button onclick="closeProfilesModal()" class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase whitespace-nowrap">Cerrar</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-3xl p-4">
+          <h4 class="text-[12px] font-black text-gray-700 uppercase mb-3">➕ Crear perfil</h4>
+          <div class="space-y-3">
+            <input id="createName" type="text" placeholder="Nombre completo" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900">
+            <input id="createPin" type="password" placeholder="PIN (4 dígitos)" maxlength="4" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900">
+            <div>
+              <label class="text-[11px] font-bold text-gray-600 block mb-2">Localidad</label>
+              <select id="createLoc" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900"></select>
+            </div>
+            <button onclick="createProfile()" class="w-full p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black uppercase text-[11px]">
+              Crear
+            </button>
           </div>
-          <button onclick="createProfile()" class="w-full p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black uppercase text-[11px]">
-            Crear
-          </button>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-3xl p-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
+            <h4 class="text-[12px] font-black text-gray-700 uppercase">Perfiles existentes</h4>
+            <button onclick="renderProfilesList()" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase whitespace-nowrap">Actualizar</button>
+          </div>
+          <div id="profilesList" class="max-h-[300px] md:max-h-[360px] overflow-y-auto overscroll-contain space-y-2" style="-webkit-overflow-scrolling:touch;touch-action:pan-y;"></div>
         </div>
       </div>
 
-      <div class="bg-white border border-gray-200 rounded-3xl p-4">
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
-          <h4 class="text-[12px] font-black text-gray-700 uppercase">Perfiles existentes</h4>
-          <button onclick="renderProfilesList()" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase whitespace-nowrap">Actualizar</button>
-        </div>
-        <div id="profilesList" class="max-h-[300px] md:max-h-[360px] overflow-y-auto space-y-2"></div>
+      <!-- Sección de duplicados -->
+      <div id="duplicateProfilesSection" class="hidden mt-4 bg-amber-50 border border-amber-200 rounded-3xl p-4">
+        <h4 class="text-[12px] font-black text-amber-800 uppercase mb-3">⚠️ Perfiles Duplicados Detectados</h4>
+        <div id="duplicateProfilesList" class="space-y-3"></div>
       </div>
-    </div>
-
-    <!-- Sección de duplicados -->
-    <div id="duplicateProfilesSection" class="hidden mt-4 bg-amber-50 border border-amber-200 rounded-3xl p-4">
-      <h4 class="text-[12px] font-black text-amber-800 uppercase mb-3">⚠️ Perfiles Duplicados Detectados</h4>
-      <div id="duplicateProfilesList" class="space-y-3"></div>
     </div>
   </div>
 </div>
 
 <!-- Modal Importar desde Imagen -->
 <div id="imageImportModal" class="modal">
-  <div class="bg-white w-full max-w-2xl rounded-3xl md:rounded-[40px] p-4 md:p-6 shadow-2xl mx-2 max-h-[90vh] overflow-y-auto overscroll-contain">
+  <div class="bg-white w-full max-w-3xl rounded-3xl md:rounded-[40px] p-4 md:p-6 shadow-2xl mx-2 max-h-[90vh] overflow-y-auto overscroll-contain">
     <div class="w-14 h-14 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 mx-auto mb-4 flex items-center justify-center">
       <span class="text-white text-2xl">📷</span>
     </div>
     <h3 class="font-black text-center uppercase text-base mb-1">Importar desde Imagen</h3>
-    <p class="text-[11px] text-gray-500 font-bold text-center mb-4">Sube una foto o captura del calendario. El OCR leerá los turnos del texto visible.</p>
+    <p class="text-[11px] text-gray-500 font-bold text-center mb-4">Ideal para calendarios tipo captura. Detecta el nombre dentro de cada día y propone el turno para el perfil actual.</p>
 
     <div class="space-y-4">
-      <!-- Selector de mes/año -->
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 block mb-1">Tipo de imagen</label>
+          <select id="imgImportKind" class="w-full bg-gray-50 border-gray-200 text-gray-900" onchange="syncImageImportModeUI()">
+            <option value="roster" selected>Planilla completa: nombre / codigo / turnos</option>
+            <option value="profile">Calendario visual del perfil actual</option>
+          </select>
+        </div>
+        <div class="rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3 text-[10px] font-bold text-violet-800">
+          En planilla completa selecciona el mes; si la segunda columna trae codigo de empleado, se ignora y los turnos inician despues.
+        </div>
+      </div>
+
+      <div id="imgImportProfileHint" class="rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3">
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div class="text-[10px] font-black uppercase tracking-wide text-violet-500">Perfil actual</div>
+            <div id="imgImportProfileName" class="text-[12px] font-black text-violet-900">—</div>
+          </div>
+          <div class="text-[10px] font-bold text-violet-700">La coincidencia prioriza apellido(s) y muestra vista previa antes de aplicar.</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
           <label class="text-[11px] font-bold text-gray-600 block mb-1">Mes</label>
           <select id="imgImportMonth" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
@@ -1713,49 +1833,133 @@
           <label class="text-[11px] font-bold text-gray-600 block mb-1">Año</label>
           <select id="imgImportYear" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
         </div>
+        <div id="imgImportShiftWrap">
+          <label class="text-[11px] font-bold text-gray-600 block mb-1">Turno a aplicar</label>
+          <select id="imgImportShift" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 block mb-1">Modo</label>
+          <select id="imgImportMode" class="w-full bg-gray-50 border-gray-200 text-gray-900">
+            <option value="replace">Reemplazar días detectados</option>
+            <option value="merge">Solo llenar días vacíos / libres</option>
+          </select>
+        </div>
       </div>
 
-      <!-- Archivo de imagen -->
       <div>
         <label class="text-[11px] font-bold text-gray-600 block mb-2">Imagen (JPG, PNG, BMP, TIFF)</label>
-        <input type="file" id="imageImportFile" accept="image/*" class="w-full bg-gray-50 border-gray-200"
-          onchange="previewImportImage(this)">
+        <input type="file" id="imageImportFile" accept="image/*" class="w-full bg-gray-50 border-gray-200" onchange="previewImportImage(this)">
       </div>
 
-      <!-- Preview -->
-      <div id="imgPreviewBox" class="hidden">
-        <img id="imgPreview" class="w-full rounded-2xl border border-gray-200 max-h-48 object-contain bg-gray-50"/>
+      <div id="imgPreviewBox" class="hidden space-y-2">
+        <img id="imgPreview" class="w-full rounded-2xl border border-gray-200 max-h-52 object-contain bg-gray-50"/>
+        <p class="text-[10px] font-bold text-gray-400">Consejo: mientras más recta y nítida esté la captura, mejor detectará los días y apellidos.</p>
       </div>
 
-      <!-- Botón OCR -->
       <button onclick="runImageOCR()" class="w-full p-3 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black uppercase text-[11px]">
-        🔎 Leer imagen (OCR)
+        🔎 Analizar imagen y detectar días
       </button>
 
-      <!-- Estado OCR -->
       <div id="ocrStatus" class="text-[11px] font-bold text-center text-gray-500 hidden"></div>
 
-      <!-- Resultados -->
       <div id="ocrResultsBox" class="hidden bg-gray-50 border border-gray-200 rounded-2xl p-4">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-[11px] font-black text-gray-700 uppercase">Turnos detectados</p>
-          <span id="ocrDetectedCount" class="text-[10px] font-bold text-gray-500"></span>
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-3">
+          <div>
+            <p class="text-[11px] font-black text-gray-700 uppercase">Días detectados</p>
+            <span id="ocrDetectedCount" class="text-[10px] font-bold text-gray-500"></span>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" onclick="setAllOCRSelections(true)" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-[10px] font-black uppercase text-gray-700">Todos</button>
+            <button type="button" onclick="setAllOCRSelections(false)" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-[10px] font-black uppercase text-gray-700">Ninguno</button>
+          </div>
         </div>
-        <div id="ocrResultsList" class="max-h-[200px] overflow-y-auto space-y-1 mb-3"></div>
 
-        <!-- Texto crudo OCR (colapsable) -->
+        <div id="ocrAnalysisSummary" class="hidden mb-3 rounded-2xl border border-indigo-100 bg-white px-3 py-2 text-[10px] font-bold text-indigo-700"></div>
+        <div id="ocrResultsList" class="max-h-[260px] overflow-y-auto space-y-2 mb-3"></div>
+
+        <div id="imageImportTurnsBox" class="hidden mb-3 rounded-2xl border border-violet-100 bg-white p-3">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
+            <div>
+              <p class="text-[11px] font-black text-gray-700 uppercase">Codigos de turno detectados</p>
+              <p class="text-[10px] font-bold text-gray-500">Asigna categoria para los codigos nuevos antes de aplicar.</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="applyImageImportCategoryToAll()" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase">Aplicar</button>
+              <select id="imageImportDefaultCategory" class="bg-gray-50 border border-gray-200 rounded-xl p-2 text-[11px] font-bold text-gray-900"></select>
+            </div>
+          </div>
+          <div id="imageImportTurnsList" class="max-h-[150px] overflow-y-auto space-y-2"></div>
+        </div>
+
         <details class="mt-2">
           <summary class="text-[10px] font-black text-gray-400 uppercase cursor-pointer">Ver texto OCR crudo</summary>
           <pre id="ocrRawText" class="text-[9px] text-gray-500 font-mono mt-2 whitespace-pre-wrap max-h-32 overflow-y-auto bg-white border border-gray-100 rounded-xl p-2"></pre>
         </details>
 
-        <button onclick="applyOCRResults()" class="w-full mt-3 p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase text-[11px]">
-          🚀 Aplicar turnos detectados
+        <button id="imgImportApplyBtn" onclick="applyImageImportResults()" class="w-full mt-3 p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase text-[11px]">
+          🚀 Aplicar días seleccionados
         </button>
       </div>
 
       <button onclick="closeImageImportModal()" class="w-full p-3 text-gray-400 font-bold uppercase text-[10px] hover:text-gray-600">
         Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal herramientas por rango -->
+<div id="bulkEditModal" class="modal">
+  <div class="bg-white w-full max-w-xl rounded-3xl md:rounded-[40px] p-4 md:p-6 shadow-2xl mx-2 max-h-[90vh] overflow-y-auto overscroll-contain">
+    <div class="flex items-start justify-between gap-3 mb-4">
+      <div>
+        <div class="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 mb-3 flex items-center justify-center text-white text-xl">🧩</div>
+        <h3 class="font-black uppercase text-base md:text-lg">Herramientas por rango</h3>
+        <p class="text-[11px] text-gray-500 font-bold">Aplica cambios al perfil actual sin abrir cada dia.</p>
+      </div>
+      <button onclick="closeBulkEditModal()" class="w-10 h-10 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-black">×</button>
+    </div>
+
+    <div class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 block mb-1">Desde</label>
+          <input id="bulkStartDate" type="date" onchange="syncBulkEditUI()" class="w-full bg-gray-50 border-gray-200 text-gray-900">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 block mb-1">Hasta</label>
+          <input id="bulkEndDate" type="date" onchange="syncBulkEditUI()" class="w-full bg-gray-50 border-gray-200 text-gray-900">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-[11px] font-bold text-gray-600 block mb-1">Accion</label>
+          <select id="bulkAction" class="w-full bg-gray-50 border-gray-200 text-gray-900" onchange="syncBulkEditUI()">
+            <option value="shift">Aplicar turno</option>
+            <option value="paste">Pegar portapapeles</option>
+            <option value="clear">Dejar libre (L)</option>
+          </select>
+        </div>
+        <div id="bulkShiftWrap">
+          <label class="text-[11px] font-bold text-gray-600 block mb-1">Turno</label>
+          <select id="bulkShift" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
+        </div>
+      </div>
+
+      <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4">
+        <p class="text-[11px] font-black text-gray-600 uppercase mb-2">Modo</p>
+        <div class="space-y-2 text-[11px] font-bold text-gray-700">
+          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="bulkMode" value="replace" onchange="syncBulkEditUI()" checked> Reemplazar rango</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="bulkMode" value="merge" onchange="syncBulkEditUI()"> Solo dias vacios / libres</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="bulkWeekdaysOnly" onchange="syncBulkEditUI()"> Solo lunes a viernes</label>
+        </div>
+      </div>
+
+      <div id="bulkSummary" class="text-[11px] font-bold text-gray-500 bg-white border border-gray-200 rounded-2xl p-3"></div>
+
+      <button onclick="applyBulkEdit()" class="w-full p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-[11px]">
+        Aplicar cambios
       </button>
     </div>
   </div>
@@ -1789,6 +1993,8 @@ try {
 }
 
 normalizeEnabledFlags();
+ensureCanonicalCoreShiftsAllUsers();
+migrateLegacyShiftPropertyEntriesAllUsers();
 
 function normalizeEnabledFlags(){
   try{
@@ -1813,6 +2019,7 @@ function createDefaultDB() {
   return {
     version: 23,
     current: 'ADMIN',
+    changeLog: [],
     localities: ['General','San Salvador','Cojutepeque','Lourdes, Colón','La Libertad','Quezaltepeque','Rosario de la Paz','Zacatecoluca','San Vicente','Santa Tecla','San Juan Opico'],
     holidays: {},
     categories: {
@@ -1837,6 +2044,8 @@ function createDefaultDB() {
         config:{
           'Mañana': { label:'Mañana', color:'Mañana', cat:'work', in:'06:00', out:'14:00', enabled:true },
           'Tarde': { label:'Tarde', color:'Tarde', cat:'work', in:'14:00', out:'22:00', enabled:true },
+          'CENA': { label:'CENA', note:'06:00 a 14:00', color:'CENA', cat:'work', in:'06:00', out:'14:00', enabled:true },
+          '16hrs': { label:'16hrs', note:'06:00 a 22:00', color:'16hrs', cat:'guardia', in:'06:00', out:'22:00', enabled:true },
           'Noche': { label:'Noche', color:'indigo', cat:'work', in:'22:00', out:'06:00', enabled:true },
           'Diurno': { label:'Diurno', color:'ambar', cat:'office', in:'08:00', out:'17:00', enabled:true },
           'Cumpleaños': { label:'Cumpleaños', color:'Cumpleaños', cat:'cumple', in:'00:00', out:'00:00', enabled:false },
@@ -1850,61 +2059,119 @@ function createDefaultDB() {
 }
 
 
-// Asegurar consistencia: el turno L siempre debe tener nota "LIBRE" en todos los perfiles
-try{
-  Object.values((db && db.users) ? db.users : {}).forEach(u=>{
-    if(!u) return;
-    if(!u.config) u.config = {};
-    if(!u.config.L) u.config.L = { label:'L', color:'L', cat:'off', in:'00:00', out:'00:00', enabled:true };
-    u.config.L.note = 'LIBRE';
-    u.config.L.in = '06:00';
-    u.config.L.out = '14:00';
+// Asegurar consistencia de turnos base en todos los perfiles
+function ensureCanonicalCoreShiftsForUser(user){
+  if(!user) return;
+  if(!user.config) user.config = {};
+
+  const defs = {
+    'Mañana': { label:'Mañana', color:'Mañana', cat:'work', in:'06:00', out:'14:00', enabled:true },
+    'Tarde': { label:'Tarde', color:'Tarde', cat:'work', in:'14:00', out:'22:00', enabled:true },
+    'CENA': { label:'CENA', note:'06:00 a 14:00', color:'CENA', cat:'work', in:'06:00', out:'14:00', enabled:true },
+    '16hrs': { label:'16hrs', note:'06:00 a 22:00', color:'16hrs', cat:'guardia', in:'06:00', out:'22:00', enabled:true },
+    'L': { label:'L', note:'LIBRE', color:'L', cat:'off', in:'06:00', out:'14:00', enabled:true },
+    'Vacaciones': { label:'Vac', color:'Vacaciones', cat:'off', in:'00:00', out:'00:00', enabled:true },
+    'Ausencia': { label:'Ausencia', color:'Ausencia', cat:'ausencia', in:'00:00', out:'00:00', enabled:false }
+  };
+
+  Object.keys(defs).forEach(key => {
+    const def = defs[key];
+    if(!user.config[key]){
+      user.config[key] = { ...def };
+      return;
+    }
+    const cfg = user.config[key];
+    Object.keys(def).forEach(prop => {
+      if(cfg[prop] === undefined || cfg[prop] === null || cfg[prop] === ''){
+        cfg[prop] = def[prop];
+      }
+    });
   });
 
-// Limpieza: eliminar turnos/categorías específicos (CENA, 16hrs) para generalizar la app.
-// Si existían en datos históricos, se convierten a LIBRE (L).
-try{
-  Object.values((db && db.users) ? db.users : {}).forEach(u=>{
-    if(!u) return;
-    if(!u.config) u.config = {};
-    // eliminar definiciones
-    if(u.config['CENA']) delete u.config['CENA'];
-    if(u.config['16hrs']) delete u.config['16hrs'];
-    // migrar días guardados
-    if(u.data){
-      Object.keys(u.data).forEach(k=>{
-        const d = u.data[k];
-        if(!d) return;
-        if(d.mode === 'simple'){
-          if(d.s === 'CENA' || d.s === '16hrs'){
-            d.s = 'L';
-            d.tIn = '06:00'; d.tOut = '14:00';
-            d.h = 8;
-            d.n = d.n && d.n.trim() ? d.n : 'LIBRE';
-          }
-        } else if(d.mode === 'mixto'){
-          let changed=false;
-          if(d.t === 'CENA' || d.t === '16hrs'){ d.t='L'; changed=true; }
-          if(d.b === 'CENA' || d.b === '16hrs'){ d.b='L'; changed=true; }
-          if(changed){
-            // mantener notas si existen; si no, poner LIBRE
-            d.noteTop = d.noteTop && d.noteTop.trim() ? d.noteTop : 'LIBRE';
-            d.noteBottom = d.noteBottom && d.noteBottom.trim() ? d.noteBottom : 'LIBRE';
-            d.n = `${d.noteTop} | ${d.noteBottom}`;
-          }
+  user.config.L.note = 'LIBRE';
+  user.config.L.in = '06:00';
+  user.config.L.out = '14:00';
+  user.config.CENA.label = 'CENA';
+  user.config.CENA.note = '06:00 a 14:00';
+  user.config.CENA.in = '06:00';
+  user.config.CENA.out = '14:00';
+  user.config.CENA.color = user.config.CENA.color || 'CENA';
+  user.config.CENA.cat = user.config.CENA.cat || 'work';
+  user.config['16hrs'].label = '16hrs';
+  user.config['16hrs'].note = '06:00 a 22:00';
+  user.config['16hrs'].in = '06:00';
+  user.config['16hrs'].out = '22:00';
+  user.config['16hrs'].color = user.config['16hrs'].color || '16hrs';
+  user.config['16hrs'].cat = user.config['16hrs'].cat || 'guardia';
+
+  ['Mañana','Tarde','CENA','16hrs','L','Vacaciones'].forEach(key => {
+    if(user.config[key]) user.config[key].enabled = true;
+  });
+}
+
+function ensureCanonicalCoreShiftsAllUsers(){
+  try{
+    if(!db || !db.users) return;
+    Object.values(db.users).forEach(user => ensureCanonicalCoreShiftsForUser(user));
+  }catch(e){
+    console.warn('ensureCanonicalCoreShiftsAllUsers error', e);
+  }
+}
+
+function buildSimpleDayFromShiftKeyForUser(user, shiftKey, existingInfo){
+  ensureCanonicalCoreShiftsForUser(user);
+  const sk = String(shiftKey || 'L').trim() || 'L';
+  const cfg = user?.config?.[sk] || user?.config?.L || { in:'00:00', out:'00:00', note:'', label:sk };
+  const tIn = cfg.in || '00:00';
+  const tOut = cfg.out || '00:00';
+  const hrs = calculateHours(tIn, tOut);
+  const note = (cfg.note || '').toString().trim() || ((tIn !== '00:00' || tOut !== '00:00') ? `${tIn} a ${tOut}` : (cfg.label || sk || '').toUpperCase());
+  const data = { mode:'simple', s: sk, tIn, tOut, h: hrs, n: note };
+  if(existingInfo && existingInfo.photoData) data.photoData = existingInfo.photoData;
+  if(existingInfo && existingInfo.imageImportMeta) data.imageImportMeta = existingInfo.imageImportMeta;
+  return data;
+}
+
+function migrateLegacyShiftPropertyEntriesAllUsers(){
+  try{
+    if(!db || !db.users) return;
+    Object.values(db.users).forEach(user => {
+      ensureCanonicalCoreShiftsForUser(user);
+      if(!user || !user.data) return;
+      Object.keys(user.data).forEach(key => {
+        const d = user.data[key];
+        if(!d || typeof d !== 'object') return;
+
+        if((!d.mode || !d.s) && typeof d.shift === 'string' && d.shift.trim()){
+          const rebuilt = buildSimpleDayFromShiftKeyForUser(user, d.shift.trim(), d);
+          if(String(d.n || d.note || '').trim()) rebuilt.n = String(d.n || d.note).trim();
+          if(d.imageImportMeta) rebuilt.imageImportMeta = d.imageImportMeta;
+          user.data[key] = rebuilt;
+          return;
+        }
+
+        if(d.mode === 'simple' && d.s){
+          const rebuilt = buildSimpleDayFromShiftKeyForUser(user, d.s, d);
+          user.data[key] = {
+            ...rebuilt,
+            ...d,
+            mode:'simple',
+            s: d.s,
+            tIn: d.tIn || rebuilt.tIn,
+            tOut: d.tOut || rebuilt.tOut,
+            h: (Number(d.h) > 0 ? Number(d.h) : rebuilt.h),
+            n: String(d.n || '').trim() || rebuilt.n
+          };
         }
       });
-    }
-  });
-
-  // eliminar categoría 'CENA' si existía
-  if(db && db.categories){
-    if(db.categories.sena) delete db.categories.sena;
+    });
+  }catch(e){
+    console.warn('migrateLegacyShiftPropertyEntriesAllUsers error', e);
   }
-}catch(e){}
+}
 
-
-}catch(e){}
+ensureCanonicalCoreShiftsAllUsers();
+migrateLegacyShiftPropertyEntriesAllUsers();
 
 function saveDB(){ 
   try {
@@ -1913,6 +2180,157 @@ function saveDB(){
     console.error('Error guardando DB:', e);
   }
 }
+
+// =========================================================
+// Change history / bitacora
+// =========================================================
+const CHANGE_LOG_LIMIT = 350;
+
+function ensureChangeLog(){
+  try{
+    if(!db || typeof db !== 'object') return;
+    if(!Array.isArray(db.changeLog)) db.changeLog = [];
+    db.changeLog = db.changeLog
+      .filter(x => x && typeof x === 'object')
+      .slice(0, CHANGE_LOG_LIMIT);
+  }catch(e){
+    console.warn('ensureChangeLog error', e);
+  }
+}
+
+function summarizeDayDataForHistory(info, userKey){
+  try{
+    if(!info || typeof info !== 'object') return 'Vacio';
+    const user = db.users?.[userKey || db.current] || db.users?.[db.current] || {};
+    const shifts = user.config || {};
+    if(info.mode === 'mixto'){
+      const top = shifts[info.t]?.label || info.t || 'L';
+      const bottom = shifts[info.b]?.label || info.b || 'L';
+      const notes = [info.noteTop, info.noteBottom].filter(Boolean).join(' / ');
+      return `${top} + ${bottom}${notes ? ' | ' + notes : ''}`;
+    }
+    const key = info.s || info.shift || 'L';
+    const label = shifts[key]?.label || key;
+    const note = String(info.n || info.note || '').trim();
+    return `${label}${note ? ' | ' + note : ''}`;
+  }catch(e){
+    return 'Cambio de dia';
+  }
+}
+
+function historySameDay(a, b){
+  try{ return JSON.stringify(a || null) === JSON.stringify(b || null); }catch(e){ return false; }
+}
+
+function recordChange(action, meta={}){
+  try{
+    ensureChangeLog();
+    const entry = {
+      id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
+      ts: new Date().toISOString(),
+      device: (typeof getDeviceId === 'function') ? getDeviceId() : 'local',
+      actor: db.current || 'ADMIN',
+      action: String(action || 'Cambio'),
+      profile: meta.profile || db.current || '',
+      date: meta.date || '',
+      summary: meta.summary || '',
+      details: meta.details || '',
+      before: meta.before || '',
+      after: meta.after || '',
+      count: Number(meta.count || 0)
+    };
+    db.changeLog.unshift(entry);
+    if(db.changeLog.length > CHANGE_LOG_LIMIT) db.changeLog.length = CHANGE_LOG_LIMIT;
+  }catch(e){
+    console.warn('recordChange error', e);
+  }
+}
+
+function formatHistoryDate(ts){
+  try{
+    return new Date(ts).toLocaleString('es', { dateStyle:'short', timeStyle:'short' });
+  }catch(e){
+    return ts || '';
+  }
+}
+
+function openChangeHistoryModal(){
+  ensureChangeLog();
+  const modal = document.getElementById('changeHistoryModal');
+  if(modal) modal.classList.add('active');
+  const filter = document.getElementById('historyFilter');
+  if(filter) filter.value = 'all';
+  const search = document.getElementById('historySearch');
+  if(search) search.value = '';
+  renderChangeHistory();
+}
+
+function closeChangeHistoryModal(){
+  const modal = document.getElementById('changeHistoryModal');
+  if(modal) modal.classList.remove('active');
+}
+
+function renderChangeHistory(){
+  ensureChangeLog();
+  const list = document.getElementById('historyList');
+  const stats = document.getElementById('historyStats');
+  if(!list) return;
+  const filter = document.getElementById('historyFilter')?.value || 'all';
+  const q = normalizeImportText(document.getElementById('historySearch')?.value || '');
+  let rows = db.changeLog || [];
+  if(filter === 'current') rows = rows.filter(x => normalizeName(x.profile) === normalizeName(db.current) || normalizeName(x.actor) === normalizeName(db.current));
+  if(filter === 'calendar') rows = rows.filter(x => String(x.action || '').toLowerCase().includes('dia') || String(x.action || '').toLowerCase().includes('rango') || String(x.action || '').toLowerCase().includes('import'));
+  if(q){
+    rows = rows.filter(x => normalizeImportText([x.action,x.profile,x.date,x.summary,x.details,x.before,x.after,x.actor].join(' ')).includes(q));
+  }
+  if(stats) stats.textContent = `${rows.length} entrada(s) visibles de ${(db.changeLog || []).length} guardadas.`;
+  if(!rows.length){
+    list.innerHTML = `<div class="text-center text-[12px] font-bold text-gray-400 py-8">No hay cambios para mostrar.</div>`;
+    return;
+  }
+  list.innerHTML = rows.slice(0, 160).map(entry => `
+    <div class="history-item">
+      <div class="flex flex-wrap items-center gap-2 mb-2">
+        <span class="history-chip">${escapeHTML(entry.action || 'Cambio')}</span>
+        ${entry.profile ? `<span class="text-[10px] font-black text-gray-500">${escapeHTML(entry.profile)}</span>` : ''}
+        ${entry.date ? `<span class="text-[10px] font-black text-gray-400">${escapeHTML(entry.date)}</span>` : ''}
+        <span class="ml-auto text-[10px] font-black text-gray-400">${escapeHTML(formatHistoryDate(entry.ts))}</span>
+      </div>
+      ${entry.summary ? `<div class="text-[12px] font-black text-gray-900 mb-1">${escapeHTML(entry.summary)}</div>` : ''}
+      ${entry.details ? `<div class="text-[11px] font-bold text-gray-600 mb-2">${escapeHTML(entry.details)}</div>` : ''}
+      ${(entry.before || entry.after) ? `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px] font-bold">
+          <div class="rounded-xl bg-red-50 border border-red-100 p-2 text-red-900"><span class="font-black">Antes:</span> ${escapeHTML(entry.before || 'Vacio')}</div>
+          <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-2 text-emerald-900"><span class="font-black">Despues:</span> ${escapeHTML(entry.after || 'Vacio')}</div>
+        </div>` : ''}
+      <div class="mt-2 text-[9px] font-bold text-gray-400">Actor: ${escapeHTML(entry.actor || '')} | Dispositivo: ${escapeHTML(String(entry.device || '').slice(0, 12))}</div>
+    </div>
+  `).join('');
+}
+
+function trimChangeHistory(confirmFirst=false){
+  ensureChangeLog();
+  if(confirmFirst && !confirm('Se conservaran las 150 entradas mas recientes. ¿Continuar?')) return;
+  db.changeLog = (db.changeLog || []).slice(0, 150);
+  saveDB();
+  renderChangeHistory();
+  if(typeof toast === 'function') toast('Bitacora depurada');
+}
+
+function exportChangeHistory(){
+  ensureChangeLog();
+  const blob = new Blob([JSON.stringify(db.changeLog || [], null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `historial-turnos-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+ensureChangeLog();
 
 // =========================================================
 // Import maps
@@ -2207,8 +2625,9 @@ function ensureShiftExistsForUser(userKey, shiftDef, enableNow=false){
   const user = db.users[userKey];
   if(!user || !shiftDef) return;
   if(!user.config[shiftDef.key]){
-    user.config[shiftDef.key] = { label: shiftDef.label, color: shiftDef.color || 'gris', cat: shiftDef.cat || 'hosp', in: shiftDef.in || '00:00', out: shiftDef.out || '00:00', enabled: !!enableNow };
+    user.config[shiftDef.key] = { label: shiftDef.label, color: shiftDef.color || 'gris', cat: shiftDef.cat || 'work', in: shiftDef.in || '00:00', out: shiftDef.out || '00:00', note: shiftDef.note || '', enabled: !!enableNow };
   }
+  if(shiftDef.note && !user.config[shiftDef.key].note) user.config[shiftDef.key].note = shiftDef.note;
   if(enableNow && user.config[shiftDef.key]) user.config[shiftDef.key].enabled = true;
 
 }function ensureImportBaseShiftsForUser(userKey){
@@ -2235,6 +2654,35 @@ function ensureUserExists(nameUpper){
 
 function dayKey(y, m1, d){ 
   return `${y}-${m1}-${d}`; 
+}
+
+function isEffectivelyEmptyDayData(info){
+  if(!info || typeof info !== 'object') return true;
+  const hasPhoto = !!info.photoData;
+  const note = String(info.n || info.note || info.comment || '').trim();
+  const hasMix = info.mode === 'mixto' || !!(info.t || info.b || info.top || info.bottom || info.noteTop || info.noteBottom);
+  const shift = String(info.s || info.shift || '').trim();
+  if(hasPhoto || note || hasMix) return false;
+  return !shift || shift === 'L';
+}
+
+function getDayPrimaryShiftKey(info){
+  if(!info || typeof info !== 'object') return 'L';
+  if(info.mode === 'mixto'){
+    return String(info.t || info.top || info.b || info.bottom || 'L').trim() || 'L';
+  }
+  return String(info.s || info.shift || 'L').trim() || 'L';
+}
+
+function getDayPrimaryShiftLabel(info, SHIFTS){
+  const key = getDayPrimaryShiftKey(info);
+  return (SHIFTS && SHIFTS[key] && SHIFTS[key].label) ? SHIFTS[key].label : key || 'L';
+}
+
+function getDayPrimaryShiftColor(info, SHIFTS){
+  const key = getDayPrimaryShiftKey(info);
+  const shift = (SHIFTS && SHIFTS[key]) ? SHIFTS[key] : null;
+  return getColorValue((shift && shift.color) ? shift.color : key);
 }
 
 function getColorValue(colorName){
@@ -2279,6 +2727,7 @@ function escapeHTML(s){
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+function escapeHtml(s){ return escapeHTML(s); }
 
 // =========================================================
 // Colores de turnos (para selector y personalización)
@@ -2723,12 +3172,12 @@ function fitCalendarToViewport(){
   const weekHeaderH = weekHeader.getBoundingClientRect().height || 0;
   const bottomTabsH = bottomTabs.getBoundingClientRect().height || 0;
 
-  const available = Math.floor(viewportH - viewTop - weekHeaderH - bottomTabsH - 8);
+  const available = Math.floor(viewportH - viewTop - weekHeaderH - bottomTabsH - 12);
   if (available <= 0) return;
 
   const rowGap = 1;
   const totalGaps = Math.max(0, rows - 1) * rowGap;
-  const rowHeight = Math.max(68, Math.floor((available - totalGaps) / rows));
+  const rowHeight = Math.max(54, Math.floor((available - totalGaps) / rows));
   const gridHeight = rows * rowHeight + totalGaps;
 
   document.documentElement.style.setProperty('--calendar-row-height', rowHeight + 'px');
@@ -3142,6 +3591,7 @@ function calcSummary(){
 // =========================================================
 function openDay(key, info){
   activeKey = key;
+  deferLocalCloudBanner = true;
   // No dejar el selector de turnos abierto por defecto
   try { if (window._setTurnArea) window._setTurnArea(false); } catch(e) {}
   activePhotoData = (info && info.photoData) ? info.photoData : "";
@@ -3267,6 +3717,10 @@ function closeModal(){
   if (modal) modal.classList.remove('active');
   // Asegura que el selector de turnos no quede abierto entre días
   try { if (window._setTurnArea) window._setTurnArea(false); } catch(e) {}
+  deferLocalCloudBanner = false;
+  if(localCloudUploadPending && !remoteConflictPending){
+    showLocalUploadBanner();
+  }
 }
 
 function setMode(m){
@@ -3537,8 +3991,142 @@ function pasteTo(key){
   const user = db.users[db.current]; if(!user) return;
   const src = clipboardDayData || clipboardShiftOnly;
   if(!src) return;
+  const before = deepCopy(user.data[key] || null);
   user.data[key] = deepCopy(src);
+  recordChange('Pegar dia', {
+    profile: db.current,
+    date: key,
+    summary: `Se pego informacion en ${key}`,
+    before: summarizeDayDataForHistory(before, db.current),
+    after: summarizeDayDataForHistory(user.data[key], db.current)
+  });
   saveDB(); render(); renderSummaryCategories(); calcSummary();
+}
+
+function dateInputFromDate(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function parseDateInputValue(value){
+  const m = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return null;
+  return new Date(parseInt(m[1],10), parseInt(m[2],10)-1, parseInt(m[3],10));
+}
+
+function fillBulkShiftOptions(){
+  const sel = document.getElementById('bulkShift');
+  const user = db.users?.[db.current];
+  if(!sel || !user) return;
+  ensureCanonicalCoreShiftsForUser(user);
+  sel.innerHTML = getVisibleShiftKeys(user).map(k => `<option value="${escapeHTML(k)}">${escapeHTML(user.config[k]?.label || k)}</option>`).join('');
+  if(user.config['L']) sel.value = 'L';
+}
+
+function openBulkEditModal(){
+  if(!isEditMode()){
+    if(typeof toast === 'function') toast('Activa modo edicion para usar herramientas por rango.');
+    else alert('Activa modo edicion.');
+    return;
+  }
+  fillBulkShiftOptions();
+  const start = document.getElementById('bulkStartDate');
+  const end = document.getElementById('bulkEndDate');
+  const y = current.getFullYear();
+  const m = current.getMonth();
+  const defaultStart = activeKey ? parseDateInputValue(activeKey.split('-').map((p,i)=>i===1?String(p).padStart(2,'0'):String(p).padStart(2,'0')).join('-')) : new Date(y, m, 1);
+  const defaultEnd = new Date(y, m + 1, 0);
+  if(start) start.value = dateInputFromDate(defaultStart || new Date(y, m, 1));
+  if(end) end.value = dateInputFromDate(defaultEnd);
+  const action = document.getElementById('bulkAction');
+  if(action) action.value = 'shift';
+  const weekdays = document.getElementById('bulkWeekdaysOnly');
+  if(weekdays) weekdays.checked = false;
+  syncBulkEditUI();
+  document.getElementById('bulkEditModal')?.classList.add('active');
+}
+
+function closeBulkEditModal(){
+  document.getElementById('bulkEditModal')?.classList.remove('active');
+}
+
+function getBulkDateKeys(){
+  const start = parseDateInputValue(document.getElementById('bulkStartDate')?.value);
+  const end = parseDateInputValue(document.getElementById('bulkEndDate')?.value);
+  if(!start || !end) return [];
+  const a = start <= end ? start : end;
+  const b = start <= end ? end : start;
+  const weekdaysOnly = !!document.getElementById('bulkWeekdaysOnly')?.checked;
+  const keys = [];
+  const curDate = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  while(curDate <= b){
+    const dow = curDate.getDay();
+    if(!weekdaysOnly || (dow !== 0 && dow !== 6)){
+      keys.push(dayKey(curDate.getFullYear(), curDate.getMonth()+1, curDate.getDate()));
+    }
+    curDate.setDate(curDate.getDate()+1);
+  }
+  return keys;
+}
+
+function syncBulkEditUI(){
+  const action = document.getElementById('bulkAction')?.value || 'shift';
+  document.getElementById('bulkShiftWrap')?.classList.toggle('hidden', action !== 'shift');
+  const summary = document.getElementById('bulkSummary');
+  if(summary){
+    const keys = getBulkDateKeys();
+    const canPaste = !!(clipboardDayData || clipboardShiftOnly);
+    summary.textContent = action === 'paste' && !canPaste
+      ? 'No hay nada copiado todavia. Copia un dia o turno primero.'
+      : `${keys.length} dia(s) dentro del rango para el perfil ${db.current}.`;
+  }
+}
+
+function applyBulkEdit(){
+  if(!isEditMode()) return alert('Activa modo edicion.');
+  const user = db.users[db.current];
+  if(!user) return;
+  const keys = getBulkDateKeys();
+  if(!keys.length) return alert('Selecciona un rango valido.');
+  const action = document.getElementById('bulkAction')?.value || 'shift';
+  const merge = (document.querySelector('input[name="bulkMode"]:checked')?.value || 'replace') === 'merge';
+  const src = clipboardDayData || clipboardShiftOnly;
+  if(action === 'paste' && !src) return alert('No hay nada copiado para pegar.');
+  const shift = document.getElementById('bulkShift')?.value || 'L';
+  let written = 0, skipped = 0;
+  const beforeFirst = deepCopy(user.data[keys[0]] || null);
+
+  keys.forEach(key => {
+    const prev = user.data[key] || null;
+    if(merge && !isEffectivelyEmptyDayData(prev)){
+      skipped++;
+      return;
+    }
+    if(action === 'paste'){
+      user.data[key] = deepCopy(src);
+    } else if(action === 'clear'){
+      user.data[key] = buildSimpleDayFromShiftKeyForUser(user, 'L', prev || {});
+    } else {
+      user.data[key] = buildSimpleDayFromShiftKeyForUser(user, shift, prev || {});
+    }
+    written++;
+  });
+
+  recordChange('Cambio por rango', {
+    profile: db.current,
+    date: `${keys[0]} a ${keys[keys.length-1]}`,
+    count: written,
+    summary: action === 'paste' ? `Se pego portapapeles en ${written} dia(s)` : action === 'clear' ? `Se dejo libre ${written} dia(s)` : `Se aplico turno ${shift} a ${written} dia(s)`,
+    details: skipped ? `${skipped} dia(s) omitidos por modo combinar.` : '',
+    before: summarizeDayDataForHistory(beforeFirst, db.current),
+    after: action === 'paste' ? summarizeDayDataForHistory(src, db.current) : (action === 'clear' ? 'L | LIBRE' : summarizeDayDataForHistory(buildSimpleDayFromShiftKeyForUser(user, shift), db.current))
+  });
+
+  saveDB();
+  render();
+  renderSummaryCategories();
+  calcSummary();
+  closeBulkEditModal();
+  if(typeof toast === 'function') toast(`Rango actualizado: ${written} dia(s).`);
 }
 
 function hideDayMenu(){
@@ -3576,12 +4164,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const c2 = document.getElementById('actCopyShift');
   const p  = document.getElementById('actPaste');
   const pm = document.getElementById('actPasteMode');
+  const rg = document.getElementById('actRange');
   const cl = document.getElementById('actClear');
 
   if(c1) c1.onclick = ()=>{ if(menuKey){ copyDay(menuKey); } hideDayMenu(); };
   if(c2) c2.onclick = ()=>{ if(menuKey){ copyShift(menuKey); } hideDayMenu(); };
   if(p)  p.onclick  = ()=>{ if(menuKey){ pasteTo(menuKey); } hideDayMenu(); };
   if(pm) pm.onclick = ()=>{ setPasteMode(!pasteMode); hideDayMenu(); };
+  if(rg) rg.onclick = ()=>{ if(menuKey){ activeKey = menuKey; } hideDayMenu(); openBulkEditModal(); };
   if(cl) cl.onclick = ()=>{ clipboardDayData=null; clipboardShiftOnly=null; setPasteMode(false); hideDayMenu(); };
 
   // Modal: botones copiar/pegar
@@ -3615,24 +4205,10 @@ if(btnOpenTurnPicker){
     const user = db.users[db.current];
     if (!user || !activeKey) return;
 
-    // RESETEO A DEFAULT: el día queda explícitamente como L con comentario LIBRE
-    // (no se deja "sin data", para evitar inconsistencias visuales y de exportación)
+    // Solo preparar el día como L dentro del modal.
+    // Se persiste hasta que el usuario presione Guardar.
     const noteLibre = 'LIBRE';
-    user.data[activeKey] = {
-      mode: 'simple',
-      s: 'L',
-      tIn: '00:00',
-      tOut: '00:00',
-      h: 0,
-      n: noteLibre
-    };
-
-    // Quitar foto si existía
-    if (user.data[activeKey].photoData) delete user.data[activeKey].photoData;
     activePhotoData = '';
-
-    // Persistir y resetear UI del modal
-    saveDB();
 
     selS = 'L';
     selT = 'L';
@@ -3682,13 +4258,10 @@ if(btnOpenTurnPicker){
 
     updateShiftCard(); 
     updateNotesPreview();
-    render(); 
-    renderSummaryCategories(); 
-    calcSummary();
 
     try { if (window._setTurnArea) window._setTurnArea(false); } catch(e) {}
 
-    toast('Turno vaciado (L - LIBRE)');
+    toast('Día preparado como L - LIBRE. Presiona Guardar para confirmar.');
   };
 
 // Modal: foto
@@ -3821,13 +4394,23 @@ function saveDay(){
   }
 
   if (activePhotoData) data.photoData = activePhotoData;
+  const previousDay = deepCopy(user.data[activeKey] || null);
   user.data[activeKey] = data;
+  if(!historySameDay(previousDay, data)){
+    recordChange('Editar dia', {
+      profile: db.current,
+      date: activeKey,
+      summary: `Se actualizo ${activeKey}`,
+      before: summarizeDayDataForHistory(previousDay, db.current),
+      after: summarizeDayDataForHistory(data, db.current)
+    });
+  }
+  try { if (window._setTurnArea) window._setTurnArea(false); } catch(e) {}
+  closeModal();
   saveDB();
   render();
   renderSummaryCategories();
   calcSummary();
-  try { if (window._setTurnArea) window._setTurnArea(false); } catch(e) {}
-  closeModal();
 }
 
 // =========================================================
@@ -4011,6 +4594,11 @@ function saveShiftSettings(){
     });
   }
   
+  recordChange('Configurar turnos', {
+    profile: db.current,
+    summary: 'Se actualizaron configuraciones de turnos',
+    details: propagate ? 'Propagado al calendario del mes actual.' : 'Sin propagacion al calendario.'
+  });
   saveDB();
   render();
   renderSummaryCategories();
@@ -4564,12 +5152,19 @@ function openProfilesModal(){
   renderProfilesList();
   
   const modal = document.getElementById('profilesModal');
-  if (modal) modal.classList.add('active');
+  if (modal) {
+    modal.classList.add('active');
+    document.body.dataset.prevOverflow = document.body.style.overflow || '';
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+  }
 }
 
 function closeProfilesModal(){
   const modal = document.getElementById('profilesModal');
   if (modal) modal.classList.remove('active');
+  document.body.style.overflow = document.body.dataset.prevOverflow || '';
+  document.body.style.touchAction = '';
 }
 
 function createProfile(){
@@ -4594,6 +5189,11 @@ function createProfile(){
   ensureImportBaseShiftsForUser(name);
   
   db.current = name;
+  recordChange('Crear perfil', {
+    profile: name,
+    summary: `Se creo el perfil ${name}`,
+    details: `Localidad: ${loc}`
+  });
   saveDB();
   updateUserDropdown();
   updateUserInitial();
@@ -4689,6 +5289,10 @@ function deleteProfile(u){
   delete db.users[u];
   if(db.current === u) db.current = 'ADMIN';
   
+  recordChange('Eliminar perfil', {
+    profile: u,
+    summary: `Se elimino el perfil ${u}`
+  });
   saveDB();
   updateUserDropdown();
   updateUserInitial();
@@ -4705,6 +5309,8 @@ function saveProfileEdits(u){
   
   const pin = document.getElementById(`p-pin-${cssSafe(u)}`)?.value?.trim();
   const loc = document.getElementById(`p-loc-${cssSafe(u)}`)?.value || 'San Salvador';
+  const oldName = u;
+  const oldLoc = user.locality || '';
   
   if(!pin || pin.length !== 4 || isNaN(pin)) return alert("PIN inválido (4 dígitos).");
   
@@ -4723,6 +5329,11 @@ function saveProfileEdits(u){
     }
   }
   
+  recordChange('Editar perfil', {
+    profile: db.current === oldName ? oldName : (db.current || oldName),
+    summary: `Se actualizo perfil ${oldName}`,
+    details: `Localidad: ${oldLoc || 'N/D'} -> ${loc}`
+  });
   saveDB();
   updateUserDropdown();
   updateUserInitial();
@@ -4788,8 +5399,8 @@ function mergeProfiles(source, target){
   const tgtData = db.users[target].data || {};
 
   Object.keys(srcData).forEach(key => {
-    if(!tgtData[key] || !tgtData[key].shift){
-      tgtData[key] = srcData[key];
+    if(isEffectivelyEmptyDayData(tgtData[key])){
+      tgtData[key] = JSON.parse(JSON.stringify(srcData[key]));
     }
   });
   db.users[target].data = tgtData;
@@ -4797,6 +5408,10 @@ function mergeProfiles(source, target){
   if(db.current === source) db.current = target;
   delete db.users[source];
 
+  recordChange('Fusionar perfiles', {
+    profile: target,
+    summary: `Se fusiono ${source} en ${target}`
+  });
   saveDB();
   updateUserDropdown();
   updateUserInitial();
@@ -4843,29 +5458,58 @@ function closeImportModalAndRefresh(){
 // Image Import (OCR con Tesseract.js)
 // =========================================================
 let ocrDetectedShifts = [];
+let ocrCalendarAnalysis = null;
+let imageRosterContext = null;
+
+function getImageImportKind(){
+  return document.getElementById('imgImportKind')?.value || 'roster';
+}
+
+function syncImageImportModeUI(){
+  const kind = getImageImportKind();
+  document.getElementById('imgImportProfileHint')?.classList.toggle('hidden', kind !== 'profile');
+  document.getElementById('imgImportShiftWrap')?.classList.toggle('hidden', kind !== 'profile');
+  const applyBtn = document.getElementById('imgImportApplyBtn');
+  if(applyBtn) applyBtn.textContent = kind === 'roster' ? '🚀 Importar personas seleccionadas' : '🚀 Aplicar días seleccionados';
+  const boxTitle = document.querySelector('#ocrResultsBox p');
+  if(boxTitle) boxTitle.textContent = kind === 'roster' ? 'Personas detectadas' : 'Días detectados';
+  const hasRosterCodes = kind === 'roster' && imageRosterContext && imageRosterContext.turnCodes && imageRosterContext.turnCodes.length;
+  document.getElementById('imageImportTurnsBox')?.classList.toggle('hidden', !hasRosterCodes);
+}
 
 function openImageImportModal(){
   const modal = document.getElementById('imageImportModal');
   if(!modal) return;
 
-  // Populate month/year selects
   const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const mSel = document.getElementById('imgImportMonth');
   const ySel = document.getElementById('imgImportYear');
-  mSel.innerHTML = months.map((m,i) => `<option value="${i}" ${i===current.getMonth()?'selected':''}>${m}</option>`).join('');
-  ySel.innerHTML = [-2,-1,0,1,2].map(d => {
+  if(mSel) mSel.innerHTML = months.map((m,i) => `<option value="${i}" ${i===current.getMonth()?'selected':''}>${m}</option>`).join('');
+  if(ySel) ySel.innerHTML = [-2,-1,0,1,2].map(d => {
     const y = current.getFullYear()+d;
     return `<option value="${y}" ${d===0?'selected':''}>${y}</option>`;
   }).join('');
 
-  // Reset UI
-  document.getElementById('imageImportFile').value = '';
-  document.getElementById('imgPreviewBox').classList.add('hidden');
-  document.getElementById('ocrStatus').classList.add('hidden');
-  document.getElementById('ocrResultsBox').classList.add('hidden');
+  fillImageImportShiftOptions();
+  syncImageImportProfileHint();
+  const kindSel = document.getElementById('imgImportKind');
+  if(kindSel) kindSel.value = 'roster';
+
+  const fileEl = document.getElementById('imageImportFile');
+  if(fileEl) fileEl.value = '';
+  document.getElementById('imgPreviewBox')?.classList.add('hidden');
+  document.getElementById('ocrStatus')?.classList.add('hidden');
+  document.getElementById('ocrResultsBox')?.classList.add('hidden');
   document.getElementById('ocrRawText').textContent = '';
   document.getElementById('ocrResultsList').innerHTML = '';
+  document.getElementById('ocrAnalysisSummary').innerHTML = '';
+  document.getElementById('ocrAnalysisSummary')?.classList.add('hidden');
+  document.getElementById('imageImportTurnsBox')?.classList.add('hidden');
+  document.getElementById('imageImportTurnsList').innerHTML = '';
   ocrDetectedShifts = [];
+  ocrCalendarAnalysis = null;
+  imageRosterContext = null;
+  syncImageImportModeUI();
 
   modal.classList.add('active');
 }
@@ -4873,6 +5517,26 @@ function openImageImportModal(){
 function closeImageImportModal(){
   const modal = document.getElementById('imageImportModal');
   if(modal) modal.classList.remove('active');
+}
+
+function syncImageImportProfileHint(){
+  const el = document.getElementById('imgImportProfileName');
+  if(el) el.textContent = db.current || '—';
+}
+
+function fillImageImportShiftOptions(){
+  const sel = document.getElementById('imgImportShift');
+  const user = db.users?.[db.current];
+  if(!sel || !user) return;
+  ensureCanonicalCoreShiftsForUser(user);
+  const visible = Object.keys(user.config || {}).filter(k => {
+    const cfg = user.config[k] || {};
+    return cfg.enabled || ['Mañana','Tarde','16hrs','CENA','L','Vacaciones'].includes(k);
+  }).sort((a,b) => a.localeCompare(b,'es'));
+  sel.innerHTML = visible.map(k => `<option value="${k}">${k}</option>`).join('');
+  if(visible.includes('CENA')) sel.value = 'CENA';
+  else if(visible.includes('Mañana')) sel.value = 'Mañana';
+  else if(visible.length) sel.value = visible[0];
 }
 
 function previewImportImage(input){
@@ -4884,22 +5548,65 @@ function previewImportImage(input){
   }
 }
 
+async function loadImageElementFromFile(file){
+  return await new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = (err) => { URL.revokeObjectURL(url); reject(err || new Error('No se pudo cargar la imagen.')); };
+    img.src = url;
+  });
+}
+
+async function buildPreprocessedOCRCanvas(file){
+  const img = await loadImageElementFromFile(file);
+  const maxWidth = 2200;
+  const scale = Math.max(1.8, Math.min(2.8, maxWidth / Math.max(img.width, 1)));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  for(let i=0; i<data.length; i+=4){
+    const r = data[i], g = data[i+1], b = data[i+2];
+    let gray = 0.299*r + 0.587*g + 0.114*b;
+    gray = ((gray - 128) * 2.25) + 128;
+    gray = Math.max(0, Math.min(255, gray));
+    if(gray > 185) gray = 255;
+    else if(gray < 95) gray = 0;
+    data[i] = data[i+1] = data[i+2] = gray;
+  }
+  ctx.putImageData(imageData, 0, 0);
+  return { canvas, width: canvas.width, height: canvas.height };
+}
+
 async function runImageOCR(){
   const fileInput = document.getElementById('imageImportFile');
-  if(!fileInput.files || !fileInput.files[0]) return alert("Selecciona una imagen primero.");
-
-  if(typeof Tesseract === 'undefined') return alert("La librería OCR aún está cargando. Espera un momento y vuelve a intentarlo.");
+  if(!fileInput.files || !fileInput.files[0]) return alert('Selecciona una imagen primero.');
+  if(typeof Tesseract === 'undefined') return alert('La librería OCR aún está cargando. Espera un momento y vuelve a intentarlo.');
 
   const status = document.getElementById('ocrStatus');
   const resultsBox = document.getElementById('ocrResultsBox');
   status.classList.remove('hidden');
-  status.textContent = 'Iniciando OCR...';
+  status.textContent = 'Preparando imagen...';
   resultsBox.classList.add('hidden');
+  document.getElementById('ocrAnalysisSummary')?.classList.add('hidden');
   ocrDetectedShifts = [];
+  ocrCalendarAnalysis = null;
+  imageRosterContext = null;
+  document.getElementById('imageImportTurnsBox')?.classList.add('hidden');
 
   try {
+    const prep = await buildPreprocessedOCRCanvas(fileInput.files[0]);
+    status.textContent = 'Iniciando OCR...';
+
     const result = await Tesseract.recognize(
-      fileInput.files[0],
+      prep.canvas,
       'spa+eng',
       { logger: m => {
         if(m.status === 'recognizing text'){
@@ -4908,135 +5615,881 @@ async function runImageOCR(){
       }}
     );
 
-    status.textContent = 'OCR completado. Analizando turnos...';
-    const rawText = result.data.text;
+    const rawText = String(result?.data?.text || '');
     document.getElementById('ocrRawText').textContent = rawText;
 
-    parseOCRShifts(rawText);
+    const month0 = parseInt(document.getElementById('imgImportMonth').value, 10);
+    const year = parseInt(document.getElementById('imgImportYear').value, 10);
+    const forcedShift = document.getElementById('imgImportShift')?.value || 'CENA';
+
+    if(getImageImportKind() === 'roster'){
+      status.textContent = 'OCR completado. Analizando planilla completa...';
+      imageRosterContext = analyzeRosterImageOCR(result, { month0, year, imageWidth: prep.width, imageHeight: prep.height });
+      ocrCalendarAnalysis = null;
+      ocrDetectedShifts = [];
+      renderImageRosterResults();
+      status.textContent = imageRosterContext.rows.length
+        ? `Se detectaron ${imageRosterContext.rows.length} persona(s) y ${imageRosterContext.turnCodes.length} codigo(s) de turno. Revisa antes de importar.`
+        : 'No se detectaron filas de planilla. Revisa el texto OCR crudo o intenta con una imagen mas recta/nitida.';
+      return;
+    }
+
+    status.textContent = 'OCR completado. Analizando calendario...';
+
+    const analysis = analyzeCalendarImageOCR(result, { month0, year, forcedShift, profileName: db.current, imageHeight: prep.height });
+    ocrCalendarAnalysis = analysis;
+
+    if(analysis && analysis.detectedShift){
+      const shiftSel = document.getElementById('imgImportShift');
+      if(shiftSel && Array.from(shiftSel.options).some(op => op.value === analysis.detectedShift)){
+        shiftSel.value = analysis.detectedShift;
+        analysis.detections.forEach(d => d.shift = shiftSel.value);
+      }
+    }
+
+    ocrDetectedShifts = (analysis?.detections || []).map(d => ({ ...d, shift: document.getElementById('imgImportShift')?.value || d.shift || forcedShift }));
+
+    if(ocrDetectedShifts.length === 0){
+      ocrDetectedShifts = parseOCRShiftsRawText(rawText, year, month0);
+      if(ocrDetectedShifts.length > 0){
+        status.textContent = `Se detectaron ${ocrDetectedShifts.length} día(s) por texto OCR. Revisa antes de aplicar.`;
+      } else {
+        status.textContent = 'No se detectaron coincidencias para el perfil actual. Revisa la vista previa o el texto OCR crudo.';
+      }
+    } else {
+      status.textContent = `Se detectaron ${ocrDetectedShifts.length} día(s) del perfil actual. Revisa y aplica.`;
+    }
+
+    renderOCRDetectedShifts();
   } catch(e){
-    status.textContent = 'Error OCR: ' + e.message;
+    status.textContent = 'Error OCR: ' + (e?.message || e);
   }
 }
 
-function parseOCRShifts(text){
-  const user = db.users[db.current];
-  if(!user) return;
-  const shiftKeys = Object.keys(user.config).map(k => k.toUpperCase());
+function getMonthSlots(year, month0){
+  const first = new Date(year, month0, 1).getDay();
+  const lastDay = new Date(year, month0 + 1, 0).getDate();
+  const slots = {};
+  for(let day=1; day<=lastDay; day++){
+    const idx = first + (day - 1);
+    slots[day] = { day, row: Math.floor(idx / 7), col: idx % 7 };
+  }
+  return { first, lastDay, slots };
+}
 
-  const year  = parseInt(document.getElementById('imgImportYear').value);
-  const month = parseInt(document.getElementById('imgImportMonth').value) + 1;
-  const lastDay = new Date(year, month, 0).getDate();
+function safeNumber(v, fallback=0){
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
 
-  ocrDetectedShifts = [];
+function extractOCRWordItems(result){
+  const rawWords = Array.isArray(result?.data?.words) ? result.data.words : [];
+  return rawWords.map(w => {
+    const text = String(w?.text || '').trim();
+    const b = w?.bbox || {};
+    const x0 = safeNumber(b.x0, safeNumber(w.left, 0));
+    const y0 = safeNumber(b.y0, safeNumber(w.top, 0));
+    const x1 = safeNumber(b.x1, x0 + safeNumber(w.width, 0));
+    const y1 = safeNumber(b.y1, y0 + safeNumber(w.height, 0));
+    return {
+      text,
+      conf: safeNumber(w?.confidence, safeNumber(w?.conf, 0)),
+      x0, y0, x1, y1,
+      w: Math.max(0, x1 - x0),
+      h: Math.max(0, y1 - y0),
+      cx: x0 + (x1 - x0) / 2,
+      cy: y0 + (y1 - y0) / 2
+    };
+  }).filter(w => w.text);
+}
 
-  // Strategy 1: lines like "1 M", "15 T", "3  L" (day + space + shift code)
-  const lines = text.split(/[\n\r]+/);
-  lines.forEach(line => {
-    const clean = line.trim();
-    // Match: one or two digits, optional whitespace/separator, then letters (shift code)
-    const m = clean.match(/^(\d{1,2})[\s\-:.]+([A-Za-záéíóúÁÉÍÓÚüÜñÑ]+)/);
-    if(m){
-      const day = parseInt(m[1]);
-      const code = m[2].toUpperCase().trim();
-      if(day >= 1 && day <= lastDay && shiftKeys.includes(code)){
-        ocrDetectedShifts.push({ day, shift: code });
-      }
+function cleanOCRTokenText(text){
+  return String(text || '')
+    .replace(/[|()[\]{}]/g, '')
+    .replace(/[“”"']/g, '')
+    .trim();
+}
+
+function isEmployeeCodeToken(text){
+  const raw = cleanOCRTokenText(text).replace(/\s+/g, '');
+  const digits = raw.replace(/\D/g, '');
+  if(digits.length <= 3) return false;
+  if(/^\d{1,3}[-.]\d{3,7}$/.test(raw)) return true;
+  if(/^\d{4,9}$/.test(raw)) return true;
+  return false;
+}
+
+function rosterShiftCodeFromText(text){
+  let raw = cleanOCRTokenText(text).toUpperCase();
+  if(!raw) return '';
+  raw = raw.replace(/[.,;:]+$/g, '');
+  raw = raw.replace(/^[-_]+|[-_]+$/g, '');
+  raw = raw.replace(/O/g, '0');
+  const norm = normalizeCode(raw);
+  if(!norm || norm === 'X') return '';
+  if(isEmployeeCodeToken(norm)) return '';
+  if(IMPORT_ABSENCE_MAP[norm] || IMPORT_SHIFT_CODE_MAP[norm]) return norm;
+  if(/^[A-Z]{1,3}$/.test(norm)) return norm;
+  if(/^\d{1,3}$/.test(norm)) return norm.padStart(3, '0');
+  if(/^[A-Z0-9]{1,3}$/.test(norm)) return norm;
+  return '';
+}
+
+function medianNumber(values, fallback=0){
+  const arr = values.filter(v => Number.isFinite(v)).sort((a,b)=>a-b);
+  return arr.length ? arr[Math.floor(arr.length/2)] : fallback;
+}
+
+function clusterByAxis(items, axis='cy', tolerance=12){
+  const sorted = [...items].sort((a,b) => a[axis] - b[axis]);
+  const clusters = [];
+  sorted.forEach(item => {
+    const last = clusters[clusters.length - 1];
+    if(last && Math.abs(item[axis] - last.center) <= tolerance){
+      last.items.push(item);
+      last.center = last.items.reduce((s,x)=>s+x[axis],0) / last.items.length;
+    } else {
+      clusters.push({ center:item[axis], items:[item] });
     }
   });
+  return clusters;
+}
 
-  // Strategy 2: scan entire text for patterns "DIA:TURNO" or "DIA/TURNO"
-  if(ocrDetectedShifts.length === 0){
-    const matches = [...text.matchAll(/\b(\d{1,2})[:\/-]([A-Za-záéíóúÁÉÍÓÚüÜñÑ]{1,4})\b/g)];
-    matches.forEach(m => {
-      const day = parseInt(m[1]);
-      const code = m[2].toUpperCase();
-      if(day >= 1 && day <= lastDay && shiftKeys.includes(code)){
-        ocrDetectedShifts.push({ day, shift: code });
+function displayNameFromRosterWords(words){
+  const parts = words
+    .sort((a,b)=>a.cx-b.cx)
+    .map(w => cleanOCRTokenText(w.text))
+    .filter(Boolean)
+    .filter(t => !/^\d{1,3}$/.test(t))
+    .filter(t => !isEmployeeCodeToken(t));
+  return parts.join(' ').replace(/\s+/g,' ').trim().toUpperCase();
+}
+
+function estimateRosterRows(words, imageWidth){
+  const hMed = medianNumber(words.map(w => w.h), 16);
+  const employeeWords = words.filter(w => isEmployeeCodeToken(w.text));
+  const rowTol = Math.max(8, hMed * 0.9);
+  const rows = [];
+
+  if(employeeWords.length >= 3){
+    clusterByAxis(employeeWords, 'cy', rowTol).forEach(cluster => {
+      const codeWord = cluster.items.sort((a,b)=>b.conf-a.conf)[0];
+      const y = cluster.center;
+      const band = Math.max(12, hMed * 1.35);
+      const rowWords = words.filter(w => Math.abs(w.cy - y) <= band);
+      const nameWords = rowWords.filter(w => w.x1 < codeWord.x0 - 4 && w.cx > imageWidth * 0.01);
+      const name = displayNameFromRosterWords(nameWords);
+      if(name){
+        rows.push({ y, codeWord, empCode: cleanOCRTokenText(codeWord.text), name, rowWords });
       }
     });
   }
 
-  // Deduplicate (keep first occurrence per day)
+  if(rows.length >= 3) return rows.sort((a,b)=>a.y-b.y);
+
+  const lineClusters = clusterByAxis(words, 'cy', Math.max(10, hMed * 0.85));
+  lineClusters.forEach(cluster => {
+    const rowWords = cluster.items;
+    const shiftLike = rowWords.filter(w => w.cx > imageWidth * 0.22 && rosterShiftCodeFromText(w.text));
+    if(shiftLike.length < 3) return;
+    const firstShiftX = Math.min(...shiftLike.map(w => w.cx));
+    const leftWords = rowWords.filter(w => w.cx < firstShiftX - 8);
+    const name = displayNameFromRosterWords(leftWords);
+    if(name){
+      rows.push({ y: cluster.center, codeWord:null, empCode:'', name, rowWords });
+    }
+  });
+
   const seen = new Set();
-  ocrDetectedShifts = ocrDetectedShifts.filter(e => {
+  return rows
+    .sort((a,b)=>a.y-b.y)
+    .filter(r => {
+      const key = `${Math.round(r.y/4)}_${normalizeName(r.name)}`;
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function estimateRosterDayColumns(words, rosterRows, lastDay, imageWidth){
+  const codeRights = rosterRows.map(r => r.codeWord ? r.codeWord.x1 : 0).filter(Boolean);
+  const dayStartX = codeRights.length ? (medianNumber(codeRights, imageWidth * 0.25) + Math.max(8, imageWidth * 0.008)) : imageWidth * 0.24;
+  const candidates = [];
+  rosterRows.forEach(row => {
+    row.rowWords.forEach(w => {
+      if(w.cx <= dayStartX) return;
+      const code = rosterShiftCodeFromText(w.text);
+      if(!code) return;
+      candidates.push({ ...w, code });
+    });
+  });
+  if(!candidates.length) return { columns: [], candidates, dayStartX };
+
+  const tol = Math.max(10, imageWidth / 150);
+  let clusters = clusterByAxis(candidates, 'cx', tol)
+    .map(c => ({
+      x: c.center,
+      count: c.items.length,
+      items: c.items,
+      score: c.items.length + Math.min(8, c.items.reduce((s,w)=>s+w.conf,0)/Math.max(1,c.items.length)/12)
+    }))
+    .filter(c => c.count >= Math.max(1, Math.ceil(rosterRows.length * 0.08)))
+    .sort((a,b)=>a.x-b.x);
+
+  if(clusters.length < Math.max(8, Math.floor(lastDay * 0.45))){
+    const minX = Math.min(...candidates.map(c => c.cx));
+    const maxX = Math.max(...candidates.map(c => c.cx));
+    const usableW = Math.max(1, maxX - minX);
+    clusters = Array.from({length:lastDay}, (_,i) => ({ x: minX + usableW * (i / Math.max(1,lastDay-1)), count:0, items:[], score:0 }));
+  }
+
+  const columns = clusters.slice(0, lastDay).map((c, idx) => ({ day: idx + 1, x: c.x, count: c.count }));
+  return { columns, candidates, dayStartX };
+}
+
+function analyzeRosterImageOCR(result, opts={}){
+  const { month0, year, imageWidth = 2000 } = opts;
+  const lastDay = new Date(year, month0 + 1, 0).getDate();
+  const words = extractOCRWordItems(result).filter(w => w.conf >= 8);
+  const rosterRows = estimateRosterRows(words, imageWidth);
+  const { columns, candidates, dayStartX } = estimateRosterDayColumns(words, rosterRows, lastDay, imageWidth);
+  const colGap = columns.length > 1 ? medianNumber(columns.slice(1).map((c,i)=>c.x - columns[i].x), imageWidth / 40) : imageWidth / 40;
+  const maxDist = Math.max(12, colGap * 0.46);
+  const turnCodesSet = new Set();
+  const rows = rosterRows.map(row => {
+    const dayMap = {};
+    columns.forEach(col => {
+      const hits = row.rowWords
+        .map(w => ({ ...w, code: rosterShiftCodeFromText(w.text), dist: Math.abs(w.cx - col.x) }))
+        .filter(w => w.code && w.dist <= maxDist)
+        .sort((a,b) => a.dist - b.dist || b.conf - a.conf);
+      if(hits[0]){
+        dayMap[col.day] = hits[0].code;
+        turnCodesSet.add(hits[0].code);
+      }
+    });
+    const matchedProfile = db.users?.[row.name] ? row.name : findFuzzyUserMatch(row.name);
+    return {
+      name: row.name,
+      empCode: row.empCode || '',
+      matchedProfile,
+      selected: true,
+      days: dayMap,
+      detectedCount: Object.keys(dayMap).length
+    };
+  }).filter(r => r.name && r.detectedCount > 0);
+
+  return {
+    kind: 'roster',
+    month0,
+    year,
+    rows,
+    turnCodes: Array.from(turnCodesSet).filter(c => !!codeToShiftDef(c)).sort(),
+    columnsDetected: columns.length,
+    totalWords: words.length,
+    dayStartX
+  };
+}
+
+function loadImageImportDefaultCategorySelect(){
+  const sel = document.getElementById('imageImportDefaultCategory');
+  if(!sel) return;
+  sel.innerHTML = Object.keys(db.categories).map(cid =>
+    `<option value="${escapeHTML(cid)}">${escapeHTML(db.categories[cid].icon || '🏷️')} ${escapeHTML(db.categories[cid].name)}</option>`
+  ).join('');
+  if(db.categories.work) sel.value = 'work';
+}
+
+function buildImageImportTurnsCategoryMapUI(turnCodes){
+  const box = document.getElementById('imageImportTurnsBox');
+  const list = document.getElementById('imageImportTurnsList');
+  if(!box || !list || !imageRosterContext) return;
+  loadImageImportDefaultCategorySelect();
+  const codes = (turnCodes || []).filter(code => !IMPORT_ABSENCE_MAP[code]);
+  if(!codes.length){
+    box.classList.add('hidden');
+    list.innerHTML = '';
+    return;
+  }
+  imageRosterContext.codeCatMap = imageRosterContext.codeCatMap || {};
+  const def = document.getElementById('imageImportDefaultCategory')?.value || 'work';
+  codes.forEach(code => { if(!imageRosterContext.codeCatMap[code]) imageRosterContext.codeCatMap[code] = def; });
+  list.innerHTML = codes.map(code => `
+    <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-2">
+      <div class="w-16 text-center text-[11px] font-black text-gray-800">${escapeHTML(code)}</div>
+      <select class="imgTurnCat flex-1 bg-white border border-gray-200 rounded-xl p-2 text-[11px] font-bold text-gray-900" data-code="${escapeHTML(code)}">
+        ${Object.keys(db.categories).map(cid => `<option value="${escapeHTML(cid)}" ${cid === imageRosterContext.codeCatMap[code] ? 'selected' : ''}>${escapeHTML(db.categories[cid].icon || '🏷️')} ${escapeHTML(db.categories[cid].name)}</option>`).join('')}
+      </select>
+    </div>
+  `).join('');
+  Array.from(document.querySelectorAll('.imgTurnCat')).forEach(sel => {
+    sel.onchange = () => {
+      const code = sel.getAttribute('data-code');
+      if(code) imageRosterContext.codeCatMap[code] = sel.value;
+    };
+  });
+  box.classList.remove('hidden');
+}
+
+function applyImageImportCategoryToAll(){
+  if(!imageRosterContext) return;
+  const cid = document.getElementById('imageImportDefaultCategory')?.value || 'work';
+  Array.from(document.querySelectorAll('.imgTurnCat')).forEach(sel => {
+    sel.value = cid;
+    const code = sel.getAttribute('data-code');
+    if(code) imageRosterContext.codeCatMap[code] = cid;
+  });
+}
+
+function renderImageRosterResults(){
+  const box = document.getElementById('ocrResultsBox');
+  const list = document.getElementById('ocrResultsList');
+  const count = document.getElementById('ocrDetectedCount');
+  const summary = document.getElementById('ocrAnalysisSummary');
+  if(!box || !list || !imageRosterContext) return;
+  box.classList.remove('hidden');
+  syncImageImportModeUI();
+  const rows = imageRosterContext.rows || [];
+  const selected = rows.filter(r => r.selected !== false).length;
+  if(count) count.textContent = `${rows.length} persona(s) detectada(s) · ${selected} seleccionada(s)`;
+  if(summary){
+    summary.textContent = `Mes: ${MONTHS[imageRosterContext.month0]} ${imageRosterContext.year} · Columnas/dias detectados: ${imageRosterContext.columnsDetected} · Palabras OCR: ${imageRosterContext.totalWords}`;
+    summary.classList.remove('hidden');
+  }
+  buildImageImportTurnsCategoryMapUI(imageRosterContext.turnCodes);
+  if(!rows.length){
+    list.innerHTML = '<p class="text-[11px] text-gray-400">No se encontraron filas de planilla. Prueba con una foto mas recta, cercana o con mejor iluminacion.</p>';
+    return;
+  }
+  list.innerHTML = rows.map((row, i) => {
+    const samples = Object.entries(row.days).slice(0, 10).map(([d,c]) => `<span class="image-import-pill">${escapeHTML(d)}: ${escapeHTML(c)}</span>`).join(' ');
+    const match = row.matchedProfile ? `<span class="text-[10px] font-black text-blue-700">→ perfil: ${escapeHTML(row.matchedProfile)}</span>` : '<span class="text-[10px] font-bold text-gray-400">creara/actualizara perfil</span>';
+    return `
+      <label class="flex gap-3 items-start rounded-2xl border border-gray-200 bg-white p-3">
+        <input type="checkbox" ${row.selected !== false ? 'checked' : ''} onchange="toggleImageRosterSelection(${i}, this.checked)" class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[12px] font-black text-gray-900">${escapeHTML(row.name)}</span>
+            ${row.empCode ? `<span class="px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 text-[10px] font-black">${escapeHTML(row.empCode)}</span>` : ''}
+            ${match}
+            <span class="ml-auto text-[10px] font-black text-gray-400">${row.detectedCount} dia(s)</span>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-1.5">${samples || '<span class="text-[10px] font-bold text-gray-400">Sin turnos de muestra</span>'}</div>
+        </div>
+      </label>`;
+  }).join('');
+}
+
+function toggleImageRosterSelection(index, checked){
+  if(!imageRosterContext?.rows?.[index]) return;
+  imageRosterContext.rows[index].selected = !!checked;
+  renderImageRosterResults();
+}
+
+function normalizeImportText(value){
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function significantNameTokens(value){
+  const stop = new Set(['lic','licda','licenciado','licenciada','ing','ingeniero','ingeniera','dra','dr','doctor','doctora','sr','sra','senor','senora','de','del','la','el','los','las','y','asueto','vacaciones','libre','domingo','lunes','martes','miercoles','jueves','viernes','sabado','dom','lun','mar','mie','mier','jue','vie','sab']);
+  return normalizeImportText(value).split(' ').filter(t => t.length > 2 && !stop.has(t));
+}
+
+function levenshteinDistance(a, b){
+  a = String(a || '');
+  b = String(b || '');
+  const m = a.length, n = b.length;
+  if(!m) return n;
+  if(!n) return m;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0] = i;
+  for(let j=0;j<=n;j++) dp[0][j] = j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost = a[i-1] === b[j-1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+function tokenSimilarity(a, b){
+  a = normalizeImportText(a);
+  b = normalizeImportText(b);
+  if(!a || !b) return 0;
+  if(a === b) return 1;
+  if(a.includes(b) || b.includes(a)) return Math.min(a.length, b.length) / Math.max(a.length, b.length);
+  const dist = levenshteinDistance(a, b);
+  return Math.max(0, 1 - (dist / Math.max(a.length, b.length, 1)));
+}
+
+function scoreCellAgainstProfile(cellText, profileName){
+  const sourceTokens = significantNameTokens(cellText);
+  const targetTokens = significantNameTokens(profileName);
+  if(!sourceTokens.length || !targetTokens.length) return { matched:false, score:0, sourceTokens, targetTokens, matchedTokens:[] };
+
+  const surnameTokens = targetTokens.slice(-Math.min(2, targetTokens.length));
+  const surnameScores = surnameTokens.map(t => Math.max(...sourceTokens.map(s => tokenSimilarity(t, s)), 0));
+  const allScores = targetTokens.map(t => Math.max(...sourceTokens.map(s => tokenSimilarity(t, s)), 0));
+  const bestSurname = Math.max(...surnameScores, 0);
+  const avgSurname = surnameScores.length ? surnameScores.reduce((a,b) => a+b, 0) / surnameScores.length : 0;
+  const avgAll = allScores.length ? allScores.reduce((a,b) => a+b, 0) / allScores.length : 0;
+  const score = (bestSurname * 0.72) + (avgSurname * 0.18) + (avgAll * 0.10);
+
+  const matchedTokens = [];
+  surnameTokens.forEach(t => {
+    sourceTokens.forEach(s => {
+      const sim = tokenSimilarity(t, s);
+      if(sim >= 0.84) matchedTokens.push({ target:t, source:s, sim });
+    });
+  });
+
+  const matched = (bestSurname >= 0.84 && score >= 0.62) || (avgSurname >= 0.80 && score >= 0.58);
+  return { matched, score, bestSurname, avgSurname, avgAll, sourceTokens, targetTokens, matchedTokens };
+}
+
+function extractShiftSuggestionFromWords(words, user, fallbackText=''){
+  const shiftKeys = Object.keys(user?.config || {});
+  const topLimit = words.length ? Math.max(...words.map(x => x.cy)) * 0.18 : 160;
+  const normalizedTop = words.filter(w => w.cy <= topLimit).map(w => normalizeImportText(w.text)).join(' ');
+  const normalizedRaw = normalizeImportText(fallbackText).split(' ').slice(0, 20).join(' ');
+  const haystack = `${normalizedTop} ${normalizedRaw}`;
+  const aliases = {
+    'cena': 'CENA',
+    'manana': 'Mañana',
+    'tarde': 'Tarde',
+    '16hrs': '16hrs',
+    '16hr': '16hrs',
+    '16h': '16hrs',
+    'libre': 'L',
+    'vacaciones': 'Vacaciones'
+  };
+  for(const [alias, shift] of Object.entries(aliases)){
+    if(haystack.includes(alias) && shiftKeys.includes(shift)) return shift;
+  }
+  return null;
+}
+
+function pickBestNumericDayWords(words, lastDay, imageHeight){
+  const grouped = new Map();
+  words.forEach(w => {
+    const clean = String(w.text || '').replace(/\D/g, '');
+    if(!/^\d{1,2}$/.test(clean)) return;
+    const day = parseInt(clean, 10);
+    if(!(day >= 1 && day <= lastDay)) return;
+    const area = Math.max(1, w.w * w.h);
+    const penaltyBottom = w.cy > imageHeight * 0.88 ? 18 : 0;
+    const penaltyTop = w.cy < imageHeight * 0.10 ? 10 : 0;
+    const score = safeNumber(w.conf, 0) + Math.min(area / 120, 14) - penaltyBottom - penaltyTop;
+    const arr = grouped.get(day) || [];
+    arr.push({ ...w, day, score, area, clean });
+    grouped.set(day, arr);
+  });
+
+  const selected = [];
+  grouped.forEach(arr => {
+    arr.sort((a,b) => b.score - a.score || b.conf - a.conf || b.area - a.area);
+    selected.push(arr[0]);
+  });
+  return selected;
+}
+
+function linearRegression(points, keyX, keyY){
+  if(!points.length) return null;
+  const xs = points.map(p => safeNumber(p[keyX], 0));
+  const ys = points.map(p => safeNumber(p[keyY], 0));
+  const n = xs.length;
+  const meanX = xs.reduce((a,b)=>a+b,0)/n;
+  const meanY = ys.reduce((a,b)=>a+b,0)/n;
+  let num = 0, den = 0;
+  for(let i=0;i<n;i++){
+    num += (xs[i]-meanX)*(ys[i]-meanY);
+    den += (xs[i]-meanX)*(xs[i]-meanX);
+  }
+  const slope = den ? num/den : 0;
+  const intercept = meanY - slope*meanX;
+  return { slope, intercept };
+}
+
+function estimateCalendarGrid(dayWords, slots){
+  const points = dayWords.map(w => {
+    const slot = slots[w.day];
+    return slot ? { ...w, row: slot.row, col: slot.col, xRight: w.x1, yTop: w.y0 } : null;
+  }).filter(Boolean);
+  if(points.length < 6) return null;
+
+  const xFit = linearRegression(points, 'col', 'xRight');
+  const yFit = linearRegression(points, 'row', 'yTop');
+  if(!xFit || !yFit) return null;
+
+  const widths = points.map(p => p.w).filter(Boolean).sort((a,b)=>a-b);
+  const heights = points.map(p => p.h).filter(Boolean).sort((a,b)=>a-b);
+  const mid = arr => arr.length ? arr[Math.floor(arr.length/2)] : 24;
+
+  return {
+    cellW: xFit.slope,
+    baseX: xFit.intercept,
+    cellH: yFit.slope,
+    baseY: yFit.intercept,
+    numberW: mid(widths),
+    numberH: mid(heights),
+    samples: points.length
+  };
+}
+
+function getCalendarCellRect(grid, row, col){
+  const cellRight = grid.baseX + (grid.cellW * col) + 4;
+  const cellLeft = cellRight - grid.cellW + 2;
+  const cellTop = grid.baseY + (grid.cellH * row) - Math.max(10, grid.numberH * 0.45);
+  const cellBottom = cellTop + grid.cellH;
+  return { left: cellLeft, top: cellTop, right: cellRight, bottom: cellBottom };
+}
+
+function wordsInsideRect(words, rect, minYRatio=0, maxYRatio=1){
+  const height = rect.bottom - rect.top;
+  const minY = rect.top + (height * minYRatio);
+  const maxY = rect.top + (height * maxYRatio);
+  return words.filter(w => w.cx >= rect.left && w.cx <= rect.right && w.cy >= minY && w.cy <= maxY);
+}
+
+function buildTextFromCellWords(cellWords){
+  const excluded = new Set(['dom','lun','mar','mie','mier','jue','vie','sab','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre','asueto','cena']);
+  const filtered = cellWords
+    .filter(w => !/^\d{1,2}$/.test(String(w.text || '').trim()))
+    .filter(w => normalizeImportText(w.text) && !excluded.has(normalizeImportText(w.text)))
+    .sort((a,b) => a.cy - b.cy || a.cx - b.cx);
+  if(!filtered.length) return '';
+
+  const avgH = filtered.reduce((s,w)=>s + Math.max(10, w.h), 0) / filtered.length;
+  const threshold = Math.max(16, avgH * 0.9);
+  const lines = [];
+  filtered.forEach(w => {
+    let line = lines.find(line => Math.abs(line.cy - w.cy) <= threshold);
+    if(!line){
+      line = { cy: w.cy, items: [] };
+      lines.push(line);
+    }
+    line.items.push(w);
+    line.cy = (line.cy + w.cy) / 2;
+  });
+  lines.sort((a,b) => a.cy - b.cy);
+  return lines.map(line => line.items.sort((a,b)=>a.cx-b.cx).map(w => String(w.text || '').trim()).join(' ')).join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function analyzeCalendarImageOCR(result, opts={}){
+  const { year, month0, forcedShift, profileName, imageHeight = 1600 } = opts;
+  const words = extractOCRWordItems(result).filter(w => w.conf >= 18);
+  const user = db.users?.[db.current];
+  const rawText = String(result?.data?.text || '');
+  const detectedShift = extractShiftSuggestionFromWords(words, user, rawText);
+  const { lastDay, slots } = getMonthSlots(year, month0);
+  const numericDays = pickBestNumericDayWords(words, lastDay, imageHeight);
+  const grid = estimateCalendarGrid(numericDays, slots);
+  const detections = [];
+
+  if(grid){
+    for(let day=1; day<=lastDay; day++){
+      const slot = slots[day];
+      if(!slot) continue;
+      const rect = getCalendarCellRect(grid, slot.row, slot.col);
+      const cellWords = wordsInsideRect(words, rect, 0.16, 0.88);
+      const cellText = buildTextFromCellWords(cellWords);
+      if(!cellText) continue;
+      const match = scoreCellAgainstProfile(cellText, profileName || db.current);
+      if(match.matched){
+        detections.push({
+          day,
+          shift: forcedShift || detectedShift || 'CENA',
+          selected: true,
+          cellText,
+          score: match.score,
+          method: match.matchedTokens.length ? 'apellido' : 'similitud',
+          matchedTokens: match.matchedTokens,
+          sourceTokens: match.sourceTokens,
+          targetTokens: match.targetTokens
+        });
+      }
+    }
+  }
+
+  const dedup = [];
+  const seen = new Set();
+  detections.sort((a,b) => a.day - b.day).forEach(d => {
+    if(seen.has(d.day)) return;
+    seen.add(d.day);
+    dedup.push(d);
+  });
+
+  return {
+    detectedShift,
+    detections: dedup,
+    grid,
+    numericSamples: numericDays.length,
+    totalWords: words.length
+  };
+}
+
+function parseOCRShiftsRawText(text, year, month0){
+  const user = db.users[db.current];
+  if(!user) return [];
+  const shiftKeys = Object.keys(user.config).map(k => k.toUpperCase());
+  const forcedShift = document.getElementById('imgImportShift')?.value || 'CENA';
+  const lastDay = new Date(year, month0 + 1, 0).getDate();
+  const detected = [];
+  const lines = String(text || '').split(/[\n\r]+/);
+  lines.forEach(line => {
+    const clean = line.trim();
+    const m = clean.match(/^(\d{1,2})[\s\-:.]+([A-Za-záéíóúÁÉÍÓÚüÜñÑ0-9]+)/);
+    if(m){
+      const day = parseInt(m[1], 10);
+      const code = m[2].toUpperCase().trim();
+      if(day >= 1 && day <= lastDay){
+        const shift = shiftKeys.includes(code) ? code : forcedShift;
+        detected.push({ day, shift, selected:true, cellText:clean, score:0.55, method:'texto OCR' });
+      }
+    }
+  });
+  const seen = new Set();
+  return detected.filter(e => {
     if(seen.has(e.day)) return false;
     seen.add(e.day);
     return true;
   }).sort((a,b) => a.day - b.day);
+}
 
-  const status = document.getElementById('ocrStatus');
-  const resultsBox = document.getElementById('ocrResultsBox');
+function renderOCRDetectedShifts(){
+  const box = document.getElementById('ocrResultsBox');
   const list = document.getElementById('ocrResultsList');
   const count = document.getElementById('ocrDetectedCount');
+  const summary = document.getElementById('ocrAnalysisSummary');
+  const user = db.users[db.current];
+  const month0 = parseInt(document.getElementById('imgImportMonth').value, 10);
+  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  box.classList.remove('hidden');
 
-  resultsBox.classList.remove('hidden');
-  count.textContent = `${ocrDetectedShifts.length} turno(s)`;
+  const selectedCount = ocrDetectedShifts.filter(x => x.selected !== false).length;
+  count.textContent = `${ocrDetectedShifts.length} día(s) detectado(s) · ${selectedCount} seleccionado(s)`;
 
-  if(ocrDetectedShifts.length === 0){
-    status.textContent = 'No se detectaron turnos en la imagen. Revisa el texto OCR crudo.';
-    list.innerHTML = '<p class="text-[11px] text-gray-400">No se encontraron pares día-turno reconocibles.</p>';
+  if(summary){
+    if(ocrCalendarAnalysis){
+      const parts = [];
+      if(ocrCalendarAnalysis.detectedShift) parts.push(`turno sugerido por título: ${ocrCalendarAnalysis.detectedShift}`);
+      if(ocrCalendarAnalysis.numericSamples) parts.push(`días guía leídos: ${ocrCalendarAnalysis.numericSamples}`);
+      if(ocrCalendarAnalysis.grid) parts.push('calendario estructurado detectado');
+      summary.textContent = parts.join(' · ');
+      summary.classList.toggle('hidden', parts.length === 0);
+    } else {
+      summary.textContent = '';
+      summary.classList.add('hidden');
+    }
+  }
+
+  if(!ocrDetectedShifts.length){
+    list.innerHTML = '<p class="text-[11px] text-gray-400">No se encontraron días del perfil actual. Puedes revisar el OCR crudo o intentar con una captura más nítida.</p>';
     return;
   }
 
-  status.textContent = `Se detectaron ${ocrDetectedShifts.length} turno(s). Revisa y aplica.`;
-
-  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   list.innerHTML = ocrDetectedShifts.map((e, i) => {
-    const shiftCfg = user.config[e.shift] || {};
-    const color = shiftCfg.color ? `background:${getColorValue(shiftCfg.color)};` : '';
+    const shiftCfg = (user?.config?.[e.shift]) || {};
+    const bg = shiftCfg.color ? `background:${getColorValue(shiftCfg.color)};` : '';
+    const checked = e.selected !== false ? 'checked' : '';
+    const scorePct = e.score ? `${Math.round(e.score * 100)}%` : '—';
+    const label = e.cellText ? escapeHtml(e.cellText) : 'Sin texto detallado';
+    const method = e.method || 'OCR';
+    const notePreview = escapeHtml((shiftCfg.note || '').toString().trim() || (((shiftCfg.in || '00:00') !== '00:00' || (shiftCfg.out || '00:00') !== '00:00') ? `${shiftCfg.in || '00:00'} a ${shiftCfg.out || '00:00'}` : ''));
     return `
-      <div class="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-1.5">
-        <span class="text-[11px] font-black text-gray-700 w-16">${monthNames[month-1]} ${e.day}</span>
-        <span class="px-2 py-0.5 rounded-lg text-[11px] font-black" style="${color}color:#111">${e.shift}</span>
-        <button onclick="ocrDetectedShifts.splice(${i},1); parseOCRRenderList();" class="ml-auto text-[10px] text-red-400 hover:text-red-600 font-black">✕</button>
-      </div>`;
+      <label class="flex gap-3 items-start rounded-2xl border border-gray-200 bg-white p-3">
+        <input type="checkbox" ${checked} onchange="toggleOCRSelection(${i}, this.checked)" class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[11px] font-black text-gray-800">${monthNames[month0]} ${e.day}</span>
+            <span class="px-2 py-0.5 rounded-lg text-[10px] font-black" style="${bg}color:#111">${escapeHtml(e.shift || '')}</span>
+            <span class="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-black">${escapeHtml(method)}</span>
+            <span class="ml-auto text-[10px] font-black text-gray-400">${scorePct}</span>
+          </div>
+          <div class="mt-1 text-[11px] font-bold text-gray-700 break-words">${label}</div>
+          ${notePreview ? `<div class="mt-1 text-[10px] font-black text-violet-700">Se aplicará: ${notePreview}</div>` : ''}
+        </div>
+      </label>`;
   }).join('');
 }
 
-function parseOCRRenderList(){
-  // Re-render list after manual removal
-  const user = db.users[db.current];
-  const month = parseInt(document.getElementById('imgImportMonth').value) + 1;
-  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const list = document.getElementById('ocrResultsList');
-  const count = document.getElementById('ocrDetectedCount');
-  count.textContent = `${ocrDetectedShifts.length} turno(s)`;
-  list.innerHTML = ocrDetectedShifts.map((e, i) => {
-    const shiftCfg = (user.config[e.shift]) || {};
-    const color = shiftCfg.color ? `background:${getColorValue(shiftCfg.color)};` : '';
-    return `
-      <div class="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-1.5">
-        <span class="text-[11px] font-black text-gray-700 w-16">${monthNames[month-1]} ${e.day}</span>
-        <span class="px-2 py-0.5 rounded-lg text-[11px] font-black" style="${color}color:#111">${e.shift}</span>
-        <button onclick="ocrDetectedShifts.splice(${i},1); parseOCRRenderList();" class="ml-auto text-[10px] text-red-400 hover:text-red-600 font-black">✕</button>
-      </div>`;
-  }).join('');
+function toggleOCRSelection(index, checked){
+  if(!ocrDetectedShifts[index]) return;
+  ocrDetectedShifts[index].selected = !!checked;
+  renderOCRDetectedShifts();
+}
+
+function setAllOCRSelections(flag){
+  if(getImageImportKind() === 'roster' && imageRosterContext){
+    imageRosterContext.rows.forEach(item => { item.selected = !!flag; });
+    renderImageRosterResults();
+    return;
+  }
+  ocrDetectedShifts.forEach(item => { item.selected = !!flag; });
+  renderOCRDetectedShifts();
+}
+
+function isPracticallyEmptyForOCRImport(info){
+  return isEffectivelyEmptyDayData(info);
+}
+
+function applyImageImportResults(){
+  if(getImageImportKind() === 'roster') return applyImageRosterResults();
+  return applyOCRResults();
+}
+
+function applyImageRosterResults(){
+  if(!imageRosterContext || !Array.isArray(imageRosterContext.rows)) return alert('Primero analiza una imagen de planilla.');
+  const selectedRows = imageRosterContext.rows.filter(r => r.selected !== false);
+  if(!selectedRows.length) return alert('Selecciona al menos una persona.');
+
+  const mode = document.getElementById('imgImportMode')?.value || 'replace';
+  const month0 = imageRosterContext.month0;
+  const year = imageRosterContext.year;
+  const month = month0 + 1;
+  const prefix = `${year}-${month}-`;
+
+  let written = 0;
+  let skipped = 0;
+  let profilesTouched = 0;
+
+  selectedRows.forEach(row => {
+    const profileName = row.matchedProfile || row.name;
+    const userKey = ensureUserExists(profileName);
+    const user = db.users[userKey];
+    if(!user) return;
+    profilesTouched++;
+    ensureImportBaseShiftsForUser(userKey);
+
+    if(mode === 'replace'){
+      Object.keys(user.data || {}).forEach(k => {
+        if(k.startsWith(prefix)) delete user.data[k];
+      });
+    }
+
+    Object.entries(row.days || {}).forEach(([dayStr, rawCode]) => {
+      const day = parseInt(dayStr, 10);
+      const code = normalizeCode(rawCode);
+      if(!day || !code || code === 'X') return;
+      let def = codeToShiftDef(code);
+      if(!def) return;
+      if(imageRosterContext.codeCatMap && imageRosterContext.codeCatMap[code] && !IMPORT_ABSENCE_MAP[code]){
+        def = { ...def, cat: imageRosterContext.codeCatMap[code] };
+      }
+      ensureShiftExistsForUser(userKey, def, true);
+      const key = dayKey(year, month, day);
+      const prev = user.data[key] || {};
+      if(mode === 'merge' && !isEffectivelyEmptyDayData(prev)){
+        skipped++;
+        return;
+      }
+      const tIn = def.in || '00:00';
+      const tOut = def.out || '00:00';
+      const hrs = calculateHours(tIn, tOut);
+      const note = def.note || ((tIn !== '00:00' || tOut !== '00:00') ? `${tIn}-${tOut}` : (def.label || def.key).toUpperCase());
+      user.data[key] = {
+        mode: 'simple',
+        s: def.key,
+        tIn,
+        tOut,
+        h: hrs,
+        n: note,
+        imageImportMeta: {
+          source: 'roster-image',
+          appliedAt: new Date().toISOString(),
+          importedName: row.name,
+          empCode: row.empCode || '',
+          rawCode: code
+        }
+      };
+      written++;
+    });
+  });
+
+  recordChange('Importar imagen planilla', {
+    profile: selectedRows.length === 1 ? (selectedRows[0].matchedProfile || selectedRows[0].name) : 'Varios perfiles',
+    date: `${MONTHS[month0]} ${year}`,
+    count: written,
+    summary: `Imagen planilla: ${written} celda(s) en ${profilesTouched} perfil(es)`,
+    details: skipped ? `${skipped} celda(s) omitidas por modo combinar.` : ''
+  });
+
+  saveDB();
+  db.current = selectedRows[0].matchedProfile || selectedRows[0].name;
+  current = new Date(year, month0, 1);
+  saveDB();
+  updateUserDropdown();
+  updateUserInitial();
+  updateMonthDisplay();
+  render();
+  renderSummaryCategories();
+  calcSummary();
+  closeImageImportModal();
+  alert(`Importacion desde imagen completada: ${written} celda(s), ${profilesTouched} perfil(es).${skipped ? ` Omitidas: ${skipped}.` : ''}`);
 }
 
 function applyOCRResults(){
-  if(ocrDetectedShifts.length === 0) return alert("No hay turnos detectados para aplicar.");
-  const year  = parseInt(document.getElementById('imgImportYear').value);
-  const month = parseInt(document.getElementById('imgImportMonth').value) + 1;
+  const selected = ocrDetectedShifts.filter(x => x.selected !== false);
+  if(selected.length === 0) return alert('No hay días seleccionados para aplicar.');
+
+  const year  = parseInt(document.getElementById('imgImportYear').value, 10);
+  const month = parseInt(document.getElementById('imgImportMonth').value, 10) + 1;
+  const shift = document.getElementById('imgImportShift')?.value || 'CENA';
+  const mode = document.getElementById('imgImportMode')?.value || 'replace';
   const user = db.users[db.current];
   if(!user) return;
 
+  ensureCanonicalCoreShiftsForUser(user);
+
   let applied = 0;
-  ocrDetectedShifts.forEach(e => {
+  let skipped = 0;
+  selected.forEach(e => {
     const key = dayKey(year, month, e.day);
-    user.data[key] = user.data[key] || {};
-    user.data[key].shift = e.shift;
+    const prev = user.data[key] || {};
+    if(mode === 'merge' && !isPracticallyEmptyForOCRImport(prev)){
+      skipped++;
+      return;
+    }
+
+    const nextDay = buildSimpleDayFromShiftKeyForUser(user, shift, prev);
+    if(prev && prev.photoData) nextDay.photoData = prev.photoData;
+    nextDay.imageImportMeta = {
+      source: 'ocr-image',
+      appliedAt: new Date().toISOString(),
+      profile: db.current,
+      matchedText: e.cellText || '',
+      score: Number(e.score || 0),
+      method: e.method || 'OCR'
+    };
+
+    user.data[key] = nextDay;
     applied++;
   });
 
+  recordChange('Importar imagen', {
+    profile: db.current,
+    date: `${MONTHS[month-1]} ${year}`,
+    count: applied,
+    summary: `OCR calendario: ${applied} dia(s) con turno ${shift}`,
+    details: skipped ? `${skipped} dia(s) omitidos por modo combinar.` : ''
+  });
   saveDB();
   render();
   renderSummaryCategories();
   calcSummary();
   closeImageImportModal();
-  alert(`Se aplicaron ${applied} turno(s) al calendario de ${db.current}.`);
+  alert(`Se aplicaron ${applied} día(s) con turno ${shift} al perfil ${db.current}.${skipped ? ` Se omitieron ${skipped} por tener datos previos.` : ''}`);
 }
 
 function selectAllImportUsers(flag){
+
   document.querySelectorAll('.impUserChk').forEach(ch => {
     ch.checked = flag;
   });
@@ -5631,8 +7084,8 @@ function runImportSelected(){
       
       const key = dayKey(year, monthIndex0 + 1, day);
 
-      // Saltar si es modo merge y ya existe
-      if(importMode === 'merge' && user.data[key]) continue;
+      // Saltar si es modo merge y el día ya tiene información real
+      if(importMode === 'merge' && !isEffectivelyEmptyDayData(user.data[key])) continue;
 
       // Proteger meses pasados: en modo replace, no tocar meses anteriores al actual
       {
@@ -5664,6 +7117,13 @@ function runImportSelected(){
     }
   }
   
+  recordChange('Importar Excel', {
+    profile: selected.length === 1 ? (nameMatchMap[selected[0]] || selected[0]) : 'Varios perfiles',
+    date: `${MONTHS[monthIndex0]} ${year}`,
+    count: written,
+    summary: `Importacion Excel: ${written} celda(s) en ${selected.length} perfil(es)`,
+    details: `Modo: ${importMode}. Hoja: ${importContext.sheetName || ''}`
+  });
   saveDB();
   
   // Cambiar al primer usuario importado
@@ -5952,8 +7412,8 @@ function buildExportHTML(userKey, locality, year, monthIndex0, todayStr, catHour
     const dPrev = prevLastDay - i;
     const keyPrev = dayKey(prevYear, prevMonth0+1, dPrev);
     const infoPrev = (user.data && user.data[keyPrev]) ? user.data[keyPrev] : null;
-    const bgPrev = infoPrev ? getColorValue(infoPrev) : '#ffffff';
-    const labelPrev = infoPrev ? (infoPrev.mode==='simple' ? (infoPrev.s||'') : (infoPrev.sTop||'')) : '';
+    const bgPrev = infoPrev ? getDayPrimaryShiftColor(infoPrev, SHIFTS) : '#ffffff';
+    const labelPrev = infoPrev ? getDayPrimaryShiftLabel(infoPrev, SHIFTS) : '';
     const dayHTMLPrev = `
       <div style="height:100px;position:relative;border:1px solid #e5e7eb;background:${bgPrev};opacity:0.35;">
         <div style="position:absolute;top:6px;right:8px;font-size:14px;color:#111827;font-weight:700;">${dPrev}</div>
@@ -6025,8 +7485,8 @@ function buildExportHTML(userKey, locality, year, monthIndex0, todayStr, catHour
   for(let i=1; i<=trailing; i++){
     const keyNext = dayKey(nextYear, nextMonth0+1, i);
     const infoNext = (user.data && user.data[keyNext]) ? user.data[keyNext] : null;
-    const bgNext = infoNext ? getColorValue(infoNext) : '#ffffff';
-    const labelNext = infoNext ? (infoNext.mode==='simple' ? (infoNext.s||'') : (infoNext.sTop||'')) : '';
+    const bgNext = infoNext ? getDayPrimaryShiftColor(infoNext, SHIFTS) : '#ffffff';
+    const labelNext = infoNext ? getDayPrimaryShiftLabel(infoNext, SHIFTS) : '';
     const dayHTMLNext = `
       <div style="height:100px;position:relative;border:1px solid #e5e7eb;background:${bgNext};opacity:0.35;">
         <div style="position:absolute;top:6px;right:8px;font-size:14px;color:#111827;font-weight:700;">${i}</div>
@@ -6198,6 +7658,7 @@ let syncDecisionResolver = null;
 let smartSyncPromise = null;
 let cloudUploadDecisionResolver = null;
 let localCloudUploadPending = false;
+let deferLocalCloudBanner = false;
 
 // --- Persistencia de estado sync en localStorage ---
 // Guardamos el string raw del updated_at de la nube para comparación exacta sin problemas de precisión
@@ -6672,14 +8133,21 @@ async function smartInitialSync(){
 function safeInitAfterCloudReplace(){
   // Cuando llega desde nube, puede faltar algo por migraciones; reusar funciones de compatibilidad existentes.
   try{
-    // Re-crear selects y re-render
-    populateUserSelect();
+    ensureChangeLog();
+    ensureCanonicalCoreShiftsAllUsers();
+    migrateLegacyShiftPropertyEntriesAllUsers();
+    initSelectors();
+    updateUserDropdown();
+    updateUserInitial();
+    updateMonthDisplay();
     render();
-    updateSummary();
+    renderSummaryCategories();
+    calcSummary();
     renderSettings();
     renderCategories();
     renderLocalities();
     renderHolidays();
+    updateUIEditMode();
   }catch(e){
     console.error("safeInitAfterCloudReplace:", e);
     try{ render(); }catch(_){}
@@ -6697,6 +8165,8 @@ function scheduleCloudPush(){
   localCloudUploadPending = true;
   setLocalPendingPersisted(true);
   updateSyncStatusUI('pending-local');
+  const dayModalOpen = !!document.getElementById('modal')?.classList.contains('active');
+  if(deferLocalCloudBanner || dayModalOpen) return;
   showLocalUploadBanner();
 }
 
@@ -7205,6 +8675,7 @@ window.addEventListener('load', () => {
     <button id="actCopyShift" class="w-full text-left px-4 py-3 hover:bg-gray-50 font-bold">📌 Copiar turno</button>
     <button id="actPaste" class="w-full text-left px-4 py-3 hover:bg-gray-50 font-bold">📥 Pegar</button>
     <button id="actPasteMode" class="w-full text-left px-4 py-3 hover:bg-gray-50 font-bold">🖱️ Modo pegar: OFF</button>
+    <button id="actRange" class="w-full text-left px-4 py-3 hover:bg-gray-50 font-bold">🧩 Aplicar a rango</button>
     <button id="actClear" class="w-full text-left px-4 py-3 hover:bg-gray-50 font-bold text-red-600">🧹 Limpiar portapapeles</button>
   </div>
 </div>
@@ -7327,6 +8798,18 @@ window.addEventListener('load', () => {
     </div>
   </div>
 </div>
+
+
+<script>
+(function(){
+  const profilesModal = document.getElementById('profilesModal');
+  if(profilesModal){
+    profilesModal.addEventListener('click', (e)=>{
+      if(e.target === profilesModal || e.target.classList?.contains('modal-scroll-shell')) closeProfilesModal();
+    }, { passive: true });
+  }
+})();
+</script>
 
 </body>
 </html>
