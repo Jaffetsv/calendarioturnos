@@ -17,22 +17,22 @@
     // Fallback si tailwind no carga
     if (typeof tailwind === 'undefined') {
       console.log('Tailwind CDN no cargó, usando estilos inline');
-      document.write('<style>' + 
-        'body { font-family: system-ui, -apple-system, sans-serif; }' +
-        '.hidden { display: none !important; }' +
-        '.grid { display: grid; }' +
-        '.flex { display: flex; }' +
-        '.block { display: block !important; }' +
-        '
-    /* === UX: evitar selección/callout al mantener presionado (iOS/Android/PC) === */
-    .day-cell, .day-cell *{
-      -webkit-user-select:none;
-      user-select:none;
-      -webkit-touch-callout:none;
-    }
-    .day-cell{ touch-action: manipulation; }
-
-</style>');
+      document.write(`
+        <style>
+          body { font-family: system-ui, -apple-system, sans-serif; }
+          .hidden { display: none !important; }
+          .grid { display: grid; }
+          .flex { display: flex; }
+          .block { display: block !important; }
+          /* === UX: evitar selección/callout al mantener presionado (iOS/Android/PC) === */
+          .day-cell, .day-cell *{
+            -webkit-user-select:none;
+            user-select:none;
+            -webkit-touch-callout:none;
+          }
+          .day-cell{ touch-action: manipulation; }
+        </style>
+      `);
     }
   </script>
   
@@ -684,7 +684,17 @@
     .btab.btab-active .btab-line { background: #2563eb; width: 28px; }
 
     /* Espacio para el tab bar inferior */
-    body { padding-bottom: 68px; }
+    body {
+      padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+      scroll-padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    }
+    #bottomTabs {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    #view-summary,
+    #view-settings {
+      padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    }
 
     /* Encabezado de días de la semana */
     #weekHeader .wday {
@@ -869,7 +879,7 @@
 <body class="bg-gray-100">
 
 <!-- Top bar (rediseñado: 1 fila compacta) -->
-<div id="topBar" class="bg-[#1e293b] text-white px-3 py-2 sticky top-0 z-50 shadow-lg">
+<div id="topBar" class="bg-[#1e293b] text-white px-3 py-2 sticky top-0 z-50 shadow-lg" style="padding-top:max(8px, env(safe-area-inset-top, 0px));">
   <div class="flex items-center gap-2">
 
     <!-- Dot de sync: tap para abrir cuenta -->
@@ -2000,6 +2010,25 @@ function buildDefaultSimpleDay(user, shiftKey){
   return { mode:'simple', s: sk, tIn, tOut, h: hrs, n: note };
 }
 
+function getConfiguredShiftHours(user, shiftKey){
+  try{
+    const sh = user?.config?.[shiftKey] || null;
+    if(!sh){
+      return String(shiftKey || '').toUpperCase() === 'L' ? 8 : 0;
+    }
+    const hrs = calculateHours(sh.in || '00:00', sh.out || '00:00');
+    if(hrs > 0) return hrs;
+    return String(shiftKey || '').toUpperCase() === 'L' ? 8 : 0;
+  }catch(e){
+    return String(shiftKey || '').toUpperCase() === 'L' ? 8 : 0;
+  }
+}
+
+function normalizeShiftHoursForSummary(user, shiftKey, storedHours){
+  const raw = Number(storedHours) || 0;
+  if(raw > 0) return raw;
+  return getConfiguredShiftHours(user, shiftKey);
+}
 
 
 // ====== Helpers: prioridad de edición (nota vs horario) ======
@@ -2971,58 +3000,68 @@ function calcSummary(){
     catDays[catId] = 0;
   });
   
-  let freeDays = 0, vacDays = 0, workedDays = 0, holidayWorked = 0;
+  let freeDays = 0, vacDays = 0, workedDays = 0, holidayWorked = 0, freeHours = 0;
   const daysInMonth = new Date(y, m0 + 1, 0).getDate();
 
   const applicableHolidays = countApplicableHolidaysInMonth(y, m0, user.locality);
+  const defaultFreeHours = getConfiguredShiftHours(user, 'L') || 8;
 
   // Procesar días del mes
   for(let day = 1; day <= daysInMonth; day++){
     const key = dayKey(y, m1, day);
     const d = user.data[key] || buildDefaultSimpleDay(user, 'L');
-    const date = new Date(y, m0, day);
     const isHoliday = db.holidays[key] && holidayApplies(db.holidays[key].location, user.locality);
 
     if (d.mode === 'mixto') {
       const topCat = SHIFTS[d.t]?.cat;
       const botCat = SHIFTS[d.b]?.cat;
+      const topHours = (topCat && categories[topCat]) ? normalizeShiftHoursForSummary(user, d.t, d.hrsTop) : 0;
+      const botHours = (botCat && categories[botCat]) ? normalizeShiftHoursForSummary(user, d.b, d.hrsBottom) : 0;
 
-      if (isHoliday && (topCat || botCat)) holidayWorked++;
+      if (isHoliday && ((topCat && topCat !== 'off') || (botCat && botCat !== 'off'))) holidayWorked++;
 
       if (topCat && categories[topCat]) {
-        catHours[topCat] += (d.hrsTop || 0);
+        catHours[topCat] += topHours;
         catDays[topCat]++;
         if (topCat !== 'off') workedDays++;
       }
 
       if (botCat && categories[botCat]) {
-        catHours[botCat] += (d.hrsBottom || 0);
+        catHours[botCat] += botHours;
         catDays[botCat]++;
         if (botCat !== 'off') workedDays++;
       }
 
-      // Para días libres/vacaciones en mixto: contar el DÍA completo
-      // según si AMBAS partes son off, o sólo una
       const topIsOff = !topCat || topCat === 'off';
       const botIsOff = !botCat || botCat === 'off';
       if (topIsOff && botIsOff) {
-        // Día completamente libre o vacaciones
         const isVac = (d.t === 'Vacaciones') || (d.b === 'Vacaciones');
-        if (isVac) vacDays++; else freeDays++;
+        if (isVac) {
+          vacDays++;
+        } else {
+          freeDays++;
+          const dayFreeHours = (topHours + botHours) > 0 ? (topHours + botHours) : defaultFreeHours;
+          freeHours += dayFreeHours;
+        }
       }
-      // Si sólo una mitad es off no contamos día completo libre
     } else {
       const cat = SHIFTS[d.s]?.cat;
+      const normalizedHours = (cat && categories[cat]) ? normalizeShiftHoursForSummary(user, d.s, d.h) : 0;
+
       if (cat && categories[cat]) {
-        catHours[cat] += (d.h || 0);
+        catHours[cat] += normalizedHours;
         catDays[cat]++;
 
         if (cat !== 'off') {
           workedDays++;
           if (isHoliday) holidayWorked++;
         } else {
-          if ((d.s || '') === 'Vacaciones') vacDays++;
-          else freeDays++;
+          if ((d.s || '') === 'Vacaciones') {
+            vacDays++;
+          } else {
+            freeDays++;
+            freeHours += normalizedHours > 0 ? normalizedHours : defaultFreeHours;
+          }
         }
       }
     }
@@ -3042,8 +3081,10 @@ function calcSummary(){
   const elements = {
     'total-off': freeDays + vacDays,
     'free-days': freeDays,
+    'free-days2': freeDays,
     'vac-days': vacDays,
-'holiday-worked': holidayWorked,
+    'vac-days2': vacDays,
+    'holiday-worked': holidayWorked,
     'worked-days': workedDays,
     'total-holidays': applicableHolidays,
     'profile-loc': user.locality || 'San Salvador',
@@ -3061,27 +3102,39 @@ function calcSummary(){
   const avgEl = document.getElementById('avg-hours');
   if (avgEl) avgEl.textContent = `${avg.toFixed(1)}h`;
 
-  // Horas libres: freeDays son días completos × 8h
-  const freeHours = freeDays * 8;
+  const freeHoursRounded = Math.round(freeHours * 10) / 10;
+  const freeHoursText = `${freeHoursRounded % 1 === 0 ? freeHoursRounded.toFixed(0) : freeHoursRounded.toFixed(1)} hrs`;
   const freeHoursEl = document.getElementById('free-hours');
-  if (freeHoursEl) freeHoursEl.textContent = `${freeHours} hrs`;
+  if (freeHoursEl) freeHoursEl.textContent = `${freeHoursText} de descanso`;
+  const freeHoursEl2 = document.getElementById('free-hours2');
+  if (freeHoursEl2) freeHoursEl2.textContent = freeHoursText;
 
   // Barra de progreso del mes
   const pct = daysInMonth > 0 ? Math.round((workedDays / daysInMonth) * 100) : 0;
+  const freePct = daysInMonth > 0 ? Math.round(((freeDays + vacDays) / daysInMonth) * 100) : 0;
   const barFill = document.getElementById('workProgressFill');
+  const barFill2 = document.getElementById('workProgressFill2');
+  const freeFill = document.getElementById('freeProgressFill');
   const barLabel = document.getElementById('workProgressLabel');
   if (barFill) barFill.style.width = `${pct}%`;
+  if (barFill2) barFill2.style.width = `${pct}%`;
+  if (freeFill) freeFill.style.width = `${freePct}%`;
   if (barLabel) barLabel.textContent = `${pct}% del mes trabajado`;
 
   // Tarjetas stat mejoradas
   const setCard = (id, val, sub) => {
     const el = document.getElementById(id);
-    if (el) { el.querySelector('.stat-card-value').textContent = val; if(sub) el.querySelector('.stat-card-sub').textContent = sub; }
+    if (el) {
+      const valueEl = el.querySelector('.stat-card-value');
+      const subEl = el.querySelector('.stat-card-sub');
+      if (valueEl) valueEl.textContent = val;
+      if (sub && subEl) subEl.textContent = sub;
+    }
   };
-  setCard('statCardWorked',  workedDays,         `${totalHours.toFixed(1)} hrs totales`);
-  setCard('statCardFree',    freeDays,            `${freeHours} hrs de descanso`);
+  setCard('statCardWorked',  workedDays,           `${totalHours.toFixed(1)} hrs totales`);
+  setCard('statCardFree',    freeDays,             `${freeHoursText} de descanso`);
   setCard('statCardAvg',     `${avg.toFixed(1)}h`, `promedio por día trabajado`);
-  setCard('statCardVac',     vacDays,             vacDays === 1 ? '1 día de vacaciones' : `${vacDays} días de vacaciones`);
+  setCard('statCardVac',     vacDays,              vacDays === 1 ? '1 día de vacaciones' : `${vacDays} días de vacaciones`);
 }
 
 // =========================================================
@@ -6155,6 +6208,7 @@ function getLastAckCloudTS(){ try{ return localStorage.getItem(LSKEY_CLOUD_TS_AC
 function saveLastAckCloudTS(ts){ try{ if(ts) localStorage.setItem(LSKEY_CLOUD_TS_ACK, String(ts)); }catch(e){} }
 function getLocalPendingPersisted(){ return localStorage.getItem(LSKEY_LOCAL_PENDING) === 'true'; }
 function setLocalPendingPersisted(val){ try{ localStorage.setItem(LSKEY_LOCAL_PENDING, val ? 'true' : 'false'); }catch(e){} }
+function hasLocalPendingChanges(){ return !!(localCloudUploadPending || getLocalPendingPersisted()); }
 
 function getDeviceId(){
   try{
@@ -6588,7 +6642,7 @@ async function smartInitialSync(){
         // Nube cambió, sin conflicto local → banner discreto, no modal bloqueante
         remoteConflictPending = true;
         lastRemotePayload = row;
-        showCloudUpdateBanner();
+        showCloudUpdateBanner(hasLocalPendingChanges() ? 'conflict' : 'remote');
         updateSyncStatusUI('pending-remote');
 
       }else if(!cloudIsNew && hasPending){
@@ -6637,7 +6691,7 @@ function scheduleCloudPush(){
   if(!cloudInitReady) return;
   if(remoteConflictPending){
     updateSyncStatusUI('pending-remote');
-    showCloudUpdateBanner();
+    showCloudUpdateBanner(hasLocalPendingChanges() ? 'conflict' : 'remote');
     return;
   }
   localCloudUploadPending = true;
@@ -6652,7 +6706,7 @@ async function manualSyncNow(){
     return;
   }
   if(remoteConflictPending){
-    showCloudUpdateBanner();
+    showCloudUpdateBanner(hasLocalPendingChanges() ? 'conflict' : 'remote');
     if(typeof toast === 'function') toast('Hay cambios pendientes de otro dispositivo. Decide primero qué hacer.');
     return;
   }
@@ -6776,11 +6830,13 @@ function subscribeRealtime(){
         const row = payload?.new || {};
         const remoteData = row?.data || {};
         const remoteDevice = remoteData?._meta?.device_id;
+        const remoteTS = remoteData?._meta?.updated_at || row?.updated_at || '';
         const myDevice = getDeviceId();
-        if(remoteDevice && remoteDevice !== myDevice){
+        const lastAck = getLastAckCloudTS();
+        if(remoteDevice && remoteDevice !== myDevice && remoteTS && remoteTS !== lastAck){
           remoteConflictPending = true;
           lastRemotePayload = row;
-          showCloudUpdateBanner();
+          showCloudUpdateBanner(hasLocalPendingChanges() ? 'conflict' : 'remote');
           updateSyncStatusUI('pending-remote');
         }
       })
@@ -6788,22 +6844,38 @@ function subscribeRealtime(){
   }catch(e){ console.warn('Realtime subscribe error:', e); }
 }
 
-function showCloudUpdateBanner(){
+function showCloudUpdateBanner(mode = 'remote'){
   let banner = document.getElementById('cloudUpdateBanner');
+  const hasConflict = mode === 'conflict' || hasLocalPendingChanges();
   if(!banner){
     banner = document.createElement('div');
     banner.id = 'cloudUpdateBanner';
-    banner.style.cssText = 'position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:9999;background:#0f172a;color:#fff;padding:14px 16px;border-radius:18px;font-size:12px;font-weight:900;display:flex;gap:14px;align-items:center;max-width:min(94vw,620px);width:calc(100vw - 24px);';
+    banner.style.cssText = 'position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:9999;background:#0f172a;color:#fff;padding:14px 16px;border-radius:18px;font-size:12px;font-weight:900;display:flex;gap:14px;align-items:center;max-width:min(94vw,760px);width:calc(100vw - 24px);box-shadow:0 8px 32px rgba(0,0,0,0.40);border:1px solid rgba(255,255,255,0.15);';
+    document.body.appendChild(banner);
+  }
+
+  if(hasConflict){
+    banner.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:900;margin-bottom:4px;line-height:1.2;">Conflicto entre nube y este dispositivo</div>
+        <div style="font-size:11px;opacity:0.88;font-weight:700;line-height:1.35;">Hay cambios nuevos en la nube y este dispositivo también conserva cambios locales. Nada se reemplazará automáticamente. Decide si deseas descargar la nube, fusionar, o subir tu versión local.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;align-self:stretch;flex-wrap:wrap;justify-content:flex-end;">
+        <button onclick="useCloudVersionFromBanner()" style="background:#2563eb;border:none;color:#fff;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">📥 Nube</button>
+        <button onclick="mergeRemoteFromBanner()" style="background:#22c55e;border:none;color:#fff;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">🔀 Fusionar</button>
+        <button onclick="uploadLocalVersionOverRemote()" style="background:#f59e0b;border:none;color:#fff;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">☁️ Subir lo mío</button>
+        <button onclick="dismissCloudBanner()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:#fff;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">✕ Ignorar</button>
+      </div>`;
+  }else{
     banner.innerHTML = `
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:900;margin-bottom:4px;line-height:1.2;">Cambios detectados en otro dispositivo</div>
         <div style="font-size:11px;opacity:0.88;font-weight:700;line-height:1.35;">Hay una versión más reciente en la nube. El sistema no reemplazará tus datos por sí solo. Decide si deseas actualizar o ignorar por ahora.</div>
       </div>
-      <div style="display:flex;gap:8px;flex-shrink:0;align-self:stretch;">
-        <button onclick="pullLatestAndDismissBanner()" style="background:#22c55e;border:none;color:#fff;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">✓ Actualizar</button>
+      <div style="display:flex;gap:8px;flex-shrink:0;align-self:stretch;flex-wrap:wrap;justify-content:flex-end;">
+        <button onclick="useCloudVersionFromBanner()" style="background:#22c55e;border:none;color:#fff;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">✓ Actualizar</button>
         <button onclick="dismissCloudBanner()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:#fff;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;font-size:11px;white-space:nowrap;">✕ Ignorar</button>
       </div>`;
-    document.body.appendChild(banner);
   }
   banner.style.display = 'flex';
 }
@@ -6820,11 +6892,28 @@ function dismissCloudBanner(){
   lastRemotePayload = null;
 }
 
-async function pullLatestAndDismissBanner(){
+async function useCloudVersionFromBanner(){
   const b = document.getElementById('cloudUpdateBanner');
   if(b) b.style.display = 'none';
   try{
-    const row = await pullFromCloud();
+    const row = lastRemotePayload || await pullFromCloud();
+    if(!row) return;
+    const cloudInternalTS = row.data?._meta?.updated_at || row.updated_at || '';
+    applyCloudDb(row.data || db, {cloudTS: cloudInternalTS});
+    remoteConflictPending = false;
+    lastRemotePayload = null;
+    toast && toast('✓ Se aplicó la versión de la nube');
+  }catch(e){
+    console.warn('useCloudVersionFromBanner error:', e);
+    updateSyncStatusUI('error');
+  }
+}
+
+async function mergeRemoteFromBanner(){
+  const b = document.getElementById('cloudUpdateBanner');
+  if(b) b.style.display = 'none';
+  try{
+    const row = lastRemotePayload || await pullFromCloud();
     if(!row) return;
     const cloudInternalTS = row.data?._meta?.updated_at || row.updated_at || '';
     const localDbSnapshot = JSON.parse(JSON.stringify(db));
@@ -6832,10 +6921,35 @@ async function pullLatestAndDismissBanner(){
     applyCloudDb(mergedDb, {cloudTS: cloudInternalTS});
     remoteConflictPending = false;
     lastRemotePayload = null;
-    toast && toast('✓ Datos actualizados desde la nube');
+    toast && toast('✓ Datos fusionados correctamente');
   }catch(e){
-    console.warn('pullLatest error:', e);
+    console.warn('mergeRemoteFromBanner error:', e);
+    updateSyncStatusUI('error');
   }
+}
+
+async function uploadLocalVersionOverRemote(){
+  const b = document.getElementById('cloudUpdateBanner');
+  if(b) b.style.display = 'none';
+  try{
+    remoteConflictPending = false;
+    lastRemotePayload = null;
+    updateSyncStatusUI('pending');
+    await pushToCloud();
+    localCloudUploadPending = false;
+    setLocalPendingPersisted(false);
+    dismissLocalUploadBanner();
+    lastSyncTime = new Date();
+    updateSyncStatusUI('synced');
+    toast && toast('✓ Tu versión local se subió a la nube');
+  }catch(e){
+    console.warn('uploadLocalVersionOverRemote error:', e);
+    updateSyncStatusUI('error');
+  }
+}
+
+async function pullLatestAndDismissBanner(){
+  return mergeRemoteFromBanner();
 }
 
 function showLocalUploadBanner(){
@@ -6866,7 +6980,7 @@ function dismissLocalUploadBanner(){
 async function confirmUploadLocalChanges(){
   dismissLocalUploadBanner();
   if(remoteConflictPending){
-    showCloudUpdateBanner();
+    showCloudUpdateBanner(hasLocalPendingChanges() ? 'conflict' : 'remote');
     return;
   }
   try{
