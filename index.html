@@ -122,7 +122,37 @@
     .weekend {
       background: #f8fafc !important;
     }
-    
+
+    /* === Stepper del asistente de importación === */
+    .import-step{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:5px 10px; border-radius:999px;
+      background:#f3f4f6; color:#9ca3af;
+      transition: all .2s ease;
+    }
+    .import-step.active{
+      background:linear-gradient(90deg,#0ea5e9,#6366f1); color:#fff;
+      box-shadow:0 2px 8px rgba(99,102,241,.35);
+    }
+    .import-step.done{ background:#dcfce7; color:#16a34a; }
+    .import-step-line{
+      width:18px; height:2px; background:#e5e7eb; border-radius:2px;
+    }
+
+    /* Animación suave al cambiar de mes */
+    .calendar-grid{ transition: opacity .15s ease; }
+    .calendar-grid.fading{ opacity:.35; }
+
+    /* Celda hoy más destacada */
+    .today{
+      box-shadow: inset 0 0 0 2px #2563eb, 0 2px 10px rgba(37,99,235,.25) !important;
+      animation: pulseToday 2.4s ease-in-out infinite;
+    }
+    @keyframes pulseToday{
+      0%,100%{ box-shadow: inset 0 0 0 2px #2563eb, 0 2px 8px rgba(37,99,235,.18) !important; }
+      50%{ box-shadow: inset 0 0 0 2px #2563eb, 0 3px 14px rgba(37,99,235,.4) !important; }
+    }
+
     /* Colores de turnos - Nombres en español */
     .bg-Mañana { background: #ffff00 !important; }
     .bg-Tarde { background: #fbcfe8 !important; }
@@ -1565,13 +1595,27 @@
 <!-- Modal Import - CORREGIDO: Nombres visibles en selects -->
 <div id="importModal" class="modal">
   <div class="bg-white w-full max-w-2xl rounded-3xl md:rounded-[40px] p-4 md:p-6 lg:p-8 shadow-2xl mx-2 max-h-[85vh] overflow-y-auto overscroll-contain">
-    <div class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 mx-auto mb-4 flex items-center justify-center">
+    <div class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 mx-auto mb-3 flex items-center justify-center shadow-lg shadow-sky-200">
       <span class="text-white text-2xl font-black">📥</span>
     </div>
-    <h3 class="font-black text-center uppercase text-base md:text-lg mb-2">Importar Excel</h3>
-    <p class="text-[11px] text-gray-500 font-bold text-center mb-6">
-      Detecta usuarios y permite seleccionar cuáles importar.
-    </p>
+    <h3 class="font-black text-center uppercase text-base md:text-lg mb-1">Importar Excel</h3>
+
+    <!-- Stepper visual de pasos -->
+    <div id="importStepper" class="flex items-center justify-center gap-1 md:gap-2 mb-4 text-[10px] font-black uppercase">
+      <span id="step1" class="import-step active">1 · Subir</span>
+      <span class="import-step-line"></span>
+      <span id="step2" class="import-step">2 · Mes</span>
+      <span class="import-step-line"></span>
+      <span id="step3" class="import-step">3 · Importar</span>
+    </div>
+
+    <!-- Aviso destacado sobre el mes destino (clave para evitar confusiones) -->
+    <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-3 mb-4 text-center">
+      <p class="text-[11px] font-black text-blue-800 leading-tight">
+        🗓️ El mes destino es el que <u>TÚ eliges abajo</u>.
+        <br>El Excel solo sugiere, pero <b>tú decides</b> a qué mes se importa.
+      </p>
+    </div>
 
     <div class="space-y-4">
       <div>
@@ -1581,12 +1625,12 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label class="text-[12px] font-bold text-gray-600 block mb-2">Mes (si no detecta)</label>
-          <select id="importMonth" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
+          <label class="text-[12px] font-bold text-gray-600 block mb-2">📅 Mes destino <span class="text-red-500 font-black">(se usa este)</span></label>
+          <select id="importMonth" onchange="refreshImportSummary()" class="w-full bg-blue-50 border-2 border-blue-300 text-gray-900 font-black"></select>
         </div>
         <div>
-          <label class="text-[12px] font-bold text-gray-600 block mb-2">Año (si no detecta)</label>
-          <select id="importYear" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
+          <label class="text-[12px] font-bold text-gray-600 block mb-2">📅 Año destino <span class="text-red-500 font-black">(se usa este)</span></label>
+          <select id="importYear" onchange="refreshImportSummary()" class="w-full bg-blue-50 border-2 border-blue-300 text-gray-900 font-black"></select>
         </div>
       </div>
 
@@ -1999,17 +2043,19 @@ migrateLegacyShiftPropertyEntriesAllUsers();
 function normalizeEnabledFlags(){
   try{
     if(!db || !db.users) return;
+    let changed = false;
     Object.keys(db.users).forEach(u=>{
       const user = db.users[u];
       if(!user || !user.config) return;
       Object.keys(user.config).forEach(k=>{
         if(typeof user.config[k].enabled === 'undefined'){
           user.config[k].enabled = (['Mañana','Tarde','16hrs','CENA','L','Vacaciones'].includes(k));
+          changed = true;
         }
         // Si alguien renombró "VACACIONES" a otro label, no afecta el key.
       });
     });
-    saveDB();
+    if(changed) saveDB();
   }catch(e){
     console.log('normalizeEnabledFlags error', e);
   }
@@ -2173,13 +2219,46 @@ function migrateLegacyShiftPropertyEntriesAllUsers(){
 ensureCanonicalCoreShiftsAllUsers();
 migrateLegacyShiftPropertyEntriesAllUsers();
 
-function saveDB(){ 
+// ----- Persistencia con debounce -----
+// El guardado se debouncea para fusionar muchas llamadas rápidas (hasta 36 sitios)
+// en una sola escritura a localStorage. _saveDBNow() fuerza escritura inmediata
+// para casos críticos (importar, logout, antes de cerrar la pestaña).
+let _saveDBTimer = null;
+let _saveDBDirty = false;
+const SAVE_DB_DEBOUNCE_MS = 300;
+
+function _persistDBNow(){
   try {
     localStorage.setItem('shifter_v23', JSON.stringify(db));
   } catch (e) {
     console.error('Error guardando DB:', e);
   }
 }
+
+function _schedulePersist(){
+  if(_saveDBTimer) clearTimeout(_saveDBTimer);
+  _saveDBTimer = setTimeout(() => {
+    _saveDBTimer = null;
+    if(_saveDBDirty){ _saveDBDirty = false; _persistDBNow(); }
+  }, SAVE_DB_DEBOUNCE_MS);
+}
+
+// Guardado con debounce: marca "dirty" y programa la escritura.
+function saveDB(){
+  _saveDBDirty = true;
+  _schedulePersist();
+}
+
+// Fuerza la escritura inmediata (vacía el timer). Úsalo en acciones críticas.
+function saveDBNow(){
+  if(_saveDBTimer){ clearTimeout(_saveDBTimer); _saveDBTimer = null; }
+  _saveDBDirty = false;
+  _persistDBNow();
+}
+
+// Asegurar que no se pierdan datos al cerrar/recargar la pestaña
+window.addEventListener('beforeunload', () => { if(_saveDBDirty) _persistDBNow(); });
+window.addEventListener('pagehide',     () => { if(_saveDBDirty) _persistDBNow(); });
 
 // =========================================================
 // Change history / bitacora
@@ -2365,6 +2444,41 @@ let selB = "L";
 let selectedColor = "Mañana";
 
 let importContext = null;
+let importContextDetected = null; // mes/año detectado en el archivo (solo sugerencia)
+let importConflictNote = '';      // aviso HTML si el archivo y la selección difieren
+
+// Usar el mes/año detectado en el archivo cuando el usuario hace clic en el aviso
+function usarMesDetectado(monthDetected, yearDetected){
+  const mSel = document.getElementById('importMonth');
+  const ySel = document.getElementById('importYear');
+  if(monthDetected != null && mSel){ mSel.value = monthDetected; }
+  if(yearDetected != null && ySel){ ySel.value = yearDetected; }
+  refreshImportSummary();
+}
+
+// Refresca el importContext y el resumen cuando el usuario cambia mes/año manualmente
+function refreshImportSummary(){
+  const mSel = document.getElementById('importMonth');
+  const ySel = document.getElementById('importYear');
+  if(!mSel || !ySel) return;
+  if(importContext){
+    importContext.monthIndex0 = parseInt(mSel.value);
+    importContext.year = parseInt(ySel.value);
+  }
+  // Re-analizar refresca usuarios, turnos y el aviso de conflicto con la nueva selección
+  analyzeImportFile();
+}
+
+// Actualiza el stepper visual (1,2,3)
+function setImportStep(n){
+  ['step1','step2','step3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.remove('active','done');
+    if(i+1 < n) el.classList.add('done');
+    else if(i+1 === n) el.classList.add('active');
+  });
+}
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const ALWAYS_VISIBLE_SHIFTS = ['Mañana','Tarde','16hrs','CENA','L','Vacaciones'];
@@ -2842,13 +2956,15 @@ function loadDefaultHolidays(){
     {date: '2026-12-31', name: 'Fin de Año', location: 'General'}
   ];
   
+  let added = false;
   defaults.forEach(({date, name, location}) => {
     if (!db.holidays[date]) {
       db.holidays[date] = { name, location };
+      added = true;
     }
   });
-  
-  saveDB();
+
+  if(added) saveDB();
 }
 
 function initSelectors(){
@@ -3187,7 +3303,9 @@ function fitCalendarToViewport(){
 function render(){
   const grid = document.getElementById('calendar');
   if (!grid) return;
-  
+
+  bindCalendarGridEvents(); // idempotente: enlaza delegación una sola vez
+
   grid.innerHTML = '';
   
   const y = current.getFullYear();
@@ -3243,120 +3361,148 @@ function render(){
 
 function createDayCell(dayNum, isOffMonth, info, SHIFTS, user, key, isToday = false){
   const cell = document.createElement('div');
-  let wasLongPress = false;
-let suppressClickUntil = 0;
-  let pressTimer = null;
-  
+
   let classes = 'day-cell';
   if (isOffMonth) classes += ' day-off-month';
-  
+
   const date = new Date(key.replace(/-/g, '/'));
   const dow = date.getDay();
   if (dow === 0 || dow === 6) classes += ' weekend';
   if (isToday) classes += ' today';
-  
+
   cell.className = classes;
-  
-  // Contenido según tipo de turno
+  cell.dataset.key = key; // para delegación de eventos
+
+  // === Construir TODO el contenido en una sola plantilla (evita re-parses) ===
+  let html = '';
+
   if (info) {
     if (info.mode === 'mixto') {
       const topShift = SHIFTS[info.t] || {color: 'L', label: 'L'};
       const bottomShift = SHIFTS[info.b] || {color: 'L', label: 'L'};
-      
-      cell.innerHTML = `
-        <div class="shift-label ${shiftBgClass(topShift.color)}" style="${shiftBgStyle(topShift.color)}">${escapeHTML(topShift.label)}</div>
-        <div class="shift-label ${shiftBgClass(bottomShift.color)}" style="${shiftBgStyle(bottomShift.color)}">${escapeHTML(bottomShift.label)}</div>
-      `;
-      
-      if (info.noteTop) {
-        cell.innerHTML += `<div class="mixto-top-note">${escapeHTML(info.noteTop)}</div>`;
-      }
-      if (info.noteBottom) {
-        cell.innerHTML += `<div class="mixto-bottom-note">${escapeHTML(info.noteBottom)}</div>`;
-      }
+      html += `<div class="shift-label ${shiftBgClass(topShift.color)}" style="${shiftBgStyle(topShift.color)}">${escapeHTML(topShift.label)}</div>`;
+      html += `<div class="shift-label ${shiftBgClass(bottomShift.color)}" style="${shiftBgStyle(bottomShift.color)}">${escapeHTML(bottomShift.label)}</div>`;
+      if (info.noteTop)    html += `<div class="mixto-top-note">${escapeHTML(info.noteTop)}</div>`;
+      if (info.noteBottom) html += `<div class="mixto-bottom-note">${escapeHTML(info.noteBottom)}</div>`;
     } else {
       const shift = SHIFTS[info.s] || {color: 'L', label: 'L'};
       const noteText = (info.n || '').toString().trim();
-      cell.innerHTML = `<div class="shift-label ${shiftBgClass(shift.color)}" style="${shiftBgStyle(shift.color)}">${escapeHTML(shift.label)}</div>`;
-      if (noteText) {
-        cell.innerHTML += `<div class="note-text">${escapeHTML(noteText)}</div>`;
-      }
+      html += `<div class="shift-label ${shiftBgClass(shift.color)}" style="${shiftBgStyle(shift.color)}">${escapeHTML(shift.label)}</div>`;
+      if (noteText) html += `<div class="note-text">${escapeHTML(noteText)}</div>`;
     }
   } else {
-    cell.innerHTML = `<div class="shift-label bg-L">L</div>`;
+    html += `<div class="shift-label bg-L">L</div>`;
   }
-  
+
   // Indicador de asueto
   const holiday = db.holidays[key];
   if (holiday && holidayApplies(holiday.location, user.locality)) {
-    cell.innerHTML += `<div class="holiday-indicator">A</div>`;
+    html += `<div class="holiday-indicator">A</div>`;
   }
-  
-  
+
   // Miniatura de foto
   if (info && info.photoData) {
-    cell.innerHTML += `<div class="day-photo-thumb"><img src="${info.photoData}" alt="foto"/></div>`;
+    html += `<div class="day-photo-thumb"><img src="${info.photoData}" alt="foto"/></div>`;
   }
 
   // Número del día
-  cell.innerHTML += `<span class="day-number">${dayNum}</span>`;
-  
-  // Evento click
-  cell.onclick = (ev) => {
-    if (wasLongPress) { wasLongPress = false; return; }
+  html += `<span class="day-number">${dayNum}</span>`;
+
+  // Asignación única (un solo parseo del HTML de la celda)
+  cell.innerHTML = html;
+
+  // Los eventos se manejan por DELEGACIÓN en la grilla (ver bindCalendarGridEvents)
+  return cell;
+}
+
+// =========================================================
+// Delegación de eventos del calendario (un solo set de listeners)
+// =========================================================
+let _dayGridEventsBound = false;
+let _dayGridWasLongPress = false;
+let _dayGridPressTimer = null;
+
+function _getCellKey(ev){
+  const cell = ev.target && ev.target.closest ? ev.target.closest('.day-cell') : null;
+  if(!cell || !cell.dataset || !cell.dataset.key) return null;
+  return cell;
+}
+
+function _getDayInfoForKey(key){
+  const user = db.users[db.current];
+  if(!user) return null;
+  return user.data[key] || null;
+}
+
+function bindCalendarGridEvents(){
+  if(_dayGridEventsBound) return;
+  const grid = document.getElementById('calendar');
+  if(!grid) return;
+  _dayGridEventsBound = true;
+
+  // Click normal
+  grid.addEventListener('click', (ev) => {
+    if(_dayGridWasLongPress){ _dayGridWasLongPress = false; return; }
+    const cell = _getCellKey(ev);
+    if(!cell) return;
+    const key = cell.dataset.key;
+
     if (!isEditMode()) {
-      // Mostrar toast más amigable en lugar de alert
       if(typeof toast === 'function') toast('🔒 Activa el modo edición desde el menú ☰');
       else alert("Activa modo edición desde el menú ☰");
       return;
     }
-    // Si está activo el modo pegar, pegar sin abrir modal
+    // Modo pegar
     if (pasteMode && (clipboardDayData || clipboardShiftOnly)) {
       pasteTo(key);
       return;
     }
     hideDayMenu();
+    const info = _getDayInfoForKey(key);
     openDay(key, info || {mode: 'simple', s: 'L'});
-  };
+  });
 
-  // Menú acciones (PC clic derecho / Touch mantener presionado)
-  cell.oncontextmenu = (ev) => {
+  // Clic derecho (PC)
+  grid.addEventListener('contextmenu', (ev) => {
+    const cell = _getCellKey(ev);
+    if(!cell) return;
     ev.preventDefault();
     if (!isEditMode()) return;
-    wasLongPress = true;
-    showDayMenu(ev.clientX, ev.clientY, key);
-  };
+    _dayGridWasLongPress = true;
+    showDayMenu(ev.clientX, ev.clientY, cell.dataset.key);
+  });
+
+  // Long-press (pointer o touch)
   const startPress = (ev) => {
+    const cell = _getCellKey(ev);
+    if(!cell) return;
     if (!isEditMode()) return;
-    // Solo botón primario (evita disparos por clic derecho/contextmenu)
     if (ev && ev.button !== undefined && ev.button !== 0) return;
     const pt = (ev.touches && ev.touches[0]) ? ev.touches[0] : ev;
-    pressTimer = setTimeout(()=> {
-      wasLongPress = true;
-      showDayMenu(pt.clientX || 20, pt.clientY || 20, key);
+    if(_dayGridPressTimer) clearTimeout(_dayGridPressTimer);
+    _dayGridPressTimer = setTimeout(() => {
+      _dayGridWasLongPress = true;
+      showDayMenu(pt.clientX || 20, pt.clientY || 20, cell.dataset.key);
     }, 450);
   };
-  const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+  const cancelPress = () => {
+    if(_dayGridPressTimer){ clearTimeout(_dayGridPressTimer); _dayGridPressTimer = null; }
+  };
 
-  // Long-press: usar *solo un* sistema de eventos para evitar dobles timers (touch + pointer)
   const supportsPointer = ('PointerEvent' in window);
   if (supportsPointer) {
-    cell.addEventListener('pointerdown', (ev)=>{ startPress(ev); });
-    cell.addEventListener('pointerup', cancelPress);
-    cell.addEventListener('pointercancel', cancelPress);
-    cell.addEventListener('pointermove', cancelPress);
+    grid.addEventListener('pointerdown', startPress);
+    grid.addEventListener('pointerup', cancelPress);
+    grid.addEventListener('pointercancel', cancelPress);
+    grid.addEventListener('pointermove', cancelPress);
   } else {
-    cell.addEventListener('touchstart', startPress, {passive:true});
-    cell.addEventListener('touchend', cancelPress);
-    cell.addEventListener('touchmove', cancelPress);
-    cell.addEventListener('mousedown', startPress);
-    cell.addEventListener('mouseup', cancelPress);
-    cell.addEventListener('mouseleave', cancelPress);
+    grid.addEventListener('touchstart', startPress, {passive:true});
+    grid.addEventListener('touchend', cancelPress);
+    grid.addEventListener('touchmove', cancelPress);
+    grid.addEventListener('mousedown', startPress);
+    grid.addEventListener('mouseup', cancelPress);
+    grid.addEventListener('mouseleave', cancelPress);
   }
-
-
-  
-  return cell;
 }
 
 // =========================================================
@@ -5430,14 +5576,17 @@ function openImportModal(){
   document.getElementById('importUsersList').innerHTML = `
     <div class="text-gray-400 font-bold">Adjunta un Excel y presiona "Analizar".</div>
   `;
-  
+  if(typeof setImportStep === 'function') setImportStep(1);
+
   importContext = null;
-  
+  importConflictNote = '';
+  importContextDetected = null;
+
   const importMonth = document.getElementById('importMonth');
   const importYear = document.getElementById('importYear');
   if (importMonth) importMonth.value = current.getMonth();
   if (importYear) importYear.value = current.getFullYear();
-  
+
   const modal = document.getElementById('importModal');
   if (modal) modal.classList.add('active');
 }
@@ -6532,12 +6681,34 @@ async function analyzeImportFile(){
 
     const { sn: sheetName, rows, headerIdx, headerRow, dayCols } = best;
 
-    // Detectar mes y año (en esa hoja)
+    // Detectar mes y año (en esa hoja) — solo como sugerencia
     const detected = detectMonthYearFromRows(rows);
-    const fallbackMonth = parseInt(document.getElementById('importMonth').value);
-    const fallbackYear = parseInt(document.getElementById('importYear').value);
-    const monthIndex0 = (detected.month ?? fallbackMonth);
-    const year = (detected.year ?? fallbackYear);
+
+    // La selección MANUAL del usuario es la FUENTE DE VERDAD.
+    // La detección del Excel/imagen se usa únicamente como sugerencia inicial
+    // y para avisar de conflictos. Así se evita que "Julio" del Excel pise
+    // la selección manual del usuario (ej. Agosto).
+    const monthIndex0 = parseInt(document.getElementById('importMonth').value);
+    const year = parseInt(document.getElementById('importYear').value);
+
+    // Avisar si se detectó un mes/año distinto al elegido por el usuario
+    let conflictNote = '';
+    const dM = (detected && detected.month != null) ? detected.month : null;
+    const dY = (detected && detected.year != null) ? detected.year : null;
+    const mesConflicto = (dM != null && dM !== monthIndex0);
+    const anioConflicto = (dY != null && dY !== year);
+    if(mesConflicto || anioConflicto){
+      const txtDet = (dM != null ? MONTHS[dM] : '¿?') + ' ' + (dY != null ? dY : '¿?');
+      const txtSel = MONTHS[monthIndex0] + ' ' + year;
+      conflictNote = ` ⚠️ El archivo dice "${txtDet}" pero se usará tu selección: ${txtSel}. ` +
+        `<button onclick="usarMesDetectado(${dM == null ? 'null' : dM}, ${dY == null ? 'null' : dY})" ` +
+        `class="underline font-black text-blue-700">Usar lo detectado</button>`;
+      importContextDetected = { month: dM, year: dY };
+    } else {
+      importContextDetected = null;
+    }
+    // Exponer nota de conflicto para el resumen final
+    importConflictNote = conflictNote;
 
     // Detectar columnas nombre/empleado (robusto)
     const cols = inferNameEmpCols(rows, headerIdx, headerRow, dayCols);
@@ -6604,8 +6775,11 @@ async function analyzeImportFile(){
     // Mostrar mapeo de turnos -> categoría (si aplica)
     buildImportTurnsCategoryMapUI(turnCodes);
 
-    document.getElementById('importInfo').innerText =
-      `Hoja: ${sheetName} | Detectado: ${MONTHS[monthIndex0]} ${year}. Usuarios: ${importContext.users.length}. Turnos: ${turnCodes.length}.`;
+    document.getElementById('importInfo').innerHTML =
+      `<div>Hoja: <b>${sheetName}</b> · Usuarios: <b>${importContext.users.length}</b> · Turnos: <b>${turnCodes.length}</b></div>` +
+      `<div class="mt-1">📅 Se importará a: <b class="text-blue-700">${MONTHS[monthIndex0]} ${year}</b> (tu selección)</div>` +
+      (importConflictNote ? `<div class="mt-1 text-amber-700">${importConflictNote}</div>` : '');
+    if(typeof setImportStep === 'function') setImportStep(2);
 
   } catch (error) {
     console.error('Error analizando archivo:', error);
@@ -6933,12 +7107,34 @@ async function analyzeImportFile(){
 
     const { sn: sheetName, rows, headerIdx, headerRow, dayCols } = best;
 
-    // Detectar mes y año (en esa hoja)
+    // Detectar mes y año (en esa hoja) — solo como sugerencia
     const detected = detectMonthYearFromRows(rows);
-    const fallbackMonth = parseInt(document.getElementById('importMonth').value);
-    const fallbackYear = parseInt(document.getElementById('importYear').value);
-    const monthIndex0 = (detected.month ?? fallbackMonth);
-    const year = (detected.year ?? fallbackYear);
+
+    // La selección MANUAL del usuario es la FUENTE DE VERDAD.
+    // La detección del Excel/imagen se usa únicamente como sugerencia inicial
+    // y para avisar de conflictos. Así se evita que "Julio" del Excel pise
+    // la selección manual del usuario (ej. Agosto).
+    const monthIndex0 = parseInt(document.getElementById('importMonth').value);
+    const year = parseInt(document.getElementById('importYear').value);
+
+    // Avisar si se detectó un mes/año distinto al elegido por el usuario
+    let conflictNote = '';
+    const dM = (detected && detected.month != null) ? detected.month : null;
+    const dY = (detected && detected.year != null) ? detected.year : null;
+    const mesConflicto = (dM != null && dM !== monthIndex0);
+    const anioConflicto = (dY != null && dY !== year);
+    if(mesConflicto || anioConflicto){
+      const txtDet = (dM != null ? MONTHS[dM] : '¿?') + ' ' + (dY != null ? dY : '¿?');
+      const txtSel = MONTHS[monthIndex0] + ' ' + year;
+      conflictNote = ` ⚠️ El archivo dice "${txtDet}" pero se usará tu selección: ${txtSel}. ` +
+        `<button onclick="usarMesDetectado(${dM == null ? 'null' : dM}, ${dY == null ? 'null' : dY})" ` +
+        `class="underline font-black text-blue-700">Usar lo detectado</button>`;
+      importContextDetected = { month: dM, year: dY };
+    } else {
+      importContextDetected = null;
+    }
+    // Exponer nota de conflicto para el resumen final
+    importConflictNote = conflictNote;
 
     // Detectar columnas nombre/empleado (robusto)
     const cols = inferNameEmpCols(rows, headerIdx, headerRow, dayCols);
@@ -7005,8 +7201,11 @@ async function analyzeImportFile(){
     // Mostrar mapeo de turnos -> categoría (si aplica)
     buildImportTurnsCategoryMapUI(turnCodes);
 
-    document.getElementById('importInfo').innerText =
-      `Hoja: ${sheetName} | Detectado: ${MONTHS[monthIndex0]} ${year}. Usuarios: ${importContext.users.length}. Turnos: ${turnCodes.length}.`;
+    document.getElementById('importInfo').innerHTML =
+      `<div>Hoja: <b>${sheetName}</b> · Usuarios: <b>${importContext.users.length}</b> · Turnos: <b>${turnCodes.length}</b></div>` +
+      `<div class="mt-1">📅 Se importará a: <b class="text-blue-700">${MONTHS[monthIndex0]} ${year}</b> (tu selección)</div>` +
+      (importConflictNote ? `<div class="mt-1 text-amber-700">${importConflictNote}</div>` : '');
+    if(typeof setImportStep === 'function') setImportStep(2);
 
   } catch (error) {
     console.error('Error analizando archivo:', error);
@@ -7129,7 +7328,7 @@ function runImportSelected(){
   // Cambiar al primer usuario importado
   db.current = selected[0];
   current = new Date(year, monthIndex0, 1);
-  saveDB();
+  saveDBNow(); // importación es crítica: forzar escritura inmediata
   
   updateUserDropdown();
   updateUserInitial();
@@ -7137,7 +7336,8 @@ function runImportSelected(){
   render();
   renderSummaryCategories();
   calcSummary();
-  
+
+  if(typeof setImportStep === 'function') setImportStep(3);
   document.getElementById('importInfo').innerHTML = `
     <div class="text-green-600 font-bold">
       Importación completada!<br>
