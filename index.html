@@ -230,9 +230,6 @@
       padding: 12px;
       box-shadow: 0 2px 10px rgba(15,23,42,0.04);
     }
-    .history-item strong {
-      font-weight: 900;
-    }
     .history-chip {
       display: inline-flex;
       align-items: center;
@@ -255,15 +252,6 @@
       font-size: 10px;
       font-weight: 900;
       text-transform: uppercase;
-    }
-    .history-meta-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 8px;
-    }
-    @media (max-width: 640px) {
-      .history-meta-grid { grid-template-columns: 1fr; }
     }
     
     /* Notas para mixto - MEJORADO */
@@ -569,12 +557,12 @@
       .calendar-grid {
         grid-template-columns: repeat(7, 1fr);
       }
-
+      
       .tab-btn {
         padding: 10px 5px;
         font-size: 10px;
       }
-
+      
       .config-tab {
         padding: 10px 12px;
         font-size: 9px;
@@ -935,17 +923,6 @@
     .day-cell {
       min-height: var(--calendar-row-height, 1fr) !important;
       height: var(--calendar-row-height, auto);
-    }
-    #calendar.calendar-current-only .day-cell {
-      box-shadow: inset 0 0 0 1px rgba(229,231,235,0.65);
-    }
-    #calendar.calendar-tight-notes .note-text {
-      font-size: 9px !important;
-      -webkit-line-clamp: 2 !important;
-      padding: 3px 5px !important;
-      margin: 2px 3px 4px !important;
-      width: calc(100% - 6px) !important;
-      border-left: 3px solid rgba(37,99,235,0.38) !important;
     }
 
     /* Ocultar tabs viejos (reemplazados por bottom tabs) */
@@ -1478,7 +1455,7 @@
   <button id="btnOpenTurnPicker" type="button" class="w-full rounded-xl bg-blue-600 hover:bg-blue-700 px-3 py-2.5 font-black text-[12px] text-white shadow-sm">🎯 Cambiar turno</button>
   <button id="btnClearShift" type="button" class="w-full rounded-xl bg-gray-100 hover:bg-red-50 border border-red-200 px-3 py-2.5 font-black text-[12px] text-red-600">🧹 Vaciar día</button>
 </div>
-                <div class="flex gap-2 flex-wrap justify-end">
+                <div class="flex gap-2 hidden">
                   <button id="btnCopyThisDay" type="button" class="rounded-xl bg-white border border-black/10 px-3 py-2 font-bold text-[12px]">📋 Copiar</button>
                   <button id="btnPasteHere" type="button" class="rounded-xl bg-white border border-black/10 px-3 py-2 font-bold text-[12px]">📥 Pegar</button>
                 </div>
@@ -1744,8 +1721,6 @@
           <option value="all">Todos los perfiles</option>
           <option value="current">Perfil actual</option>
           <option value="calendar">Solo calendario</option>
-          <option value="imports">Solo importaciones</option>
-          <option value="today">Cambios de hoy</option>
         </select>
       </div>
       <div class="md:col-span-2">
@@ -1757,7 +1732,6 @@
     <div class="flex flex-col md:flex-row gap-2 mb-4">
       <button onclick="renderChangeHistory()" class="flex-1 p-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-black uppercase text-[11px]">Actualizar</button>
       <button onclick="exportChangeHistory()" class="flex-1 p-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[11px]">Exportar JSON</button>
-      <button onclick="exportChangeHistoryCSV()" class="flex-1 p-3 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-black uppercase text-[11px]">Exportar CSV</button>
       <button onclick="trimChangeHistory(true)" class="flex-1 p-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-black uppercase text-[11px]">Limpiar antiguas</button>
     </div>
 
@@ -1824,7 +1798,7 @@
       <span class="text-white text-2xl">📷</span>
     </div>
     <h3 class="font-black text-center uppercase text-base mb-1">Importar desde Imagen</h3>
-    <p class="text-[11px] text-gray-500 font-bold text-center mb-4">Lee capturas de calendario o planillas fotografiadas. En planilla detecta nombre, codigo opcional y turnos por dia.</p>
+    <p class="text-[11px] text-gray-500 font-bold text-center mb-4">Ideal para calendarios tipo captura. Detecta el nombre dentro de cada día y propone el turno para el perfil actual.</p>
 
     <div class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1836,7 +1810,7 @@
           </select>
         </div>
         <div class="rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3 text-[10px] font-bold text-violet-800">
-          Selecciona el mes. Soporta numero + nombre + codigo + turnos, nombre + codigo + turnos, o nombre + turnos.
+          En planilla completa selecciona el mes; si la segunda columna trae codigo de empleado, se ignora y los turnos inician despues.
         </div>
       </div>
 
@@ -2210,7 +2184,7 @@ function saveDB(){
 // =========================================================
 // Change history / bitacora
 // =========================================================
-const CHANGE_LOG_LIMIT = 1000;
+const CHANGE_LOG_LIMIT = 350;
 
 function ensureChangeLog(){
   try{
@@ -2218,26 +2192,10 @@ function ensureChangeLog(){
     if(!Array.isArray(db.changeLog)) db.changeLog = [];
     db.changeLog = db.changeLog
       .filter(x => x && typeof x === 'object')
-      .sort((a,b) => String(b.ts || '').localeCompare(String(a.ts || '')))
       .slice(0, CHANGE_LOG_LIMIT);
   }catch(e){
     console.warn('ensureChangeLog error', e);
   }
-}
-
-function mergeChangeLogs(...logs){
-  const seen = new Set();
-  const merged = [];
-  logs.flat().forEach(entry => {
-    if(!entry || typeof entry !== 'object') return;
-    const id = entry.id || `${entry.ts || ''}_${entry.actor || ''}_${entry.action || ''}_${entry.profile || ''}_${entry.date || ''}_${entry.summary || ''}`;
-    if(seen.has(id)) return;
-    seen.add(id);
-    merged.push({ ...entry, id });
-  });
-  return merged
-    .sort((a,b) => String(b.ts || '').localeCompare(String(a.ts || '')))
-    .slice(0, CHANGE_LOG_LIMIT);
 }
 
 function summarizeDayDataForHistory(info, userKey){
@@ -2267,11 +2225,8 @@ function historySameDay(a, b){
 function recordChange(action, meta={}){
   try{
     ensureChangeLog();
-    const version = Number(db.changeSeq || 0) + 1;
-    db.changeSeq = version;
     const entry = {
       id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
-      version,
       ts: new Date().toISOString(),
       device: (typeof getDeviceId === 'function') ? getDeviceId() : 'local',
       actor: db.current || 'ADMIN',
@@ -2322,14 +2277,9 @@ function renderChangeHistory(){
   if(!list) return;
   const filter = document.getElementById('historyFilter')?.value || 'all';
   const q = normalizeImportText(document.getElementById('historySearch')?.value || '');
-  let rows = [...(db.changeLog || [])].sort((a,b) => String(b.ts || '').localeCompare(String(a.ts || '')));
+  let rows = db.changeLog || [];
   if(filter === 'current') rows = rows.filter(x => normalizeName(x.profile) === normalizeName(db.current) || normalizeName(x.actor) === normalizeName(db.current));
   if(filter === 'calendar') rows = rows.filter(x => String(x.action || '').toLowerCase().includes('dia') || String(x.action || '').toLowerCase().includes('rango') || String(x.action || '').toLowerCase().includes('import'));
-  if(filter === 'imports') rows = rows.filter(x => String(x.action || '').toLowerCase().includes('import'));
-  if(filter === 'today'){
-    const today = new Date().toISOString().slice(0,10);
-    rows = rows.filter(x => String(x.ts || '').slice(0,10) === today);
-  }
   if(q){
     rows = rows.filter(x => normalizeImportText([x.action,x.profile,x.date,x.summary,x.details,x.before,x.after,x.actor].join(' ')).includes(q));
   }
@@ -2342,7 +2292,6 @@ function renderChangeHistory(){
     <div class="history-item">
       <div class="flex flex-wrap items-center gap-2 mb-2">
         <span class="history-chip">${escapeHTML(entry.action || 'Cambio')}</span>
-        ${entry.version ? `<span class="history-chip" style="background:#f8fafc;color:#475569;">v${escapeHTML(entry.version)}</span>` : ''}
         ${entry.profile ? `<span class="text-[10px] font-black text-gray-500">${escapeHTML(entry.profile)}</span>` : ''}
         ${entry.date ? `<span class="text-[10px] font-black text-gray-400">${escapeHTML(entry.date)}</span>` : ''}
         <span class="ml-auto text-[10px] font-black text-gray-400">${escapeHTML(formatHistoryDate(entry.ts))}</span>
@@ -2354,7 +2303,7 @@ function renderChangeHistory(){
           <div class="rounded-xl bg-red-50 border border-red-100 p-2 text-red-900"><span class="font-black">Antes:</span> ${escapeHTML(entry.before || 'Vacio')}</div>
           <div class="rounded-xl bg-emerald-50 border border-emerald-100 p-2 text-emerald-900"><span class="font-black">Despues:</span> ${escapeHTML(entry.after || 'Vacio')}</div>
         </div>` : ''}
-      <div class="mt-2 text-[9px] font-bold text-gray-400">Actor: ${escapeHTML(entry.actor || '')} | Dispositivo: ${escapeHTML(String(entry.device || '').slice(0, 12))}${entry.count ? ` | Cambios: ${escapeHTML(entry.count)}` : ''}</div>
+      <div class="mt-2 text-[9px] font-bold text-gray-400">Actor: ${escapeHTML(entry.actor || '')} | Dispositivo: ${escapeHTML(String(entry.device || '').slice(0, 12))}</div>
     </div>
   `).join('');
 }
@@ -2375,41 +2324,6 @@ function exportChangeHistory(){
   const a = document.createElement('a');
   a.href = url;
   a.download = `historial-turnos-${new Date().toISOString().slice(0,10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function csvCell(value){
-  return `"${String(value ?? '').replace(/"/g, '""')}"`;
-}
-
-function exportChangeHistoryCSV(){
-  ensureChangeLog();
-  const headers = ['version','fecha','actor','perfil','dia_o_mes','accion','resumen','detalle','antes','despues','cantidad','dispositivo'];
-  const lines = [headers.map(csvCell).join(',')];
-  (db.changeLog || []).forEach(e => {
-    lines.push([
-      e.version || '',
-      formatHistoryDate(e.ts),
-      e.actor || '',
-      e.profile || '',
-      e.date || '',
-      e.action || '',
-      e.summary || '',
-      e.details || '',
-      e.before || '',
-      e.after || '',
-      e.count || '',
-      e.device || ''
-    ].map(csvCell).join(','));
-  });
-  const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `historial-turnos-${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -3243,28 +3157,6 @@ function switchUser(){
 // Calendar Rendering
 // =========================================================
 
-function getCalendarRowsForMonth(firstDayMonday, lastDate){
-  return Math.max(1, Math.ceil((firstDayMonday + lastDate) / 7));
-}
-
-function getProjectedCalendarRowHeight(rows){
-  const view = document.getElementById('view-calendar');
-  const weekHeader = document.getElementById('weekHeader');
-  const bottomTabs = document.getElementById('bottomTabs');
-  if(!view || !weekHeader || !bottomTabs) return 999;
-  const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  const viewTop = view.getBoundingClientRect().top;
-  const weekHeaderH = weekHeader.getBoundingClientRect().height || 0;
-  const bottomTabsH = bottomTabs.getBoundingClientRect().height || 0;
-  const available = Math.floor(viewportH - viewTop - weekHeaderH - bottomTabsH - 12);
-  const totalGaps = Math.max(0, rows - 1);
-  return Math.floor((available - totalGaps) / Math.max(1, rows));
-}
-
-function shouldShowAdjacentMonthDays(rows){
-  return getProjectedCalendarRowHeight(rows) >= 78;
-}
-
 function fitCalendarToViewport(){
   const view = document.getElementById('view-calendar');
   const grid = document.getElementById('calendar');
@@ -3272,7 +3164,8 @@ function fitCalendarToViewport(){
   const bottomTabs = document.getElementById('bottomTabs');
   if (!view || !grid || !weekHeader || !bottomTabs) return;
 
-  const rows = Math.max(1, parseInt(grid.dataset.rows || '0', 10) || Math.ceil(grid.children.length / 7));
+  const totalCells = grid.children.length;
+  const rows = Math.max(1, Math.ceil(totalCells / 7));
   const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
 
   const viewTop = view.getBoundingClientRect().top;
@@ -3289,7 +3182,6 @@ function fitCalendarToViewport(){
 
   document.documentElement.style.setProperty('--calendar-row-height', rowHeight + 'px');
   document.documentElement.style.setProperty('--calendar-grid-height', gridHeight + 'px');
-  grid.classList.toggle('calendar-tight-notes', rowHeight < 84);
 }
 
 function render(){
@@ -3311,22 +3203,17 @@ function render(){
   const firstDayMonday = firstDay === 0 ? 6 : firstDay - 1;
   const lastDate = new Date(y, m + 1, 0).getDate();
   const prevLastDate = new Date(y, m, 0).getDate();
-  const rowsNeeded = getCalendarRowsForMonth(firstDayMonday, lastDate);
-  const showAdjacentDays = shouldShowAdjacentMonthDays(rowsNeeded);
-  grid.dataset.rows = String(rowsNeeded);
-  grid.classList.toggle('calendar-current-only', !showAdjacentDays);
   
   // Días del mes anterior
-  if(showAdjacentDays){
-    for(let i = firstDayMonday; i > 0; i--){
-      const prevDay = prevLastDate - i + 1;
-      const prevMonth = m === 0 ? 12 : m;
-      const prevYear = m === 0 ? y - 1 : y;
-      const key = dayKey(prevYear, prevMonth, prevDay);
-      const info = user.data[key];
-      const cell = createDayCell(prevDay, true, info, SHIFTS, user, key);
-      grid.appendChild(cell);
-    }
+  for(let i = firstDayMonday; i > 0; i--){
+    const prevDay = prevLastDate - i + 1;
+    const prevMonth = m === 0 ? 12 : m;
+    const prevYear = m === 0 ? y - 1 : y;
+    const key = dayKey(prevYear, prevMonth, prevDay);
+    const info = user.data[key];
+    
+    const cell = createDayCell(prevDay, true, info, SHIFTS, user, key);
+    grid.appendChild(cell);
   }
   
   // Días del mes actual
@@ -3336,23 +3223,19 @@ function render(){
     const isToday = key === todayKey;
     
     const cell = createDayCell(d, false, info, SHIFTS, user, key, isToday);
-    if(!showAdjacentDays && d === 1 && firstDayMonday > 0){
-      cell.style.gridColumnStart = String(firstDayMonday + 1);
-    }
     grid.appendChild(cell);
   }
   
   // Días del mes siguiente
   const total = firstDayMonday + lastDate;
   const trailing = (7 - (total % 7)) % 7;
-  if(showAdjacentDays){
-    for(let i = 1; i <= trailing; i++){
-      const nextMonth = m === 11 ? 1 : m + 2;
-      const nextYear = m === 11 ? y + 1 : y;
-      const key = dayKey(nextYear, nextMonth, i);
-      const cell = createDayCell(i, true, null, SHIFTS, user, key);
-      grid.appendChild(cell);
-    }
+  for(let i = 1; i <= trailing; i++){
+    const nextMonth = m === 11 ? 1 : m + 2;
+    const nextYear = m === 11 ? y + 1 : y;
+    const key = dayKey(nextYear, nextMonth, i);
+    
+    const cell = createDayCell(i, true, null, SHIFTS, user, key);
+    grid.appendChild(cell);
   }
 
   requestAnimationFrame(fitCalendarToViewport);
@@ -3474,20 +3357,6 @@ let suppressClickUntil = 0;
 
   
   return cell;
-}
-
-let calendarViewportTimer = null;
-function scheduleCalendarViewportRefresh(){
-  clearTimeout(calendarViewportTimer);
-  calendarViewportTimer = setTimeout(() => {
-    const active = document.getElementById('view-calendar')?.classList.contains('view-active');
-    if(active) render();
-  }, 120);
-}
-
-window.addEventListener('resize', scheduleCalendarViewportRefresh);
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize', scheduleCalendarViewportRefresh);
 }
 
 // =========================================================
@@ -5689,16 +5558,14 @@ async function loadImageElementFromFile(file){
   });
 }
 
-async function buildPreprocessedOCRCanvas(file, mode='sharp'){
+async function buildPreprocessedOCRCanvas(file){
   const img = await loadImageElementFromFile(file);
-  const maxWidth = mode === 'soft' ? 2600 : 2400;
-  const scale = Math.max(1.8, Math.min(3.0, maxWidth / Math.max(img.width, 1)));
+  const maxWidth = 2200;
+  const scale = Math.max(1.8, Math.min(2.8, maxWidth / Math.max(img.width, 1)));
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(img.width * scale));
   canvas.height = Math.max(1, Math.round(img.height * scale));
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -5708,40 +5575,14 @@ async function buildPreprocessedOCRCanvas(file, mode='sharp'){
   for(let i=0; i<data.length; i+=4){
     const r = data[i], g = data[i+1], b = data[i+2];
     let gray = 0.299*r + 0.587*g + 0.114*b;
-    const contrast = mode === 'soft' ? 1.45 : 2.05;
-    gray = ((gray - 128) * contrast) + 128;
+    gray = ((gray - 128) * 2.25) + 128;
     gray = Math.max(0, Math.min(255, gray));
-    if(mode !== 'soft'){
-      if(gray > 205) gray = 255;
-      else if(gray < 70) gray = 0;
-    }
+    if(gray > 185) gray = 255;
+    else if(gray < 95) gray = 0;
     data[i] = data[i+1] = data[i+2] = gray;
   }
   ctx.putImageData(imageData, 0, 0);
   return { canvas, width: canvas.width, height: canvas.height };
-}
-
-async function recognizeImportCanvas(canvas, statusEl, label){
-  return await Tesseract.recognize(
-    canvas,
-    'spa+eng',
-    {
-      preserve_interword_spaces: '1',
-      tessedit_pageseg_mode: '6',
-      logger: m => {
-        if(m.status === 'recognizing text' && statusEl){
-          statusEl.textContent = `${label}: ${Math.round(m.progress * 100)}%`;
-        }
-      }
-    }
-  );
-}
-
-function scoreRosterContext(ctx){
-  if(!ctx) return 0;
-  const rows = ctx.rows || [];
-  const detectedCells = rows.reduce((sum, row) => sum + Number(row.detectedCount || 0), 0);
-  return (rows.length * 120) + detectedCells + ((ctx.turnCodes || []).length * 8) + Number(ctx.columnsDetected || 0);
 }
 
 async function runImageOCR(){
@@ -5761,11 +5602,21 @@ async function runImageOCR(){
   document.getElementById('imageImportTurnsBox')?.classList.add('hidden');
 
   try {
-    const prep = await buildPreprocessedOCRCanvas(fileInput.files[0], 'sharp');
+    const prep = await buildPreprocessedOCRCanvas(fileInput.files[0]);
     status.textContent = 'Iniciando OCR...';
 
-    let result = await recognizeImportCanvas(prep.canvas, status, 'Leyendo imagen');
-    let rawText = String(result?.data?.text || '');
+    const result = await Tesseract.recognize(
+      prep.canvas,
+      'spa+eng',
+      { logger: m => {
+        if(m.status === 'recognizing text'){
+          status.textContent = `Leyendo imagen: ${Math.round(m.progress * 100)}%`;
+        }
+      }}
+    );
+
+    const rawText = String(result?.data?.text || '');
+    document.getElementById('ocrRawText').textContent = rawText;
 
     const month0 = parseInt(document.getElementById('imgImportMonth').value, 10);
     const year = parseInt(document.getElementById('imgImportYear').value, 10);
@@ -5773,34 +5624,7 @@ async function runImageOCR(){
 
     if(getImageImportKind() === 'roster'){
       status.textContent = 'OCR completado. Analizando planilla completa...';
-      let bestPrep = prep;
-      let bestResult = result;
-      let bestContext = analyzeRosterImageOCR(result, { month0, year, imageWidth: prep.width, imageHeight: prep.height, pass:'alto contraste' });
-
-      if(bestContext.rows.length < 6 || scoreRosterContext(bestContext) < 520){
-        status.textContent = 'Probando lectura suave para rescatar nombres y codigos...';
-        const softPrep = await buildPreprocessedOCRCanvas(fileInput.files[0], 'soft');
-        const softResult = await recognizeImportCanvas(softPrep.canvas, status, 'Lectura suave');
-        const softContext = analyzeRosterImageOCR(softResult, { month0, year, imageWidth: softPrep.width, imageHeight: softPrep.height, pass:'suave' });
-        if(scoreRosterContext(softContext) > scoreRosterContext(bestContext)){
-          bestPrep = softPrep;
-          bestResult = softResult;
-          bestContext = softContext;
-        }
-        rawText = [
-          '=== OCR ALTO CONTRASTE ===',
-          String(result?.data?.text || ''),
-          '',
-          '=== OCR SUAVE ===',
-          String(softResult?.data?.text || '')
-        ].join('\n');
-      }
-
-      document.getElementById('ocrRawText').textContent = rawText;
-      result = bestResult;
-      imageRosterContext = bestContext;
-      imageRosterContext.imageWidth = bestPrep.width;
-      imageRosterContext.imageHeight = bestPrep.height;
+      imageRosterContext = analyzeRosterImageOCR(result, { month0, year, imageWidth: prep.width, imageHeight: prep.height });
       ocrCalendarAnalysis = null;
       ocrDetectedShifts = [];
       renderImageRosterResults();
@@ -5809,8 +5633,6 @@ async function runImageOCR(){
         : 'No se detectaron filas de planilla. Revisa el texto OCR crudo o intenta con una imagen mas recta/nitida.';
       return;
     }
-
-    document.getElementById('ocrRawText').textContent = rawText;
 
     status.textContent = 'OCR completado. Analizando calendario...';
 
@@ -5897,53 +5719,20 @@ function isEmployeeCodeToken(text){
   return false;
 }
 
-function canonicalRosterNumericCode(raw){
-  let compact = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if(!compact) return '';
-  const hasDigit = /\d/.test(compact);
-  if(hasDigit){
-    compact = compact
-      .replace(/[OQD]/g, '0')
-      .replace(/[IL|]/g, '1')
-      .replace(/S/g, '5')
-      .replace(/G/g, '6')
-      .replace(/B/g, '8')
-      .replace(/A/g, '4');
-  }
-  if(compact === '18') return '018';
-  if(/^\d{1,3}$/.test(compact)) return compact.padStart(3, '0');
-  return compact;
-}
-
-function rosterShiftCodeFromText(text, opts={}){
-  const allowGenericLetters = opts.allowGenericLetters !== false;
+function rosterShiftCodeFromText(text){
   let raw = cleanOCRTokenText(text).toUpperCase();
   if(!raw) return '';
   raw = raw.replace(/[.,;:]+$/g, '');
   raw = raw.replace(/^[-_]+|[-_]+$/g, '');
-  raw = raw.replace(/[—–]/g, '-').replace(/\s+/g, '');
-  if(!raw || raw === '-' || raw === '_') return '';
-  if(isEmployeeCodeToken(raw)) return '';
-
-  let norm = normalizeCode(raw);
+  raw = raw.replace(/O/g, '0');
+  const norm = normalizeCode(raw);
   if(!norm || norm === 'X') return '';
+  if(isEmployeeCodeToken(norm)) return '';
   if(IMPORT_ABSENCE_MAP[norm] || IMPORT_SHIFT_CODE_MAP[norm]) return norm;
-
-  const numericish = canonicalRosterNumericCode(norm);
-  if(isEmployeeCodeToken(numericish)) return '';
-  if(IMPORT_SHIFT_CODE_MAP[numericish]) return numericish;
-  if(numericish === '018' || numericish === '468' || numericish === '650') return numericish;
-  if(/^\d{1,3}$/.test(numericish)) return numericish.padStart(3, '0');
-
-  const compact = String(norm || '').replace(/[^A-Z0-9]/g, '');
-  if(IMPORT_ABSENCE_MAP[compact]) return compact;
-  if(/^[A-Z]{1,3}$/.test(compact)) return allowGenericLetters ? compact : '';
-  if(/^[A-Z0-9]{1,3}$/.test(compact)) return compact;
+  if(/^[A-Z]{1,3}$/.test(norm)) return norm;
+  if(/^\d{1,3}$/.test(norm)) return norm.padStart(3, '0');
+  if(/^[A-Z0-9]{1,3}$/.test(norm)) return norm;
   return '';
-}
-
-function isLikelyRosterTotalCode(code){
-  return ['120','128','136','144','152','160','168','176','184','192'].includes(String(code || ''));
 }
 
 function medianNumber(values, fallback=0){
@@ -5966,92 +5755,56 @@ function clusterByAxis(items, axis='cy', tolerance=12){
   return clusters;
 }
 
-function cleanRosterNameToken(text){
-  let token = cleanOCRTokenText(text).replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9.'-]/g, '');
-  if(!/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(token)) return '';
-  token = token
-    .replace(/0/g, 'O')
-    .replace(/1/g, 'I')
-    .replace(/5/g, 'S')
-    .replace(/8/g, 'B');
-  return token;
-}
-
 function displayNameFromRosterWords(words){
-  const banned = new Set(['TOTAL','TOTALES','OBSERVACION','OBSERVACIONES','NOMBRE','EMPLEADO','CODIGO','COD','NO','NUM','TURNO','TURNOS']);
   const parts = words
     .sort((a,b)=>a.cx-b.cx)
-    .map(w => cleanRosterNameToken(w.text))
+    .map(w => cleanOCRTokenText(w.text))
     .filter(Boolean)
     .filter(t => !/^\d{1,3}$/.test(t))
-    .filter(t => !isEmployeeCodeToken(t))
-    .filter(t => !banned.has(t.toUpperCase()))
-    .filter(t => t.length > 1 || /^[A-ZÁÉÍÓÚÜÑ]$/i.test(t));
+    .filter(t => !isEmployeeCodeToken(t));
   return parts.join(' ').replace(/\s+/g,' ').trim().toUpperCase();
-}
-
-function inferRosterRowLayout(rowWords, imageWidth, hMed){
-  const sorted = [...rowWords].sort((a,b)=>a.cx-b.cx);
-  const minShiftX = Math.max(imageWidth * 0.18, 120);
-  let strictShiftWords = sorted
-    .map(w => ({ ...w, code: rosterShiftCodeFromText(w.text, { allowGenericLetters:false }) }))
-    .filter(w => w.code && w.cx > minShiftX);
-
-  let looseShiftWords = strictShiftWords;
-  if(looseShiftWords.length < 2){
-    looseShiftWords = sorted
-      .map(w => ({ ...w, code: rosterShiftCodeFromText(w.text, { allowGenericLetters:true }) }))
-      .filter(w => w.code && w.cx > imageWidth * 0.24);
-  }
-  if(looseShiftWords.length < 2) return null;
-
-  const firstShiftX = Math.min(...looseShiftWords.map(w => w.cx));
-  const gap = Math.max(8, hMed * 0.65);
-  const metaWords = sorted.filter(w => w.cx < firstShiftX - gap && w.cx > imageWidth * 0.005);
-  const empCandidates = metaWords
-    .filter(w => isEmployeeCodeToken(w.text))
-    .sort((a,b) => b.x1 - a.x1 || b.conf - a.conf);
-  const codeWord = empCandidates[0] || null;
-  const nameWords = metaWords.filter(w => {
-    const clean = cleanOCRTokenText(w.text);
-    if(!clean) return false;
-    if(isEmployeeCodeToken(clean)) return false;
-    if(/^\d{1,3}$/.test(clean.replace(/\D/g,'')) && !/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(clean)) return false;
-    if(rosterShiftCodeFromText(clean, { allowGenericLetters:false }) && w.cx > firstShiftX - gap * 2) return false;
-    return true;
-  });
-  const name = displayNameFromRosterWords(nameWords);
-  if(!name || significantNameTokens(name).length < 2) return null;
-
-  return {
-    y: medianNumber(rowWords.map(w => w.cy), 0),
-    codeWord,
-    empCode: codeWord ? cleanOCRTokenText(codeWord.text) : '',
-    name,
-    rowWords,
-    firstShiftX,
-    shiftCount: looseShiftWords.length
-  };
 }
 
 function estimateRosterRows(words, imageWidth){
   const hMed = medianNumber(words.map(w => w.h), 16);
-  const lineClusters = clusterByAxis(words, 'cy', Math.max(10, hMed * 0.95));
+  const employeeWords = words.filter(w => isEmployeeCodeToken(w.text));
+  const rowTol = Math.max(8, hMed * 0.9);
   const rows = [];
 
+  if(employeeWords.length >= 3){
+    clusterByAxis(employeeWords, 'cy', rowTol).forEach(cluster => {
+      const codeWord = cluster.items.sort((a,b)=>b.conf-a.conf)[0];
+      const y = cluster.center;
+      const band = Math.max(12, hMed * 1.35);
+      const rowWords = words.filter(w => Math.abs(w.cy - y) <= band);
+      const nameWords = rowWords.filter(w => w.x1 < codeWord.x0 - 4 && w.cx > imageWidth * 0.01);
+      const name = displayNameFromRosterWords(nameWords);
+      if(name){
+        rows.push({ y, codeWord, empCode: cleanOCRTokenText(codeWord.text), name, rowWords });
+      }
+    });
+  }
+
+  if(rows.length >= 3) return rows.sort((a,b)=>a.y-b.y);
+
+  const lineClusters = clusterByAxis(words, 'cy', Math.max(10, hMed * 0.85));
   lineClusters.forEach(cluster => {
-    const y = cluster.center;
-    const band = Math.max(12, hMed * 1.45);
-    const rowWords = words.filter(w => Math.abs(w.cy - y) <= band);
-    const layout = inferRosterRowLayout(rowWords, imageWidth, hMed);
-    if(layout) rows.push(layout);
+    const rowWords = cluster.items;
+    const shiftLike = rowWords.filter(w => w.cx > imageWidth * 0.22 && rosterShiftCodeFromText(w.text));
+    if(shiftLike.length < 3) return;
+    const firstShiftX = Math.min(...shiftLike.map(w => w.cx));
+    const leftWords = rowWords.filter(w => w.cx < firstShiftX - 8);
+    const name = displayNameFromRosterWords(leftWords);
+    if(name){
+      rows.push({ y: cluster.center, codeWord:null, empCode:'', name, rowWords });
+    }
   });
 
   const seen = new Set();
   return rows
     .sort((a,b)=>a.y-b.y)
     .filter(r => {
-      const key = `${Math.round(r.y/6)}_${normalizeName(r.name)}`;
+      const key = `${Math.round(r.y/4)}_${normalizeName(r.name)}`;
       if(seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -6060,16 +5813,13 @@ function estimateRosterRows(words, imageWidth){
 
 function estimateRosterDayColumns(words, rosterRows, lastDay, imageWidth){
   const codeRights = rosterRows.map(r => r.codeWord ? r.codeWord.x1 : 0).filter(Boolean);
-  const firstShiftXs = rosterRows.map(r => r.firstShiftX).filter(v => Number.isFinite(v));
-  const dayStartX = firstShiftXs.length ? medianNumber(firstShiftXs, imageWidth * 0.25) : (codeRights.length ? (medianNumber(codeRights, imageWidth * 0.25) + Math.max(8, imageWidth * 0.008)) : imageWidth * 0.24);
+  const dayStartX = codeRights.length ? (medianNumber(codeRights, imageWidth * 0.25) + Math.max(8, imageWidth * 0.008)) : imageWidth * 0.24;
   const candidates = [];
   rosterRows.forEach(row => {
-    const rowStart = Math.max(imageWidth * 0.16, (row.firstShiftX || dayStartX) - imageWidth * 0.025);
     row.rowWords.forEach(w => {
-      if(w.cx < rowStart) return;
+      if(w.cx <= dayStartX) return;
       const code = rosterShiftCodeFromText(w.text);
       if(!code) return;
-      if(isLikelyRosterTotalCode(code) && w.cx > imageWidth * 0.90) return;
       candidates.push({ ...w, code });
     });
   });
@@ -6088,12 +5838,9 @@ function estimateRosterDayColumns(words, rosterRows, lastDay, imageWidth){
 
   if(clusters.length < Math.max(8, Math.floor(lastDay * 0.45))){
     const minX = Math.min(...candidates.map(c => c.cx));
-    const sortedX = candidates.map(c => c.cx).sort((a,b)=>a-b);
-    const maxX = sortedX[Math.max(0, Math.min(sortedX.length - 1, Math.floor(sortedX.length * 0.96)))];
+    const maxX = Math.max(...candidates.map(c => c.cx));
     const usableW = Math.max(1, maxX - minX);
     clusters = Array.from({length:lastDay}, (_,i) => ({ x: minX + usableW * (i / Math.max(1,lastDay-1)), count:0, items:[], score:0 }));
-  } else if(clusters.length >= lastDay){
-    clusters = clusters.slice(0, lastDay);
   }
 
   const columns = clusters.slice(0, lastDay).map((c, idx) => ({ day: idx + 1, x: c.x, count: c.count }));
@@ -6101,21 +5848,20 @@ function estimateRosterDayColumns(words, rosterRows, lastDay, imageWidth){
 }
 
 function analyzeRosterImageOCR(result, opts={}){
-  const { month0, year, imageWidth = 2000, pass = 'OCR' } = opts;
+  const { month0, year, imageWidth = 2000 } = opts;
   const lastDay = new Date(year, month0 + 1, 0).getDate();
-  const words = extractOCRWordItems(result).filter(w => w.conf >= 4 && w.w > 1 && w.h > 1);
+  const words = extractOCRWordItems(result).filter(w => w.conf >= 8);
   const rosterRows = estimateRosterRows(words, imageWidth);
   const { columns, candidates, dayStartX } = estimateRosterDayColumns(words, rosterRows, lastDay, imageWidth);
   const colGap = columns.length > 1 ? medianNumber(columns.slice(1).map((c,i)=>c.x - columns[i].x), imageWidth / 40) : imageWidth / 40;
-  const maxDist = Math.max(12, colGap * 0.48);
+  const maxDist = Math.max(12, colGap * 0.46);
   const turnCodesSet = new Set();
   const rows = rosterRows.map(row => {
     const dayMap = {};
     columns.forEach(col => {
       const hits = row.rowWords
         .map(w => ({ ...w, code: rosterShiftCodeFromText(w.text), dist: Math.abs(w.cx - col.x) }))
-        .filter(w => w.code && w.dist <= maxDist && w.cx >= ((row.firstShiftX || dayStartX) - Math.max(colGap, 16)))
-        .filter(w => !(isLikelyRosterTotalCode(w.code) && w.cx > imageWidth * 0.90))
+        .filter(w => w.code && w.dist <= maxDist)
         .sort((a,b) => a.dist - b.dist || b.conf - a.conf);
       if(hits[0]){
         dayMap[col.day] = hits[0].code;
@@ -6141,8 +5887,7 @@ function analyzeRosterImageOCR(result, opts={}){
     turnCodes: Array.from(turnCodesSet).filter(c => !!codeToShiftDef(c)).sort(),
     columnsDetected: columns.length,
     totalWords: words.length,
-    dayStartX,
-    pass
+    dayStartX
   };
 }
 
@@ -6209,12 +5954,6 @@ function renderImageRosterResults(){
   if(count) count.textContent = `${rows.length} persona(s) detectada(s) · ${selected} seleccionada(s)`;
   if(summary){
     summary.textContent = `Mes: ${MONTHS[imageRosterContext.month0]} ${imageRosterContext.year} · Columnas/dias detectados: ${imageRosterContext.columnsDetected} · Palabras OCR: ${imageRosterContext.totalWords}`;
-    summary.textContent = [
-      `Mes: ${MONTHS[imageRosterContext.month0]} ${imageRosterContext.year}`,
-      `Lectura: ${imageRosterContext.pass || 'OCR'}`,
-      `Columnas/dias detectados: ${imageRosterContext.columnsDetected}`,
-      `Palabras OCR: ${imageRosterContext.totalWords}`
-    ].join(' · ');
     summary.classList.remove('hidden');
   }
   buildImageImportTurnsCategoryMapUI(imageRosterContext.turnCodes);
@@ -6615,6 +6354,7 @@ function applyImageRosterResults(){
   const month0 = imageRosterContext.month0;
   const year = imageRosterContext.year;
   const month = month0 + 1;
+  const prefix = `${year}-${month}-`;
 
   let written = 0;
   let skipped = 0;
@@ -6627,6 +6367,12 @@ function applyImageRosterResults(){
     if(!user) return;
     profilesTouched++;
     ensureImportBaseShiftsForUser(userKey);
+
+    if(mode === 'replace'){
+      Object.keys(user.data || {}).forEach(k => {
+        if(k.startsWith(prefix)) delete user.data[k];
+      });
+    }
 
     Object.entries(row.days || {}).forEach(([dayStr, rawCode]) => {
       const day = parseInt(dayStr, 10);
@@ -8263,8 +8009,6 @@ function mergeSmartPull(cloudDb, localDb){
 
     const merged = JSON.parse(JSON.stringify(cloudDb || localDb));
     if(!merged.users) merged.users = {};
-    merged.changeLog = mergeChangeLogs(cloudDb?.changeLog || [], localDb?.changeLog || []);
-    merged.changeSeq = Math.max(Number(cloudDb?.changeSeq || 0), Number(localDb?.changeSeq || 0), ...merged.changeLog.map(e => Number(e.version || 0)));
 
     // Para cada usuario local, conservar datos de meses pasados
     if(localDb && localDb.users){
