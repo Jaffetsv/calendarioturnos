@@ -1,0 +1,18 @@
+{
+  "name": "shifter-pro-apk",
+  "version": "24.0.0",
+  "private": true,
+  "description": "Empaquetado Android (Capacitor) de Shifter Pro. La app web vive en index.html en la raiz del repo.",
+  "scripts": {
+    "copy-app": "node scripts/copy-app.js",
+    "android:add": "cap add android",
+    "android:sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}

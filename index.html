@@ -1004,6 +1004,14 @@
     .history-entry time{font-size:9px;color:#64748b;font-weight:800}
     .history-entry .history-title{font-size:11px;color:#0f172a;font-weight:1000}
     .history-entry .history-detail{font-size:10px;color:#475569;font-weight:700;line-height:1.45;margin-top:4px}
+    .hist-who{display:inline-block;margin-left:6px;font-size:9px;font-weight:900;color:#1d4ed8;background:#eff6ff;border-radius:999px;padding:2px 7px}
+    .hist-changes{margin-top:8px;border-top:1px dashed #e2e8f0;padding-top:7px;display:grid;gap:4px}
+    .hist-change{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:9.5px;font-weight:800}
+    .hist-field{min-width:62px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-weight:1000}
+    .hist-from{color:#b91c1c;background:#fef2f2;border-radius:6px;padding:1px 6px;text-decoration:line-through;text-decoration-thickness:1px}
+    .hist-arrow{color:#94a3b8;font-weight:1000}
+    .hist-to{color:#15803d;background:#f0fdf4;border-radius:6px;padding:1px 6px}
+    .hist-more{font-size:9px;font-weight:900;color:#64748b;padding-top:2px}
     .backup-card{border:1px solid #bae6fd;background:#f0f9ff;border-radius:16px;padding:12px}
     .status-chip{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:9px;font-weight:1000}
     .status-chip.safe{background:#dcfce7;color:#166534}.status-chip.warn{background:#fef3c7;color:#92400e}.status-chip.danger{background:#fee2e2;color:#991b1b}
@@ -1016,6 +1024,55 @@
     @media (prefers-reduced-motion:reduce){
       *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
     }
+
+    /* =======================================================
+       APP SHELL — TODO EN UNA SOLA PANTALLA
+       La página nunca hace scroll vertical: la cabecera y la
+       barra inferior quedan fijas y sólo el contenido interno
+       se desplaza cuando es estrictamente necesario.
+       (El bottom bar va antes que las vistas en el HTML, por
+        eso se reordena con flex `order` en vez de mover markup.)
+       ======================================================= */
+    html{height:100%}
+    body{
+      height:100vh;
+      height:100dvh;
+      min-height:0!important;
+      overflow:hidden!important;
+      padding-bottom:0!important;
+      display:flex;
+      flex-direction:column;
+    }
+
+    #topBar{order:1;flex:0 0 auto;position:relative!important;top:auto!important}
+    #monthNavWrap{order:2;flex:0 0 auto}
+    .view-section{order:3}
+    #bottomTabs{order:4;position:relative!important;flex:0 0 auto;bottom:auto!important;left:auto!important;right:auto!important}
+
+    /* La vista activa ocupa el espacio restante */
+    .view-section.view-active{
+      flex:1 1 auto;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* Calendario: encaja sin scroll */
+    #view-calendar.view-active{overflow:hidden}
+    #view-calendar #weekHeader{flex:0 0 auto;position:relative!important;top:auto!important}
+    #view-calendar .calendar-grid{flex:1 1 auto;min-height:0}
+
+    /* Resumen y ajustes: scroll interno (su contenido es largo) */
+    #view-summary.view-active,
+    #view-settings.view-active{
+      overflow-y:auto;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+      padding-bottom:14px!important;
+    }
+
+    /* El drawer y los modales son fixed: fuera del flujo flex */
+    #menuDrawer,#menuOverlay,.modal{order:0}
 
   </style>
 </head>
@@ -1060,7 +1117,7 @@
 </div>
 
 <!-- Month/year nav: compacto y protagonista -->
-<div class="px-2 pt-1.5 pb-0">
+<div id="monthNavWrap" class="px-2 pt-1.5 pb-0">
   <div id="monthNav" class="flex items-center justify-between gap-2 rounded-[22px] px-3 py-2">
     <button onclick="changeMonth(-1)" class="month-nav-btn" aria-label="Mes anterior">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1126,7 +1183,7 @@
     <div class="bg-white/5 rounded-2xl p-3 mb-2">
       <div class="text-[9px] font-black uppercase text-gray-400 tracking-widest mb-2">Datos</div>
       <button onclick="openProfilesModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px] mb-2">👤 Perfiles de usuario</button>
-      <button onclick="openImportModal(); closeMenu();" class="w-full p-3 bg-sky-700 hover:bg-sky-800 rounded-xl font-black text-[11px] mb-2">📥 Importar Excel</button>
+      <button onclick="openImportModal(); closeMenu();" class="w-full p-3 bg-sky-700 hover:bg-sky-800 rounded-xl font-black text-[11px] mb-2">📥 Importar Excel / PDF</button>
       <button onclick="openImageImportModal(); closeMenu();" class="w-full p-3 bg-violet-700 hover:bg-violet-800 rounded-xl font-black text-[11px] mb-2">📷 Importar desde Imagen</button>
       <button onclick="showExportModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px] mb-2">📋 Exportar calendario</button>
       <button onclick="openHistoryModal(); closeMenu();" class="w-full p-3 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-300/20 rounded-xl font-black text-[11px]">🕘 Historial, respaldos y cambios</button>
@@ -1655,15 +1712,15 @@
     <div class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 mx-auto mb-4 flex items-center justify-center">
       <span class="text-white text-2xl font-black">📥</span>
     </div>
-    <h3 class="font-black text-center uppercase text-base md:text-lg mb-2">Importar Excel</h3>
+    <h3 class="font-black text-center uppercase text-base md:text-lg mb-2">Importar Excel o PDF</h3>
     <p class="text-[11px] text-gray-500 font-bold text-center mb-6">
       Detecta usuarios y permite seleccionar cuáles importar.
     </p>
 
     <div class="space-y-4">
       <div>
-        <label class="text-[12px] font-bold text-gray-600 block mb-2">Archivo Excel (.xlsx)</label>
-        <input type="file" id="importFile" accept=".xlsx,.xls" class="w-full bg-gray-50 border-gray-200">
+        <label class="text-[12px] font-bold text-gray-600 block mb-2">Archivo (.xlsx, .xls, .csv o .pdf)</label>
+        <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.pdf,application/pdf" class="w-full bg-gray-50 border-gray-200">
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1770,24 +1827,23 @@
       </section>
       <section>
         <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
-          <div><h4 class="font-black text-[12px] uppercase text-slate-800">Bitácora de actividad</h4><p class="text-[10px] font-bold text-slate-500 mt-1">Ediciones, importaciones y restauraciones recientes.</p></div>
+          <div>
+            <h4 class="font-black text-[12px] uppercase text-slate-800">Historial de ajustes</h4>
+            <p class="text-[10px] font-bold text-slate-500 mt-1">Turnos, colores, textos, horarios, días vaciados, perfiles, categorías y asuetos.</p>
+          </div>
           <div class="flex gap-2">
-            <button onclick="exportActivityLog()" class="px-3 py-2 rounded-xl bg-blue-600 text-white text-[9px] font-black uppercase">Exportar JSON</button>
+            <button onclick="exportActivityLog()" class="px-3 py-2 rounded-xl bg-blue-600 text-white text-[9px] font-black uppercase">Exportar</button>
             <button onclick="clearActivityLog()" class="px-3 py-2 rounded-xl bg-white border border-red-200 text-red-700 text-[9px] font-black uppercase">Vaciar</button>
           </div>
         </div>
+
+        <input id="historySearch" type="search" oninput="renderHistoryModal()"
+          placeholder="Buscar (turno, color, día, perfil…)"
+          class="w-full mb-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-800"/>
+
+        <div id="historyFilters" class="flex flex-wrap gap-1.5 mb-3"></div>
         <div id="historyList" class="space-y-2"></div>
-      </section>
-      <section class="rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
-        <h4 class="font-black text-[12px] uppercase text-indigo-950">Registro de cambios · v24</h4>
-        <div class="mt-3 grid gap-2 text-[10px] font-bold text-indigo-900 leading-relaxed">
-          <div>✓ Mes y año destino autoritativos en importación Excel.</div>
-          <div>✓ Vista previa de sobrescrituras, confirmación detallada y respaldo restaurable.</div>
-          <div>✓ Mapeo seguro de perfiles, control de colisiones y validación de días del mes.</div>
-          <div>✓ Renderizado del calendario en un solo lote, navegación por teclado y mejor contraste.</div>
-          <div>✓ Librerías pesadas cargadas bajo demanda para iniciar más rápido.</div>
-          <div>✓ Manifest PWA adaptado a rutas de GitHub Pages.</div>
-        </div>
+        <div id="historyCount" class="mt-2 text-center text-[9px] font-black uppercase tracking-wider text-slate-400"></div>
       </section>
     </div>
   </div>
@@ -2255,8 +2311,16 @@ const LIBRARY_URLS = {
   html2canvas: [
     'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
     'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
+  ],
+  pdfjs: [
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js'
   ]
 };
+const PDF_WORKER_URLS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+];
 const _libraryPromises = {};
 let importPreviewTimer = null;
 
@@ -2322,6 +2386,95 @@ function addActivityLog(type, title, detail = '', meta = {}, level = 'info'){
     localStorage.setItem(SHIFTER_ACTIVITY_KEY, JSON.stringify(entries.slice(0, MAX_ACTIVITY_ENTRIES)));
   }catch(e){ console.warn('No se pudo registrar actividad', e); }
 }
+// ---------------------------------------------------------
+// Bitácora de AJUSTES DEL USUARIO
+// Compara la config de turnos antes/después y describe los
+// cambios en lenguaje natural (colores, textos, horarios...).
+// ---------------------------------------------------------
+const SHIFT_FIELD_LABELS = {
+  label:'Nombre', color:'Color', cat:'Categoría',
+  in:'Entrada', out:'Salida', note:'Nota', enabled:'Visible'
+};
+
+function diffShiftConfigs(oldCfg, newCfg){
+  const changes = [];
+  const ids = new Set([...Object.keys(oldCfg || {}), ...Object.keys(newCfg || {})]);
+  ids.forEach(id => {
+    const a = oldCfg && oldCfg[id];
+    const b = newCfg && newCfg[id];
+    if(a && !b){ changes.push({ shift:id, field:'*', from:'existía', to:'eliminado', text:`«${id}» eliminado` }); return; }
+    if(!a && b){ changes.push({ shift:id, field:'*', from:'—', to:'creado', text:`«${(b.label || id)}» creado` }); return; }
+    if(!a || !b) return;
+    Object.keys(SHIFT_FIELD_LABELS).forEach(f => {
+      const norm = v => (f === 'enabled') ? (v ? 'sí' : 'no') : (v === undefined || v === null || v === '' ? '(vacío)' : String(v));
+      const av = norm(a[f]);
+      const bv = norm(b[f]);
+      if(av !== bv){
+        changes.push({
+          shift:id, field:f, from:av, to:bv,
+          text:`«${(b.label || id)}» · ${SHIFT_FIELD_LABELS[f]}: ${av} → ${bv}`
+        });
+      }
+    });
+  });
+  return changes;
+}
+
+// "2026-8-5" -> "5 ago 2026"
+function formatDayKeyLong(key){
+  const parts = String(key || '').split('-').map(n => parseInt(n, 10));
+  if(parts.length !== 3 || parts.some(isNaN)) return String(key || '');
+  const short = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${parts[2]} ${short[parts[1] - 1] || '?'} ${parts[0]}`;
+}
+
+// Describe en lenguaje natural qué cambió en un día del calendario
+function describeDayChange(prev, next, user){
+  const cfg = (user && user.config) || {};
+  const nameOf = id => (cfg[id] && cfg[id].label) || id || '—';
+  const changes = [];
+
+  const prevEmpty = !prev || isEffectivelyEmptyDayData(prev);
+  const nextEmpty = !next || isEffectivelyEmptyDayData(next);
+
+  const describe = d => {
+    if(!d) return '(vacío)';
+    if(d.mode === 'mixto') return `${nameOf(d.t)} + ${nameOf(d.b)}`;
+    return nameOf(d.s);
+  };
+
+  const beforeTxt = describe(prev);
+  const afterTxt  = describe(next);
+  if(beforeTxt !== afterTxt) changes.push({ field:'turno', from:beforeTxt, to:afterTxt, text:`Turno: ${beforeTxt} → ${afterTxt}` });
+
+  const hhPrev = prev ? `${prev.tIn || '—'}-${prev.tOut || '—'}` : '—';
+  const hhNext = next ? `${next.tIn || '—'}-${next.tOut || '—'}` : '—';
+  if(hhPrev !== hhNext) changes.push({ field:'horario', from:hhPrev, to:hhNext, text:`Horario: ${hhPrev} → ${hhNext}` });
+
+  const nPrev = String((prev && prev.n) || '').trim() || '(sin nota)';
+  const nNext = String((next && next.n) || '').trim() || '(sin nota)';
+  if(nPrev !== nNext) changes.push({ field:'nota', from:nPrev, to:nNext, text:`Nota: ${nPrev} → ${nNext}` });
+
+  let title = 'Día actualizado';
+  if(!prevEmpty && nextEmpty) title = 'Día vaciado';
+  else if(prevEmpty && !nextEmpty) title = 'Turno asignado';
+
+  const detail = changes.length ? changes.map(c => c.text).join(' · ') : 'Sin cambios relevantes';
+  return { title, detail, changes };
+}
+
+// Registra una tanda de cambios de ajustes con resumen legible
+function logSettingsChange(type, title, changes, extraMeta = {}){
+  if(!changes || !changes.length) return;
+  const preview = changes.slice(0, 4).map(c => c.text).join(' · ');
+  addActivityLog(
+    type, title,
+    `${db.current}: ${changes.length} cambio(s). ${preview}${changes.length > 4 ? ' …' : ''}`,
+    { profile: db.current, changes, ...extraMeta },
+    'success'
+  );
+}
+
 function getImportBackups(){
   return safeParseJSON(localStorage.getItem(SHIFTER_IMPORT_BACKUP_KEY), []);
 }
@@ -2400,17 +2553,83 @@ function openHistoryModal(){
   document.getElementById('historyModal')?.classList.add('active');
 }
 function closeHistoryModal(){ document.getElementById('historyModal')?.classList.remove('active'); }
+// Grupos de filtro para el historial de ajustes
+const HISTORY_GROUPS = {
+  all:      { label:'Todo',        types:null },
+  day:      { label:'Días',        types:['day-edit','day-paste'] },
+  shift:    { label:'Turnos',      types:['shift-config'] },
+  category: { label:'Categorías',  types:['category'] },
+  holiday:  { label:'Asuetos',     types:['holiday'] },
+  locality: { label:'Localidades', types:['locality'] },
+  profile:  { label:'Perfiles',    types:['profile','profile-merge'] },
+  import:   { label:'Importación', types:['excel-import','image-import','pdf-import','restore'] }
+};
+let historyFilter = 'all';
+
+function setHistoryFilter(key){
+  historyFilter = key;
+  renderHistoryModal();
+}
+
 function renderHistoryModal(){
   const historyBox = document.getElementById('historyList');
   const backupBox = document.getElementById('importBackupsList');
+
+  // Chips de filtro
+  const filterBox = document.getElementById('historyFilters');
+  const allEntries = getActivityLog();
+  if(filterBox){
+    filterBox.innerHTML = Object.keys(HISTORY_GROUPS).map(key => {
+      const g = HISTORY_GROUPS[key];
+      const n = g.types ? allEntries.filter(e => g.types.includes(e.type)).length : allEntries.length;
+      const on = historyFilter === key;
+      return `<button onclick="setHistoryFilter('${key}')" class="px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wide border transition-colors ${on ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}">${g.label} ${n ? `<span class="opacity-60">${n}</span>` : ''}</button>`;
+    }).join('');
+  }
+
   if(historyBox){
-    const entries = getActivityLog();
-    historyBox.innerHTML = entries.length ? entries.slice(0,80).map(entry => {
+    const q = (document.getElementById('historySearch')?.value || '').trim().toLowerCase();
+    const group = HISTORY_GROUPS[historyFilter] || HISTORY_GROUPS.all;
+
+    const entries = allEntries.filter(e => {
+      if(group.types && !group.types.includes(e.type)) return false;
+      if(!q) return true;
+      const hay = `${e.title || ''} ${e.detail || ''} ${e.type || ''} ${(e.meta && e.meta.profile) || ''} ${(e.meta && e.meta.changes || []).map(c => c.text).join(' ')}`.toLowerCase();
+      return hay.includes(q);
+    });
+
+    historyBox.innerHTML = entries.length ? entries.slice(0,120).map(entry => {
       const date = new Date(entry.at);
       const when = Number.isNaN(date.getTime()) ? entry.at : date.toLocaleString('es-SV',{dateStyle:'short',timeStyle:'short'});
       const levelClass = entry.level === 'error' ? 'danger' : entry.level === 'warning' ? 'warn' : 'safe';
-      return `<div class="history-entry"><div class="flex items-start justify-between gap-3"><div class="history-title">${escapeHTML(entry.title || entry.type || 'Actividad')}</div><span class="status-chip ${levelClass}">${escapeHTML(entry.type || 'evento')}</span></div><time>${escapeHTML(when)}</time>${entry.detail ? `<div class="history-detail">${escapeHTML(entry.detail)}</div>` : ''}</div>`;
-    }).join('') : '<div class="rounded-2xl border border-dashed border-slate-300 p-5 text-center text-[10px] font-bold text-slate-500">Todavía no hay actividad registrada.</div>';
+      const changes = (entry.meta && Array.isArray(entry.meta.changes)) ? entry.meta.changes : [];
+      const who = (entry.meta && entry.meta.profile) ? `<span class="hist-who">${escapeHTML(entry.meta.profile)}</span>` : '';
+
+      const changeRows = changes.length ? `
+        <div class="hist-changes">
+          ${changes.slice(0,12).map(c => `
+            <div class="hist-change">
+              <span class="hist-field">${escapeHTML(c.field === '*' ? '—' : (SHIFT_FIELD_LABELS[c.field] || c.field || ''))}</span>
+              <span class="hist-from">${escapeHTML(String(c.from ?? ''))}</span>
+              <span class="hist-arrow">→</span>
+              <span class="hist-to">${escapeHTML(String(c.to ?? ''))}</span>
+            </div>`).join('')}
+          ${changes.length > 12 ? `<div class="hist-more">+${changes.length - 12} cambio(s) más</div>` : ''}
+        </div>` : '';
+
+      return `<div class="history-entry">
+        <div class="flex items-start justify-between gap-3">
+          <div class="history-title">${escapeHTML(entry.title || entry.type || 'Actividad')}</div>
+          <span class="status-chip ${levelClass}">${escapeHTML(entry.type || 'evento')}</span>
+        </div>
+        <time>${escapeHTML(when)}</time> ${who}
+        ${entry.detail ? `<div class="history-detail">${escapeHTML(entry.detail)}</div>` : ''}
+        ${changeRows}
+      </div>`;
+    }).join('') : `<div class="rounded-2xl border border-dashed border-slate-300 p-5 text-center text-[10px] font-bold text-slate-500">${q || historyFilter !== 'all' ? 'Sin resultados para este filtro.' : 'Todavía no hay ajustes registrados.'}</div>`;
+
+    const countEl = document.getElementById('historyCount');
+    if(countEl) countEl.textContent = `${entries.length} de ${allEntries.length} registro(s)`;
   }
   if(backupBox){
     const backups = getImportBackups();
@@ -3212,8 +3431,7 @@ function showView(view){
     activeView.style.display = target === 'calendar' ? 'flex' : 'block';
   }
 
-  // Lock body scroll on calendar to prevent page scrolling
-  document.body.style.overflowY = target === 'calendar' ? 'hidden' : '';
+  // El app shell ya impide el scroll de página; no tocar overflow aquí.
 
   document.querySelectorAll('#bottomTabs .btab').forEach(btn => btn.classList.remove('btab-active'));
   const activeBtn = document.getElementById('btab-' + target);
@@ -3400,27 +3618,37 @@ function switchUser(){
 // Calendar Rendering
 // =========================================================
 
+// Reajustar la rejilla cuando cambia el tamaño/orientación del dispositivo
+let _fitRaf = null;
+function scheduleCalendarFit(){
+  if(_fitRaf) cancelAnimationFrame(_fitRaf);
+  _fitRaf = requestAnimationFrame(() => { _fitRaf = null; fitCalendarToViewport(); });
+}
+window.addEventListener('resize', scheduleCalendarFit);
+window.addEventListener('orientationchange', scheduleCalendarFit);
+if(window.visualViewport) window.visualViewport.addEventListener('resize', scheduleCalendarFit);
+
+// Ajusta la rejilla para que el mes completo quepa SIN scroll vertical.
+// Mide el espacio real del contenedor (app shell), no la ventana.
 function fitCalendarToViewport(){
   const view = document.getElementById('view-calendar');
   const grid = document.getElementById('calendar');
   const weekHeader = document.getElementById('weekHeader');
-  const bottomTabs = document.getElementById('bottomTabs');
-  if (!view || !grid || !weekHeader || !bottomTabs) return;
+  if (!view || !grid || !weekHeader) return;
+  if (!view.classList.contains('view-active')) return;
 
   const totalCells = grid.children.length;
   const rows = Math.max(1, Math.ceil(totalCells / 7));
-  const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
 
-  const viewTop = view.getBoundingClientRect().top;
+  const viewH = view.clientHeight;
   const weekHeaderH = weekHeader.getBoundingClientRect().height || 0;
-  const bottomTabsH = bottomTabs.getBoundingClientRect().height || 0;
-
-  const available = Math.floor(viewportH - viewTop - weekHeaderH - bottomTabsH - 12);
+  const available = Math.floor(viewH - weekHeaderH - 2);
   if (available <= 0) return;
 
-  const rowGap = 1;
+  const rowGap = 2;
   const totalGaps = Math.max(0, rows - 1) * rowGap;
-  const rowHeight = Math.max(54, Math.floor((available - totalGaps) / rows));
+  // Mínimo bajo para que 6 semanas quepan incluso en pantallas pequeñas
+  const rowHeight = Math.max(38, Math.floor((available - totalGaps) / rows));
   const gridHeight = rows * rowHeight + totalGaps;
 
   document.documentElement.style.setProperty('--calendar-row-height', rowHeight + 'px');
@@ -4545,7 +4773,9 @@ function saveDay(){
   try { if (window._setTurnArea) window._setTurnArea(false); } catch(e) {}
   closeModal();
   saveDB();
-  addActivityLog('day-edit','Día actualizado',`${db.current} · ${activeKey}`,{previous:previousDayData,next:data},'success');
+  const dayDiff = describeDayChange(previousDayData, data, user);
+  addActivityLog('day-edit', dayDiff.title, `${db.current} · ${formatDayKeyLong(activeKey)} — ${dayDiff.detail}`,
+    {previous:previousDayData, next:data, day:activeKey, profile:db.current, changes:dayDiff.changes}, 'success');
   render();
   renderSummaryCategories();
   calcSummary();
@@ -4731,12 +4961,16 @@ function saveShiftSettings(){
       }
     });
   }
-  
+
+  // Bitácora: registrar exactamente qué ajustes cambiaron
+  const shiftChanges = diffShiftConfigs(oldConfig, SHIFTS);
+  logSettingsChange('shift-config', 'Ajustes de turnos', shiftChanges, { propagated: propagate });
+
   saveDB();
   render();
   renderSummaryCategories();
   calcSummary();
-  alert("Turnos actualizados.");
+  toast(shiftChanges.length ? `Turnos actualizados · ${shiftChanges.length} cambio(s)` : 'Sin cambios que guardar');
 }
 
 function deleteShift(id){
@@ -4758,13 +4992,16 @@ function deleteShift(id){
   if(used) return alert("No se puede eliminar: el turno está usado en el calendario del perfil.");
   
   if(!confirm(`¿Eliminar turno "${id}"?`)) return;
-  
+
+  const removed = cloneJSON(user.config[id] || {});
   delete user.config[id];
+  addActivityLog('shift-config','Turno eliminado',`${db.current}: se eliminó «${removed.label || id}».`,{profile:db.current, shift:id, removed},'warning');
   saveDB();
   renderSettings();
   render();
   renderSummaryCategories();
   calcSummary();
+  toast(`Turno «${removed.label || id}» eliminado`);
 }
 
 // =========================================================
@@ -4815,17 +5052,21 @@ function addNewShift(){
     enabled: true
   };
   
+  addActivityLog('shift-config','Turno creado',
+    `${db.current}: «${name}» (${inTime}–${outTime}), categoría ${cat}.`,
+    {profile:db.current, shift:key, created:cloneJSON(user.config[key])},'success');
+
   saveDB();
   renderSettings();
   render();
-  
+
   // Limpiar formulario
   document.getElementById('newShiftName').value = '';
   document.getElementById('newShiftIn').value = '';
   document.getElementById('newShiftOut').value = '';
   document.getElementById('newShiftNote').value = '';
-  
-  alert("Turno agregado.");
+
+  toast(`Turno «${name}» agregado`);
 }
 
 // =========================================================
@@ -4888,12 +5129,14 @@ function addNewCategory(){
     color: '#6b7280'
   };
   
+  addActivityLog('category','Categoría creada',`Se creó la categoría «${name}» ${icon || ''}`.trim(),{cid, created:cloneJSON(db.categories[cid])},'success');
+
   saveDB();
   document.getElementById('newCategoryName').value = '';
   renderCategories();
   renderSummaryCategories();
   loadCategoriesSelect();
-  alert("Categoría agregada.");
+  toast(`Categoría «${name}» agregada`);
 }
 
 function deleteCategory(cid){
@@ -4907,35 +5150,52 @@ function deleteCategory(cid){
   if(used) return alert("No se puede eliminar: hay turnos usando esta categoría.");
   
   if(!confirm(`¿Eliminar categoría "${db.categories[cid].name}"?`)) return;
-  
+
+  const removedCat = cloneJSON(db.categories[cid]);
   delete db.categories[cid];
+  addActivityLog('category','Categoría eliminada',`Se eliminó «${removedCat.name || cid}».`,{cid, removed:removedCat},'warning');
   saveDB();
   renderCategories();
   renderSummaryCategories();
   loadCategoriesSelect();
-  alert("Categoría eliminada.");
+  toast(`Categoría «${removedCat.name || cid}» eliminada`);
 }
 
 function saveCategories(){
   if(!isEditMode()) return alert("Activa modo edición.");
-  
+
+  const beforeCats = cloneJSON(db.categories);
+
   Object.keys(db.categories).forEach(cid => {
     const name = document.getElementById(`cat-name-${cid}`)?.value?.trim();
     const icon = document.getElementById(`cat-icon-${cid}`)?.value?.trim();
     const color = document.getElementById(`cat-color-${cid}`)?.value;
-    
+
     if(name) db.categories[cid].name = name;
     if(icon) db.categories[cid].icon = icon;
     if(color) db.categories[cid].color = color;
   });
-  
+
+  // Bitácora: nombre / icono / color de cada categoría
+  const catLabels = { name:'Nombre', icon:'Icono', color:'Color' };
+  const catChanges = [];
+  Object.keys(db.categories).forEach(cid => {
+    const a = beforeCats[cid] || {}, b = db.categories[cid] || {};
+    Object.keys(catLabels).forEach(f => {
+      const av = a[f] === undefined || a[f] === '' ? '(vacío)' : String(a[f]);
+      const bv = b[f] === undefined || b[f] === '' ? '(vacío)' : String(b[f]);
+      if(av !== bv) catChanges.push({ shift:cid, field:f, from:av, to:bv, text:`«${b.name || cid}» · ${catLabels[f]}: ${av} → ${bv}` });
+    });
+  });
+  logSettingsChange('category','Ajustes de categorías', catChanges);
+
   saveDB();
   renderCategories();
   renderSummaryCategories();
   loadCategoriesSelect();
   renderSettings();
   render();
-  alert("Categorías actualizadas.");
+  toast(catChanges.length ? `Categorías actualizadas · ${catChanges.length} cambio(s)` : 'Sin cambios que guardar');
 }
 
 // =========================================================
@@ -5076,12 +5336,22 @@ function saveLocalities(){
     });
   });
   
+  // Bitácora: renombres, altas y bajas de localidades
+  const locChanges = renamePairs.map(([from, to]) => ({
+    shift:from, field:'nombre', from, to, text:`Localidad: ${from} → ${to}`
+  }));
+  oldList.filter(l => !db.localities.includes(l) && !renamePairs.some(p => p[0] === l))
+    .forEach(l => locChanges.push({ shift:l, field:'*', from:l, to:'(eliminada)', text:`Localidad eliminada: ${l}` }));
+  db.localities.filter(l => !oldList.includes(l) && !renamePairs.some(p => p[1] === l))
+    .forEach(l => locChanges.push({ shift:l, field:'*', from:'—', to:l, text:`Localidad agregada: ${l}` }));
+  logSettingsChange('locality','Ajustes de localidades', locChanges);
+
   saveDB();
   renderLocalities();
   renderHolidays();
   renderProfilesList();
   render();
-  alert("Localidades actualizadas.");
+  toast(locChanges.length ? `Localidades actualizadas · ${locChanges.length} cambio(s)` : 'Sin cambios que guardar');
 }
 
 function refreshHolidayLocationSelects(){
@@ -5173,32 +5443,37 @@ function addNewHoliday(){
     location: loc
   };
   
+  addActivityLog('holiday','Asueto agregado',`${key} · «${name}» (${loc})`,{key, created:{name, location:loc}},'success');
+
   document.getElementById('newHolidayDate').value = '';
   document.getElementById('newHolidayName').value = '';
   saveDB();
   renderHolidays();
   render();
-  alert("Asueto agregado.");
+  toast(`Asueto «${name}» agregado`);
 }
 
 function deleteHoliday(k){
   if(!isEditMode()) return alert("Activa modo edición.");
   
   if(!confirm(`¿Eliminar asueto del ${k}?`)) return;
-  
+
+  const removedHol = cloneJSON(db.holidays[k] || {});
   delete db.holidays[k];
+  addActivityLog('holiday','Asueto eliminado',`${k} · «${removedHol.name || ''}»`,{key:k, removed:removedHol},'warning');
   saveDB();
   renderHolidays();
   render();
-  alert("Asueto eliminado.");
+  toast('Asueto eliminado');
 }
 
 function saveHolidays(){
   if(!isEditMode()) return alert("Activa modo edición.");
   
+  const beforeHolidays = cloneJSON(db.holidays || {});
   const newHolidays = {};
   const keys = Object.keys(db.holidays);
-  
+
   keys.forEach(oldKey => {
     const safeKey = cssSafe(oldKey);
     const dateVal = document.getElementById(`h-date-${safeKey}`)?.value;
@@ -5216,11 +5491,28 @@ function saveHolidays(){
     };
   });
   
+  // Bitácora: comparar asuetos antes/después
+  const holChanges = [];
+  const allHolKeys = new Set([...Object.keys(beforeHolidays), ...Object.keys(newHolidays)]);
+  allHolKeys.forEach(k => {
+    const a = beforeHolidays[k], b = newHolidays[k];
+    if(a && !b){ holChanges.push({ shift:k, field:'*', from:a.name || '', to:'(eliminado)', text:`Asueto eliminado: ${k} «${a.name || ''}»` }); return; }
+    if(!a && b){ holChanges.push({ shift:k, field:'*', from:'—', to:b.name || '', text:`Asueto agregado: ${k} «${b.name || ''}»` }); return; }
+    if(!a || !b) return;
+    ['name','location'].forEach(f => {
+      const lbl = f === 'name' ? 'Nombre' : 'Localidad';
+      if(String(a[f] || '') !== String(b[f] || '')){
+        holChanges.push({ shift:k, field:f, from:String(a[f] || '(vacío)'), to:String(b[f] || '(vacío)'), text:`Asueto ${k} · ${lbl}: ${a[f] || '(vacío)'} → ${b[f] || '(vacío)'}` });
+      }
+    });
+  });
+  logSettingsChange('holiday','Ajustes de asuetos', holChanges);
+
   db.holidays = newHolidays;
   saveDB();
   renderHolidays();
   render();
-  alert("Asuetos actualizados.");
+  toast(holChanges.length ? `Asuetos actualizados · ${holChanges.length} cambio(s)` : 'Sin cambios que guardar');
 }
 
 // =========================================================
@@ -5414,15 +5706,18 @@ function deleteProfile(u){
   
   if(!confirm(`¿Eliminar perfil "${u}"? Se perderá su calendario.`)) return;
   
+  const daysCount = Object.keys(db.users[u]?.data || {}).length;
   delete db.users[u];
   if(db.current === u) db.current = 'ADMIN';
-  
+
+  addActivityLog('profile','Perfil eliminado',`Se eliminó «${u}» (${daysCount} día(s) de calendario).`,{profile:u, days:daysCount},'warning');
+
   saveDB();
   updateUserDropdown();
   updateUserInitial();
   render();
   renderProfilesList();
-  alert("Perfil eliminado.");
+  toast(`Perfil «${u}» eliminado`);
 }
 
 function saveProfileEdits(u){
@@ -5433,12 +5728,16 @@ function saveProfileEdits(u){
   
   const pin = document.getElementById(`p-pin-${cssSafe(u)}`)?.value?.trim();
   const loc = document.getElementById(`p-loc-${cssSafe(u)}`)?.value || 'San Salvador';
-  
+
   if(!pin || pin.length !== 4 || isNaN(pin)) return alert("PIN inválido (4 dígitos).");
-  
+
+  const profChanges = [];
+  if(String(user.pin || '') !== String(pin)) profChanges.push({ field:'PIN', from:'••••', to:'••••', text:'PIN modificado' });
+  if(String(user.locality || '') !== String(loc)) profChanges.push({ field:'Localidad', from:String(user.locality || '(vacío)'), to:loc, text:`Localidad: ${user.locality || '(vacío)'} → ${loc}` });
+
   user.pin = pin;
   user.locality = loc;
-  
+
   if(u !== 'ADMIN'){
     const newName = document.getElementById(`p-name-${cssSafe(u)}`)?.value?.trim()?.toUpperCase();
     if(newName && newName !== u){
@@ -5446,17 +5745,24 @@ function saveProfileEdits(u){
       
       db.users[newName] = user;
       delete db.users[u];
-      
+      profChanges.push({ field:'Nombre', from:u, to:newName, text:`Nombre: ${u} → ${newName}` });
+
       if(db.current === u) db.current = newName;
     }
   }
-  
+
+  if(profChanges.length){
+    addActivityLog('profile','Ajustes de perfil',
+      `${u}: ${profChanges.map(c => c.text).join(' · ')}`,
+      {profile:u, changes:profChanges},'success');
+  }
+
   saveDB();
   updateUserDropdown();
   updateUserInitial();
   renderProfilesList();
   render();
-  alert("Perfil actualizado.");
+  toast(profChanges.length ? `Perfil actualizado · ${profChanges.length} cambio(s)` : 'Sin cambios que guardar');
 }
 
 function detectDuplicateProfiles(){
@@ -5651,6 +5957,118 @@ async function loadImageElementFromFile(file){
     img.onerror = (err) => { URL.revokeObjectURL(url); reject(err || new Error('No se pudo cargar la imagen.')); };
     img.src = url;
   });
+}
+
+// =========================================================
+// SOPORTE PDF
+// Convierte un PDF a la MISMA estructura de filas que usa el
+// importador de Excel, para reutilizar toda la detección de
+// encabezados, días, nombres y turnos. Si el PDF viene
+// escaneado (sin capa de texto), cae automáticamente a OCR.
+// =========================================================
+async function ensurePdfJs(){
+  const lib = await loadScriptOnce('pdfjs', 'pdfjsLib');
+  const real = lib || window.pdfjsLib;
+  try{
+    if(real && real.GlobalWorkerOptions && !real.GlobalWorkerOptions.workerSrc){
+      real.GlobalWorkerOptions.workerSrc = PDF_WORKER_URLS[0];
+    }
+  }catch(_e){}
+  return real;
+}
+
+// Mejora un canvas ya renderizado para OCR (gris + contraste + binarizado suave)
+function enhanceCanvasForOCR(canvas){
+  try{
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for(let i=0; i<data.length; i+=4){
+      let gray = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+      gray = ((gray - 128) * 2.25) + 128;
+      gray = Math.max(0, Math.min(255, gray));
+      if(gray > 185) gray = 255;
+      else if(gray < 95) gray = 0;
+      data[i] = data[i+1] = data[i+2] = gray;
+    }
+    ctx.putImageData(imageData, 0, 0);
+  }catch(_e){}
+  return canvas;
+}
+
+// Agrupa fragmentos de texto por coordenada Y (misma línea) y ordena por X
+function pdfTextItemsToRows(items, yTolerance = 3.2){
+  const lines = [];
+  (items || []).forEach(it => {
+    const str = String(it.str || '').trim();
+    if(!str) return;
+    const x = it.transform ? it.transform[4] : 0;
+    const y = it.transform ? it.transform[5] : 0;
+    let line = null;
+    for(const l of lines){ if(Math.abs(l.y - y) <= yTolerance){ line = l; break; } }
+    if(!line){ line = { y, cells: [] }; lines.push(line); }
+    line.cells.push({ x, str });
+  });
+  lines.sort((a,b) => b.y - a.y); // de arriba hacia abajo
+  return lines.map(l => l.cells.sort((a,b) => a.x - b.x).map(c => c.str));
+}
+
+// OCR de un PDF escaneado, página por página
+async function pdfOcrToRows(pdf, onProgress){
+  await loadScriptOnce('tesseract', 'Tesseract');
+  let rows = [];
+  for(let p = 1; p <= pdf.numPages; p++){
+    if(onProgress) onProgress(`OCR de página ${p} de ${pdf.numPages}…`);
+    const page = await pdf.getPage(p);
+    const viewport = page.getViewport({ scale: 2.2 });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(viewport.width);
+    canvas.height = Math.round(viewport.height);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    enhanceCanvasForOCR(canvas);
+    const result = await Tesseract.recognize(canvas, 'spa+eng');
+    const text = (result && result.data && result.data.text) || '';
+    text.split('\n').forEach(line => {
+      const cells = line.trim().split(/\s{2,}|\t|\|/).map(s => s.trim()).filter(Boolean);
+      if(cells.length) rows.push(cells);
+    });
+  }
+  return rows;
+}
+
+// Devuelve { rows, usedOCR, pages } listo para el pipeline de importación
+async function pdfToRows(file, onProgress){
+  const pdfjsLib = await ensurePdfJs();
+  if(!pdfjsLib) throw new Error('No se pudo cargar el lector de PDF.');
+  const data = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data }).promise;
+
+  let rows = [];
+  let textChars = 0;
+  for(let p = 1; p <= pdf.numPages; p++){
+    if(onProgress) onProgress(`Leyendo página ${p} de ${pdf.numPages}…`);
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const pageRows = pdfTextItemsToRows(content.items);
+    pageRows.forEach(r => { textChars += r.join('').length; });
+    rows = rows.concat(pageRows);
+  }
+
+  // PDF escaneado (sin capa de texto útil) -> OCR
+  if(textChars < 40){
+    if(onProgress) onProgress('El PDF no tiene texto; aplicando OCR…');
+    rows = await pdfOcrToRows(pdf, onProgress);
+    return { rows, usedOCR:true, pages: pdf.numPages };
+  }
+  return { rows, usedOCR:false, pages: pdf.numPages };
+}
+
+function isPdfFile(file){
+  if(!file) return false;
+  return file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
 }
 
 async function buildPreprocessedOCRCanvas(file){
@@ -6471,21 +6889,37 @@ function findFuzzyUserMatch(importedName){
 
 async function analyzeImportFile(){
   const fileInput = document.getElementById('importFile');
-  if(!fileInput?.files?.[0]) return alert('Selecciona un archivo Excel.');
+  if(!fileInput?.files?.[0]) return alert('Selecciona un archivo Excel (.xlsx/.xls) o PDF.');
   let target;
   try{ target = getSelectedImportTarget(); }catch(e){ return alert(e.message); }
-  setImportBusy(true,'Cargando lector Excel…');
+  const file = fileInput.files[0];
+  setImportBusy(true, isPdfFile(file) ? 'Cargando lector PDF…' : 'Cargando lector Excel…');
   const info = document.getElementById('importInfo');
   try{
-    await ensureXLSXLoaded();
-    setImportBusy(true,'Analizando estructura y usuarios…');
-    const file = fileInput.files[0];
-    const data = await file.arrayBuffer();
-    const wb = XLSX.read(data,{type:'array',cellDates:true});
+    // Excel y PDF terminan en la MISMA estructura de filas
+    let candidates = [];
+    let wb = null;
+    let pdfInfo = null;
+
+    if(isPdfFile(file)){
+      const res = await pdfToRows(file, msg => setImportBusy(true, msg));
+      pdfInfo = res;
+      candidates = [{ sn: res.usedOCR ? 'PDF (OCR)' : 'PDF (texto)', rows: res.rows }];
+    } else {
+      await ensureXLSXLoaded();
+      setImportBusy(true,'Analizando estructura y usuarios…');
+      const data = await file.arrayBuffer();
+      wb = XLSX.read(data,{type:'array',cellDates:true});
+      candidates = wb.SheetNames.map(sn => ({
+        sn,
+        rows: XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:false,defval:'',dateNF:'d/m/yyyy'})
+      }));
+    }
+
     let best = null;
-    for(const sn of wb.SheetNames){
-      const ws = wb.Sheets[sn];
-      const rows = XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:'',dateNF:'d/m/yyyy'});
+    for(const cand of candidates){
+      const sn = cand.sn;
+      const rows = cand.rows;
       const headerIdx = findHeaderRow(rows);
       if(headerIdx<0) continue;
       const headerRow = rows[headerIdx] || [];
@@ -6497,7 +6931,9 @@ async function analyzeImportFile(){
       const finalScore = dayCount*20 + keywordScore*5 + Math.min(populatedRows,30);
       if(!best || finalScore>best.finalScore) best={sn,rows,headerIdx,headerRow,dayCols,finalScore};
     }
-    if(!best) throw new Error('No se encontró una tabla válida con encabezados de días (1…31 o fechas).');
+    if(!best) throw new Error(isPdfFile(file)
+      ? 'No se encontró una tabla de turnos en el PDF. Si es un PDF escaneado, prueba con una imagen más nítida o usa "Importar desde Imagen".'
+      : 'No se encontró una tabla válida con encabezados de días (1…31 o fechas).');
     const {sn:sheetName,rows,headerIdx,headerRow,dayCols}=best;
     const cols=inferNameEmpCols(rows,headerIdx,headerRow,dayCols);
     if(cols.nameCol<0 || Object.keys(dayCols).length<10) throw new Error('Formato no reconocido: falta una columna de nombre o hay menos de 10 columnas de días.');
@@ -6524,12 +6960,16 @@ async function analyzeImportFile(){
       wb,sheetName,rows,headerIdx,headerRow,nameCol:cols.nameCol,empCol:cols.empCol,dayCols,
       detectedSource:detectMonthYearFromRows(rows),analyzedTarget:target,
       users,codeCatMap:{},nameMatchMap,exactMatchMap,suggestionMap,
+      pdfInfo,
       fileMeta:{name:file.name,size:file.size,lastModified:file.lastModified},analyzedAt:new Date().toISOString()
     };
     renderImportUsersList();
     buildImportTurnsCategoryMapUI(turnCodes);
     refreshImportDestinationUI();
-    if(info) info.innerHTML=`<div class="rounded-2xl bg-slate-100 border border-slate-200 p-3 text-left"><div class="font-black text-slate-900">Archivo analizado correctamente</div><div class="mt-1 text-[10px] text-slate-600">Hoja: ${escapeHTML(sheetName)} · ${Object.keys(dayCols).length} días · ${users.length} usuarios · ${turnCodes.length} turnos.</div><div class="mt-1 text-[10px] text-blue-800 font-black">Destino autorizado: ${MONTHS[target.monthIndex0]} ${target.year}</div></div>`;
+    const sourceNote = pdfInfo
+      ? `<div class="mt-1 text-[10px] font-black ${pdfInfo.usedOCR ? 'text-violet-700' : 'text-emerald-700'}">${pdfInfo.usedOCR ? '📷 PDF escaneado leído con OCR' : '📄 PDF con texto leído directamente'} · ${pdfInfo.pages} página(s)</div>`
+      : '';
+    if(info) info.innerHTML=`<div class="rounded-2xl bg-slate-100 border border-slate-200 p-3 text-left"><div class="font-black text-slate-900">Archivo analizado correctamente</div><div class="mt-1 text-[10px] text-slate-600">Origen: ${escapeHTML(sheetName)} · ${Object.keys(dayCols).length} días · ${users.length} usuarios · ${turnCodes.length} turnos.</div>${sourceNote}<div class="mt-1 text-[10px] text-blue-800 font-black">Destino autorizado: ${MONTHS[target.monthIndex0]} ${target.year}</div></div>`;
     scheduleImportPreview();
   }catch(error){
     console.error('Error analizando archivo:',error);

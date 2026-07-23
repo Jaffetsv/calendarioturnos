@@ -1,0 +1,12 @@
+{
+  "appId": "sv.jaffet.shifterpro",
+  "appName": "Shifter Pro",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#0f172a"
+  }
+}
