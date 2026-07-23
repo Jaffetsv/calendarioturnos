@@ -1291,8 +1291,17 @@
       text-transform:uppercase;
       border-bottom:1px solid #e8edf4;
     }
+    /* Fin de semana en ROJO (la regla gris de arriba los estaba pisando). */
+    #weekHeader .wday-sat,
+    #weekHeader .wday-sun{ color:#dc2626!important; }
 
     .calendar-grid{ background:#e6ebf3!important; }
+
+    /* Esquinas ligeramente redondeadas: la celda recorta el color de fondo
+       (tiene overflow:hidden), así que el color queda con el mismo redondeo
+       y deja de verse todo cuadrado. */
+    .day-cell{ border-radius:8px; }
+    .today{ border-radius:8px; }
 
     /* --- Ajustes --- */
     .config-tabs-container{
@@ -1387,10 +1396,10 @@
        (el fondo lo pinta .day-bg, así que un `background` en la celda no se
        vería). Y número en azul. */
     .calendar-grid.mark-weekend .day-cell.weekend:not(.day-off-month) .day-bg::after{
-      content:''; position:absolute; inset:0; background:rgba(37,99,235,.10);
+      content:''; position:absolute; inset:0; background:rgba(220,38,38,.07);
     }
-    .calendar-grid.mark-weekend .day-cell.weekend:not(.day-off-month) .day-number{
-      color:#2563eb!important;
+    .calendar-grid.mark-weekend .day-cell.weekend:not(.day-off-month):not(.today) .day-number{
+      color:#dc2626!important;
     }
 
     #view-settings h3{
