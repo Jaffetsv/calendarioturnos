@@ -1226,17 +1226,24 @@
     }
     .day-cell:not(.day-off-month) .day-number{ color:#64748b!important; }
 
-    /* Hoy: acento limpio en vez de un borde grueso */
+    /* Hoy: anillo ROJO sólido, dibujado por encima de todo (outline) para
+       que el borde completo se vea y no quede detrás de la etiqueta de
+       color. Sin desplazar el layout. */
     .today{
       border:0!important;
-      box-shadow:inset 0 0 0 2px #2563eb!important;
-      background:#f7faff!important;
+      box-shadow:none!important;
+      outline:3px solid #ef4444!important;
+      outline-offset:-3px!important;
+      background:#fff6f6!important;
+      z-index:6;
     }
     .today .day-number{
-      background:#2563eb!important;
-      color:#fff!important;
-      border-radius:0 0 0 8px!important;
-      padding:1px 6px!important;
+      background:#ef4444!important;
+      color:#ffffff!important;
+      border-radius:0 0 0 9px!important;
+      padding:1px 7px!important;
+      font-weight:1000!important;
+      z-index:22;
     }
 
     /* Asueto: insignia discreta */
@@ -1323,11 +1330,56 @@
     }
     .shift-item[open] .shift-chevron{ transform:rotate(-90deg); color:#2563eb; }
 
+    /* Filas de preferencias (Apariencia) */
+    .pref-row{
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      background:#fff; border:1px solid #e4eaf3; border-radius:15px;
+      padding:14px 15px; cursor:pointer;
+      box-shadow:0 1px 2px rgba(15,23,42,.045);
+    }
+    .pref-row:hover{ border-color:#cfdcef; }
+    .pref-title{ font-size:12.5px; font-weight:1000; color:#1e293b; }
+    .pref-sub{ font-size:10.5px; font-weight:700; color:#8695a8; margin-top:3px; line-height:1.35; }
+    /* Interruptor tipo switch */
+    .pref-switch{
+      -webkit-appearance:none; appearance:none;
+      width:44px; height:26px; border-radius:999px; background:#cbd5e1;
+      position:relative; flex:0 0 auto; cursor:pointer;
+      transition:background .18s; outline:none;
+    }
+    .pref-switch::after{
+      content:''; position:absolute; top:3px; left:3px;
+      width:20px; height:20px; border-radius:50%; background:#fff;
+      box-shadow:0 1px 3px rgba(15,23,42,.28); transition:transform .18s;
+    }
+    .pref-switch:checked{ background:#2563eb; }
+    .pref-switch:checked::after{ transform:translateX(18px); }
+    .pref-switch:focus-visible{ box-shadow:0 0 0 3px rgba(37,99,235,.25); }
+
+    /* --- Modos de visualización del calendario --- */
+    /* Horario en una sola línea */
+    .calendar-grid.note-1line .day-cell .note-text{
+      white-space:nowrap!important;
+      display:block!important;
+      -webkit-line-clamp:unset!important;
+      text-overflow:ellipsis!important;
+      max-height:none!important;
+    }
+    /* Ocultar la nota "LIBRE" en días libres */
+    .calendar-grid.hide-libre .day-cell.is-libre .note-text{ display:none!important; }
+    /* Resaltar fines de semana */
+    .calendar-grid.mark-weekend .day-cell.weekend:not(.day-off-month):not(.today){
+      background:#f4f7fc!important;
+    }
+    .calendar-grid.mark-weekend .day-cell.weekend:not(.day-off-month) .day-number{
+      color:#3b82f6!important;
+    }
+
     #view-settings h3{
       letter-spacing:.045em;
       color:#334155!important;
     }
-    #view-settings input:not([type=checkbox]):not([type=radio]),
+    #view-settings input:not([type=checkbox]):not([type=radio]):not([type=color]),
     #view-settings select,
     #view-settings textarea{
       border:1px solid #dde4ee!important;
@@ -1343,6 +1395,24 @@
       border-color:#2563eb!important;
       box-shadow:0 0 0 3px rgba(37,99,235,.13)!important;
       outline:none!important;
+    }
+    /* Muestra de color: cuadro amplio y con el color a sangre (sin
+       relleno interior que lo haga ver pequeño). */
+    input.color-swatch{
+      -webkit-appearance:none; appearance:none;
+      width:52px!important; height:42px!important;
+      padding:0!important; border:1px solid #dde4ee!important;
+      border-radius:10px!important; background:transparent;
+      cursor:pointer; flex:0 0 auto;
+      transition:border-color .15s, box-shadow .15s;
+    }
+    input.color-swatch::-webkit-color-swatch-wrapper{ padding:3px; }
+    input.color-swatch::-webkit-color-swatch{ border:0; border-radius:7px; }
+    input.color-swatch::-moz-color-swatch{ border:0; border-radius:7px; }
+    input.color-swatch:hover{ border-color:#94a3b8!important; }
+    input.color-swatch:focus{
+      border-color:#2563eb!important;
+      box-shadow:0 0 0 3px rgba(37,99,235,.13)!important; outline:none!important;
     }
     #view-settings .text-\[9px\].font-black.text-gray-400{
       letter-spacing:.07em;
@@ -1601,6 +1671,7 @@
     <button onclick="showConfigTab('categorias')" id="config-categorias" class="config-tab whitespace-nowrap">🏷️ Categorías</button>
     <button onclick="showConfigTab('localidades')" id="config-localidades" class="config-tab whitespace-nowrap">📍 Localidades</button>
     <button onclick="showConfigTab('asuetos')" id="config-asuetos" class="config-tab whitespace-nowrap">🎉 Asuetos</button>
+    <button onclick="showConfigTab('apariencia')" id="config-apariencia" class="config-tab whitespace-nowrap">🖌️ Apariencia</button>
     <button onclick="showConfigTab('seguridad')" id="config-seguridad" class="config-tab whitespace-nowrap">🔒 Seguridad</button>
   </div>
 
@@ -1784,6 +1855,38 @@
     </div>
 
     <!-- Seguridad -->
+    <div id="tab-apariencia" class="config-tab-content hidden">
+      <h3 class="text-[14px] font-black text-gray-600 uppercase mb-4">🖌️ Apariencia del calendario</h3>
+
+      <div class="space-y-3">
+        <label class="pref-row">
+          <div>
+            <div class="pref-title">Horario en una sola línea</div>
+            <div class="pref-sub">Muestra "06:00–14:00" completo en una línea, sin partirlo. El texto se ajusta al ancho de la celda.</div>
+          </div>
+          <input type="checkbox" id="prefSingleLineNote" class="pref-switch" onchange="setDisplayPref('singleLineNote', this.checked)">
+        </label>
+
+        <label class="pref-row">
+          <div>
+            <div class="pref-title">Ocultar la nota "LIBRE"</div>
+            <div class="pref-sub">En los días libres muestra solo la "L", sin repetir la palabra LIBRE debajo. Deja más aire a la celda.</div>
+          </div>
+          <input type="checkbox" id="prefHideLibreNote" class="pref-switch" onchange="setDisplayPref('hideLibreNote', this.checked)">
+        </label>
+
+        <label class="pref-row">
+          <div>
+            <div class="pref-title">Resaltar fines de semana</div>
+            <div class="pref-sub">Da un fondo suave a sábados y domingos para ubicarlos de un vistazo.</div>
+          </div>
+          <input type="checkbox" id="prefHighlightWeekend" class="pref-switch" onchange="setDisplayPref('highlightWeekend', this.checked)">
+        </label>
+      </div>
+
+      <p class="mt-4 text-[10px] font-bold text-gray-400">Estas preferencias se guardan en este dispositivo.</p>
+    </div>
+
     <div id="tab-seguridad" class="config-tab-content hidden">
       <h3 class="text-[14px] font-black text-gray-600 uppercase mb-4">🔒 Seguridad (PIN del perfil actual)</h3>
       <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-3xl border border-blue-100">
@@ -2351,7 +2454,9 @@ function normalizeEnabledFlags(){
       if(!user || !user.config) return;
       Object.keys(user.config).forEach(k=>{
         if(typeof user.config[k].enabled === 'undefined'){
-          user.config[k].enabled = (['Mañana','Tarde','16hrs','CENA','L','Vacaciones'].includes(k));
+          // Sólo los estados esenciales quedan visibles por defecto; los
+          // turnos de trabajo dependen de lo que cada usuario configure.
+          user.config[k].enabled = (['L','Vacaciones'].includes(k));
         }
         // Si alguien renombró "VACACIONES" a otro label, no afecta el key.
       });
@@ -2360,6 +2465,19 @@ function normalizeEnabledFlags(){
   }catch(e){
     console.log('normalizeEnabledFlags error', e);
   }
+}
+
+// Configuración MÍNIMA con la que arranca cualquier perfil nuevo.
+// Sólo trae los estados universales (Libre, Vacaciones, Ausencia); los
+// turnos y horarios de trabajo los define cada quien, porque no todos
+// tienen el mismo empleo. Los turnos "reconocidos" (Mañana, 018, 468…)
+// dejan de venir precargados: viven en el perfil de cada usuario.
+function essentialShiftConfig(){
+  return {
+    'L':          { label:'L',        note:'LIBRE',      color:'L',          cat:'off',      in:'06:00', out:'14:00', enabled:true },
+    'Vacaciones': { label:'Vac',      note:'VACACIONES', color:'Vacaciones', cat:'off',      in:'00:00', out:'00:00', enabled:true },
+    'Ausencia':   { label:'Ausencia', note:'AUSENCIA',   color:'Ausencia',   cat:'ausencia', in:'00:00', out:'00:00', enabled:false }
+  };
 }
 
 function createDefaultDB() {
@@ -2387,38 +2505,22 @@ function createDefaultDB() {
         editLocked:false,
         locality:'San Salvador',
         data:{},
-        config:{
-          'Mañana': { label:'Mañana', color:'Mañana', cat:'work', in:'06:00', out:'14:00', enabled:true },
-          'Tarde': { label:'Tarde', color:'Tarde', cat:'work', in:'14:00', out:'22:00', enabled:true },
-          'CENA': { label:'CENA', note:'06:00 a 14:00', color:'CENA', cat:'work', in:'06:00', out:'14:00', enabled:true },
-          '16hrs': { label:'16hrs', note:'06:00 a 22:00', color:'16hrs', cat:'guardia', in:'06:00', out:'22:00', enabled:true },
-          'Noche': { label:'Noche', color:'indigo', cat:'work', in:'22:00', out:'06:00', enabled:true },
-          'Diurno': { label:'Diurno', color:'ambar', cat:'office', in:'08:00', out:'17:00', enabled:true },
-          'Cumpleaños': { label:'Cumpleaños', color:'Cumpleaños', cat:'cumple', in:'00:00', out:'00:00', enabled:false },
-          'L': { label:'L', note:'LIBRE', color:'L', cat:'off', in:'06:00', out:'14:00', enabled:true },
-          'Vacaciones': { label:'Vac', color:'Vacaciones', cat:'off', in:'00:00', out:'00:00', enabled:true },
-          'Ausencia': { label:'Ausencia', color:'Ausencia', cat:'ausencia', in:'00:00', out:'00:00', enabled:false }
-        }
+        config: essentialShiftConfig()
       }
     }
   };
 }
 
 
-// Asegurar consistencia de turnos base en todos los perfiles
+// Garantiza SOLO los estados esenciales que la app necesita para funcionar
+// (Libre, Vacaciones, Ausencia). Ya NO fuerza turnos de trabajo: si el
+// usuario los borró o nunca los tuvo, se respeta su configuración. No
+// sobrescribe valores que el usuario haya personalizado.
 function ensureCanonicalCoreShiftsForUser(user){
   if(!user) return;
   if(!user.config) user.config = {};
 
-  const defs = {
-    'Mañana': { label:'Mañana', color:'Mañana', cat:'work', in:'06:00', out:'14:00', enabled:true },
-    'Tarde': { label:'Tarde', color:'Tarde', cat:'work', in:'14:00', out:'22:00', enabled:true },
-    'CENA': { label:'CENA', note:'06:00 a 14:00', color:'CENA', cat:'work', in:'06:00', out:'14:00', enabled:true },
-    '16hrs': { label:'16hrs', note:'06:00 a 22:00', color:'16hrs', cat:'guardia', in:'06:00', out:'22:00', enabled:true },
-    'L': { label:'L', note:'LIBRE', color:'L', cat:'off', in:'06:00', out:'14:00', enabled:true },
-    'Vacaciones': { label:'Vac', color:'Vacaciones', cat:'off', in:'00:00', out:'00:00', enabled:true },
-    'Ausencia': { label:'Ausencia', color:'Ausencia', cat:'ausencia', in:'00:00', out:'00:00', enabled:false }
-  };
+  const defs = essentialShiftConfig();
 
   Object.keys(defs).forEach(key => {
     const def = defs[key];
@@ -2434,25 +2536,11 @@ function ensureCanonicalCoreShiftsForUser(user){
     });
   });
 
-  user.config.L.note = 'LIBRE';
-  user.config.L.in = '06:00';
-  user.config.L.out = '14:00';
-  user.config.CENA.label = 'CENA';
-  user.config.CENA.note = '06:00 a 14:00';
-  user.config.CENA.in = '06:00';
-  user.config.CENA.out = '14:00';
-  user.config.CENA.color = user.config.CENA.color || 'CENA';
-  user.config.CENA.cat = user.config.CENA.cat || 'work';
-  user.config['16hrs'].label = '16hrs';
-  user.config['16hrs'].note = '06:00 a 22:00';
-  user.config['16hrs'].in = '06:00';
-  user.config['16hrs'].out = '22:00';
-  user.config['16hrs'].color = user.config['16hrs'].color || '16hrs';
-  user.config['16hrs'].cat = user.config['16hrs'].cat || 'guardia';
-
-  ['Mañana','Tarde','CENA','16hrs','L','Vacaciones'].forEach(key => {
-    if(user.config[key]) user.config[key].enabled = true;
-  });
+  // 'L' (Libre) es el relleno por defecto de cada día: debe existir y estar
+  // siempre disponible.
+  if(!user.config.L.note) user.config.L.note = 'LIBRE';
+  user.config.L.enabled = true;
+  if(user.config.Vacaciones) user.config.Vacaciones.enabled = true;
 }
 
 function ensureCanonicalCoreShiftsAllUsers(){
@@ -2554,10 +2642,10 @@ const IMPORT_SHIFT_CODE_MAP = {
 let current = new Date();
 let activeKey = "";
 let mode = "simple";
-let selS = "Mañana";
+let selS = "L";
 let selT = "L";
 let selB = "L";
-let selectedColor = "Mañana";
+let selectedColor = "azul";
 
 let importContext = null;
 
@@ -3163,7 +3251,9 @@ function updateImportPreflightUI(){
 
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const ALWAYS_VISIBLE_SHIFTS = ['Mañana','Tarde','16hrs','CENA','L','Vacaciones'];
+// Sólo 'L' (Libre) es imprescindible y siempre visible; el resto de turnos
+// los controla el usuario con la casilla "Visible en selector".
+const ALWAYS_VISIBLE_SHIFTS = ['L'];
 
 
 // =========================================================
@@ -3501,12 +3591,14 @@ function ensureUserExists(nameValue){
   const name = existingKey || requested.toUpperCase();
 
   if(!db.users[name]){
+    // Perfil creado durante una importación: arranca con lo esencial y las
+    // funciones de importación le añaden los códigos que trae el archivo.
     db.users[name] = {
       pin: '0000',
       editLocked: false,
       locality: 'San Salvador',
       data: {},
-      config: JSON.parse(JSON.stringify(db.users.ADMIN.config))
+      config: essentialShiftConfig()
     };
     ensureImportBaseShiftsForUser(name);
   }
@@ -3905,10 +3997,62 @@ function showConfigTab(tab){
   if(tab === 'localidades'){ 
     renderLocalities(); 
   }
-  if(tab === 'asuetos'){ 
-    refreshHolidayLocationSelects(); 
-    renderHolidays(); 
+  if(tab === 'asuetos'){
+    refreshHolidayLocationSelects();
+    renderHolidays();
   }
+  if(tab === 'apariencia'){
+    syncDisplayPrefsUI();
+  }
+}
+
+// =========================================================
+// Preferencias de visualización (por dispositivo)
+// =========================================================
+const DISPLAY_PREFS_KEY = 'shifter_v24_display_prefs';
+const DISPLAY_PREFS_DEFAULT = { singleLineNote:false, hideLibreNote:false, highlightWeekend:false };
+
+function getDisplayPrefs(){
+  return { ...DISPLAY_PREFS_DEFAULT, ...safeParseJSON(localStorage.getItem(DISPLAY_PREFS_KEY), {}) };
+}
+function setDisplayPref(key, value){
+  const prefs = getDisplayPrefs();
+  prefs[key] = !!value;
+  try{ localStorage.setItem(DISPLAY_PREFS_KEY, JSON.stringify(prefs)); }catch(_e){}
+  applyDisplayPrefs();
+  render();
+}
+function syncDisplayPrefsUI(){
+  const prefs = getDisplayPrefs();
+  const map = {
+    singleLineNote:'prefSingleLineNote',
+    hideLibreNote:'prefHideLibreNote',
+    highlightWeekend:'prefHighlightWeekend'
+  };
+  Object.keys(map).forEach(k => {
+    const el = document.getElementById(map[k]);
+    if(el) el.checked = !!prefs[k];
+  });
+}
+// Compacta un horario "06:00-14:00" a "6–14" para que quepa en una línea.
+// Sólo toca notas que son exactamente un rango de horas; el resto se
+// devuelve igual. Si los minutos no son :00, se conservan.
+function compactScheduleNote(text){
+  const s = String(text || '').trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})\s*[-–—a]\s*(\d{1,2}):(\d{2})$/i);
+  if(!m) return s;
+  const fmt = (h, mm) => mm === '00' ? String(parseInt(h,10)) : `${parseInt(h,10)}:${mm}`;
+  return `${fmt(m[1], m[2])}–${fmt(m[3], m[4])}`;
+}
+
+// Aplica las clases de preferencia al calendario (no re-renderiza por sí sola)
+function applyDisplayPrefs(){
+  const grid = document.getElementById('calendar');
+  if(!grid) return;
+  const prefs = getDisplayPrefs();
+  grid.classList.toggle('note-1line', prefs.singleLineNote);
+  grid.classList.toggle('hide-libre', prefs.hideLibreNote);
+  grid.classList.toggle('mark-weekend', prefs.highlightWeekend);
 }
 
 // =========================================================
@@ -4130,7 +4274,32 @@ function fitCalendarToViewport(){
 
   fitShiftLabels();
   fitNoteLines(rowHeight);
+  fitNotesOneLine();
   enableCalendarSwipe();
+}
+
+// Con "Horario en una sola línea" activo, reduce el tamaño de la nota hasta
+// que "06:00–14:00" (y similares) quepan completos en una sola línea, sin
+// puntos suspensivos. Las notas manuales muy largas sí se recortan.
+function fitNotesOneLine(){
+  const grid = document.getElementById('calendar');
+  if(!grid || !grid.classList.contains('note-1line')) return;
+
+  const d = document.documentElement;
+  d.style.setProperty('--cell-note-lines', '1');
+
+  const shortNotes = Array.from(grid.querySelectorAll('.day-cell .note-text'))
+    .filter(n => (n.textContent || '').trim().length <= 12); // horarios y códigos
+  if(!shortNotes.length) return;
+
+  let size = parseFloat(getComputedStyle(d).getPropertyValue('--cell-note-size')) || 10;
+  let guard = 0;
+  while(guard++ < 14 && size > 7){
+    const overflow = shortNotes.some(n => n.scrollWidth > n.clientWidth + 1);
+    if(!overflow) break;
+    size = Math.max(7, size - 0.5);
+    d.style.setProperty('--cell-note-size', size.toFixed(1) + 'px');
+  }
 }
 
 // Decide cuántas líneas completas de nota caben de verdad en la celda.
@@ -4176,10 +4345,15 @@ function fitShiftLabels(){
   }
 }
 
+// Preferencias de visualización activas durante el render (evita leer
+// localStorage en cada una de las 42 celdas).
+let activeDisplayPrefs = { ...DISPLAY_PREFS_DEFAULT };
+
 function render(){
   const grid = document.getElementById('calendar');
   if (!grid) return;
-  
+
+  activeDisplayPrefs = getDisplayPrefs();
   grid.setAttribute('aria-busy','true');
   const fragment = document.createDocumentFragment();
   
@@ -4233,6 +4407,7 @@ function render(){
 
   grid.replaceChildren(fragment);
   grid.setAttribute('aria-busy','false');
+  applyDisplayPrefs();
   requestAnimationFrame(fitCalendarToViewport);
 }
 
@@ -4252,6 +4427,7 @@ let suppressClickUntil = 0;
   const primaryShift = getDayPrimaryShiftKey(info);
   if(!isEffectivelyEmptyDayData(info)) classes += ' has-data';
   if(primaryShift === 'L' || primaryShift === 'Vacaciones') classes += ' free-day';
+  if(primaryShift === 'L') classes += ' is-libre';
   const holidayForCell = db.holidays[key];
   if(holidayForCell && holidayApplies(holidayForCell.location, user.locality)) classes += ' holiday-day';
   
@@ -4280,7 +4456,8 @@ let suppressClickUntil = 0;
       }
     } else {
       const shift = SHIFTS[info.s] || {color: 'L', label: 'L'};
-      const noteText = (info.n || '').toString().trim();
+      let noteText = (info.n || '').toString().trim();
+      if (activeDisplayPrefs.singleLineNote) noteText = compactScheduleNote(noteText);
       cell.innerHTML = `<div class="shift-label ${shiftBgClass(shift.color)}" style="${shiftBgStyle(shift.color)}">${escapeHTML(shift.label)}</div>`;
       if (noteText) {
         cell.innerHTML += `<div class="note-text">${escapeHTML(noteText)}</div>`;
@@ -4655,10 +4832,10 @@ function openDay(key, info){
   try { if (window._setTurnArea) window._setTurnArea(false); } catch(e) {}
   activePhotoData = (info && info.photoData) ? info.photoData : "";
   mode = info.mode || 'simple';
-  selS = info.s || 'Mañana';
-  // En mixto el default debe ser 'L' (Libre) en ambas partes
-  selT = info.t || (mode === 'mixto' ? 'L' : 'Mañana');
-  selB = info.b || (mode === 'mixto' ? 'L' : 'Tarde');
+  // 'L' siempre existe; es el default seguro para cualquier perfil.
+  selS = info.s || 'L';
+  selT = info.t || 'L';
+  selB = info.b || 'L';
   
   const user = db.users[db.current];
   if (!user) return;
@@ -4843,8 +5020,9 @@ function setMode(m){
 function getVisibleShiftKeys(user){
   if(!user) return [];
   const keys = Object.keys(user.config || {});
-  const visible = keys.filter(k => (['Mañana','Tarde','16hrs','CENA','L','Vacaciones'].includes(k)) || (user.config[k] && user.config[k].enabled));
-  const extras = visible.filter(k => !(['Mañana','Tarde','16hrs','CENA','L','Vacaciones'].includes(k))).sort((a,b)=>a.localeCompare(b,'es'));
+  // Visible = 'L' (siempre) + los turnos que el usuario marcó como visibles.
+  const visible = keys.filter(k => ALWAYS_VISIBLE_SHIFTS.includes(k) || (user.config[k] && user.config[k].enabled));
+  const extras = visible.filter(k => !ALWAYS_VISIBLE_SHIFTS.includes(k)).sort((a,b)=>a.localeCompare(b,'es'));
   return [...ALWAYS_VISIBLE_SHIFTS.filter(k=>visible.includes(k)), ...extras];
 }
 
@@ -5425,7 +5603,7 @@ function renderSettings(){
               </select>
               <input type="color" id="set-colorpick-${cssSafe(id)}" value="${shiftToHex(conf.color)}"
                      onchange="document.getElementById('set-color-${cssSafe(id)}').value='__custom__';"
-                     class="w-12 h-10 p-1 bg-white border border-gray-200 rounded-xl"/>
+                     class="color-swatch" title="Elegir color personalizado"/>
             </div>
             </div>
             <div>
@@ -5692,7 +5870,7 @@ function renderCategories(){
           </div>
           <div class="md:col-span-2">
             <div class="text-[9px] font-black text-gray-400 uppercase mb-1">Color</div>
-            <input type="color" id="cat-color-${cid}" value="${c.color || '#3b82f6'}" class="w-full h-10 bg-white border-gray-200 focus:border-blue-400 rounded-xl"/>
+            <input type="color" id="cat-color-${cid}" value="${c.color || '#3b82f6'}" class="color-swatch" style="width:100%!important" title="Elegir color"/>
           </div>
           <div class="md:col-span-2 text-[10px] font-bold text-gray-500">
             ID: <span class="font-black text-gray-800">${cid}</span>
@@ -6199,16 +6377,18 @@ function createProfile(){
   if(!pin || pin.length !== 4 || isNaN(pin)) return alert("PIN inválido (debe ser 4 dígitos).");
   if(db.users[name]) return alert("Ya existe ese perfil.");
   
+  // Perfil nuevo desde cero: sólo estados esenciales (Libre, Vacaciones,
+  // Ausencia). El usuario crea sus propios turnos y horarios en "Nuevo".
   db.users[name] = {
     pin: pin,
     editLocked: false,
     locality: loc,
     data: {},
-    config: JSON.parse(JSON.stringify(db.users.ADMIN.config))
+    config: essentialShiftConfig()
   };
-  
-  ensureImportBaseShiftsForUser(name);
-  
+
+  addActivityLog('profile','Perfil creado',`Se creó «${name}» con configuración inicial vacía.`,{profile:name},'success');
+
   db.current = name;
   saveDB();
   updateUserDropdown();
