@@ -9,13 +9,7 @@
   <meta name="theme-color" content="#1e293b">
   <link rel="apple-touch-icon" id="appTouchIcon" href="">
   <link rel="manifest" id="pwaManifest" href="">
-  <title>Shifter Pro v24 - Calendario de Turnos</title>
-  <meta name="description" content="Calendario profesional de turnos, perfiles, importación Excel, historial y sincronización.">
-  <meta name="application-name" content="Shifter Pro">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="color-scheme" content="light">
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <title>Shifter Pro v23 - Calendario de Turnos</title>
   
   <!-- CDNs con fallback -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -43,8 +37,10 @@
   </script>
   
   <!-- Scripts con atributos async/defer -->
-  <!-- Librerías pesadas (Excel, OCR y exportación) se cargan solo cuando se usan -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" async></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
     /* Estilos críticos inline para evitar problemas de carga */
@@ -304,15 +300,6 @@
 
     .modal.active {
       display: flex;
-    }
-
-    .modal-scroll-shell {
-      width: 100%;
-      max-height: calc(100vh - 24px);
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      -webkit-overflow-scrolling: touch;
-      touch-action: pan-y;
     }
 
     /* ===== TOAST ===== */
@@ -805,7 +792,6 @@
       cursor: pointer;
       font: inherit;
       font-weight: 900;
-      line-height: 1.05;
     }
     .month-picker-trigger:focus-visible {
       outline: 2px solid rgba(255,255,255,0.45);
@@ -813,31 +799,26 @@
       border-radius: 10px;
     }
     #currentYearLabel {
-      font-size: 24px;
-      line-height: 1.05;
-      font-weight: 900;
-      color: #ffffff;
-      letter-spacing: 0.01em;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .month-year-row {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      min-width: 0;
-      flex-wrap: nowrap;
-      line-height: 1.05;
-    }
-    .month-year-sep {
-      font-size: 20px;
+      font-size: 13px;
       line-height: 1;
       font-weight: 800;
-      color: rgba(255,255,255,0.78);
+      color: rgba(255,255,255,0.68);
+      letter-spacing: 0.04em;
+    }
+    .month-year-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: nowrap;
+    }
+    .month-year-sep {
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 900;
+      color: #ffffff;
       flex-shrink: 0;
-      transform: translateY(-1px);
     }
     .month-today-btn {
       border: none;
@@ -882,11 +863,8 @@
     #calendar {
       flex: 1 1 auto;
       min-height: 0;
-      height: var(--calendar-grid-height, auto);
-      max-height: var(--calendar-grid-height, none);
       align-content: stretch;
       grid-auto-rows: var(--calendar-row-height, 1fr);
-      overflow: hidden;
     }
     .day-cell {
       min-height: var(--calendar-row-height, 1fr) !important;
@@ -895,127 +873,6 @@
 
     /* Ocultar tabs viejos (reemplazados por bottom tabs) */
     #oldTabBar { display: none !important; }
-
-  
-
-    /* =========================================================
-       Shifter Pro v24 — claridad, accesibilidad y rendimiento
-       ========================================================= */
-    :root{
-      --sp-navy:#0f172a;
-      --sp-blue:#2563eb;
-      --sp-blue-dark:#1e3a8a;
-      --sp-danger:#dc2626;
-      --sp-success:#059669;
-      --sp-border:#dbe3ef;
-      --sp-shadow:0 12px 34px rgba(15,23,42,.12);
-    }
-    body{
-      background:linear-gradient(180deg,#eef4fb 0,#f8fafc 38%,#f1f5f9 100%);
-    }
-    button,select,input,textarea{font:inherit}
-    button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,.day-cell:focus-visible{
-      outline:3px solid rgba(37,99,235,.42)!important;
-      outline-offset:2px;
-    }
-    #topBar{
-      background:rgba(15,23,42,.96)!important;
-      -webkit-backdrop-filter:blur(16px);
-      backdrop-filter:blur(16px);
-      border-bottom:1px solid rgba(255,255,255,.10);
-    }
-    #monthNav{
-      border:1px solid rgba(255,255,255,.13);
-      background:linear-gradient(135deg,#172554,#1e3a5f 52%,#164e63)!important;
-    }
-    #weekHeader{
-      position:sticky;
-      top:var(--sp-header-offset,0px);
-      z-index:24;
-      box-shadow:0 5px 14px rgba(15,23,42,.08);
-    }
-    .calendar-grid{
-      gap:2px!important;
-      border:0!important;
-      background:#dbe3ef!important;
-      box-shadow:var(--sp-shadow);
-    }
-    .day-cell{
-      border:1px solid transparent;
-      isolation:isolate;
-      contain:layout paint style;
-    }
-    .day-cell:not(.day-off-month):hover{
-      z-index:5;
-      border-color:#93c5fd;
-      box-shadow:inset 0 0 0 1px #93c5fd,0 7px 18px rgba(37,99,235,.13);
-    }
-    .day-cell.has-data:not(.free-day){
-      box-shadow:inset 0 -3px 0 rgba(15,23,42,.11);
-    }
-    .day-cell.free-day .shift-label{color:#64748b!important}
-    .today{
-      border:3px solid #ef4444!important;
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 0 0 2px rgba(239,68,68,.14)!important;
-      z-index:8;
-    }
-    .today .day-number{
-      background:#dc2626!important;
-      color:#fff!important;
-      min-width:27px;
-      text-align:center;
-    }
-    .holiday-day::after{
-      content:'ASUETO';
-      position:absolute;
-      left:4px;
-      bottom:4px;
-      z-index:18;
-      padding:2px 5px;
-      border-radius:999px;
-      background:#fef2f2;
-      border:1px solid #fecaca;
-      color:#b91c1c;
-      font-size:7px;
-      font-weight:1000;
-      letter-spacing:.04em;
-    }
-    .import-destination-card{
-      border:2px solid #60a5fa;
-      background:linear-gradient(135deg,#eff6ff,#eef2ff);
-      border-radius:20px;
-      padding:14px;
-      box-shadow:0 8px 22px rgba(37,99,235,.10);
-    }
-    .import-authoritative-badge{
-      display:inline-flex;align-items:center;gap:6px;
-      border-radius:999px;padding:5px 9px;
-      background:#1d4ed8;color:#fff;
-      font-size:9px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em;
-    }
-    .import-progress-track{height:6px;border-radius:999px;background:#e2e8f0;overflow:hidden}
-    .import-progress-bar{height:100%;width:0;background:linear-gradient(90deg,#0ea5e9,#4f46e5);transition:width .2s}
-    .import-progress-bar.busy{width:68%;animation:spImportPulse 1.1s ease-in-out infinite alternate}
-    @keyframes spImportPulse{from{transform:translateX(-35%)}to{transform:translateX(70%)}}
-    #runImportBtn:disabled,#analyzeImportBtn:disabled{opacity:.48;cursor:not-allowed;filter:grayscale(.25)}
-    .imp-user-row{border:1px solid #e2e8f0;background:#fff;border-radius:16px;padding:10px}
-    .imp-user-row:hover{border-color:#bfdbfe;background:#f8fbff}
-    .history-entry{border:1px solid #e2e8f0;border-radius:16px;padding:12px;background:#fff}
-    .history-entry time{font-size:9px;color:#64748b;font-weight:800}
-    .history-entry .history-title{font-size:11px;color:#0f172a;font-weight:1000}
-    .history-entry .history-detail{font-size:10px;color:#475569;font-weight:700;line-height:1.45;margin-top:4px}
-    .backup-card{border:1px solid #bae6fd;background:#f0f9ff;border-radius:16px;padding:12px}
-    .status-chip{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:9px;font-weight:1000}
-    .status-chip.safe{background:#dcfce7;color:#166534}.status-chip.warn{background:#fef3c7;color:#92400e}.status-chip.danger{background:#fee2e2;color:#991b1b}
-    @media (max-width:640px){
-      .calendar-grid{gap:1px!important}
-      .day-cell{contain:layout paint}
-      .holiday-day::after{content:'A';font-size:7px;padding:1px 4px}
-      .note-text{max-height:36px;overflow:hidden!important}
-    }
-    @media (prefers-reduced-motion:reduce){
-      *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
-    }
 
   </style>
 </head>
@@ -1069,11 +926,11 @@
     <div class="flex flex-1 min-w-0 flex-col items-center justify-center text-center">
       <div class="month-year-row">
         <button type="button" id="monthTriggerBtn" class="month-picker-trigger truncate" onclick="openMonthPicker()" aria-label="Seleccionar mes">
-          <span id="currentMonthLabel" class="truncate" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1.05;display:inline-flex;align-items:center;">Marzo</span>
+          <span id="currentMonthLabel" class="truncate" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1;display:inline-block;">Marzo</span>
         </button>
         <span class="month-year-sep" aria-hidden="true">/</span>
         <button type="button" id="yearTriggerBtn" class="month-picker-trigger" onclick="openYearPicker()" aria-label="Seleccionar año">
-          <span id="currentYearLabel" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1.05;display:inline-flex;align-items:center;">2026</span>
+          <span id="currentYearLabel" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1;display:inline-block;">2026</span>
         </button>
       </div>
       <div class="mt-1 flex items-center justify-center">
@@ -1128,8 +985,7 @@
       <button onclick="openProfilesModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px] mb-2">👤 Perfiles de usuario</button>
       <button onclick="openImportModal(); closeMenu();" class="w-full p-3 bg-sky-700 hover:bg-sky-800 rounded-xl font-black text-[11px] mb-2">📥 Importar Excel</button>
       <button onclick="openImageImportModal(); closeMenu();" class="w-full p-3 bg-violet-700 hover:bg-violet-800 rounded-xl font-black text-[11px] mb-2">📷 Importar desde Imagen</button>
-      <button onclick="showExportModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px] mb-2">📋 Exportar calendario</button>
-      <button onclick="openHistoryModal(); closeMenu();" class="w-full p-3 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-300/20 rounded-xl font-black text-[11px]">🕘 Historial, respaldos y cambios</button>
+      <button onclick="showExportModal(); closeMenu();" class="w-full p-3 bg-white/10 hover:bg-white/15 rounded-xl font-black text-[11px]">📋 Exportar calendario</button>
     </div>
 
   </div>
@@ -1137,7 +993,7 @@
   <!-- Pie del drawer -->
   <div class="p-4 border-t border-white/10 flex-shrink-0">
     <div class="text-[10px] text-gray-500 font-bold text-center">
-      Shifter Pro v24 · Agrega esta página a tu pantalla de inicio para usarla como app.
+      Agrega esta página a tu pantalla de inicio para usarla como app.
     </div>
   </div>
 
@@ -1262,6 +1118,7 @@
     <!-- IDs legacy ocultos para compatibilidad -->
     <div class="hidden">
       <span id="worked-days-legacy"></span>
+      <span id="total-holidays"></span>
     </div>
 
   </div>
@@ -1668,31 +1525,20 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label class="text-[12px] font-black text-blue-900 block mb-2">Mes destino <span class="text-red-600">*</span></label>
-          <select id="importMonth" class="w-full bg-blue-50 border-blue-200 text-gray-900"></select>
+          <label class="text-[12px] font-bold text-gray-600 block mb-2">Mes (si no detecta)</label>
+          <select id="importMonth" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
         </div>
         <div>
-          <label class="text-[12px] font-black text-blue-900 block mb-2">Año destino <span class="text-red-600">*</span></label>
-          <select id="importYear" class="w-full bg-blue-50 border-blue-200 text-gray-900"></select>
+          <label class="text-[12px] font-bold text-gray-600 block mb-2">Año (si no detecta)</label>
+          <select id="importYear" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
         </div>
-      </div>
-        </div>
-      </div>
-
-      <div class="import-destination-card" id="importDestinationCard">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <span class="import-authoritative-badge">🔒 Destino autoritativo</span>
-          <strong id="importDestinationLabel" class="text-[15px] text-blue-950">—</strong>
-        </div>
-        <p class="mt-2 text-[10px] font-bold text-blue-900 leading-relaxed">El mes y año seleccionados aquí siempre mandan. La fecha detectada dentro del Excel se muestra únicamente como referencia y nunca cambia el destino.</p>
-        <div id="importDetectedSource" class="mt-2 text-[10px] font-bold text-slate-500">Archivo aún no analizado.</div>
       </div>
 
       <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4">
         <p class="text-[11px] font-black text-gray-600 uppercase mb-2">Modo</p>
         <div class="flex flex-col md:flex-row gap-3">
           <label class="flex items-center gap-2 cursor-pointer text-[11px] font-bold text-gray-700">
-            <input type="radio" name="importMode" value="replace" checked> Reemplazar días presentes en el Excel
+            <input type="radio" name="importMode" value="replace" checked> Reemplazar mes
           </label>
           <label class="flex items-center gap-2 cursor-pointer text-[11px] font-bold text-gray-700">
             <input type="radio" name="importMode" value="merge"> Combinar (solo días vacíos)
@@ -1724,73 +1570,24 @@
             <select id="importDefaultCategory" class="flex-1 bg-white border border-gray-200 rounded-xl p-2 text-[11px] font-bold text-gray-900"></select>
           </div>
         </div>
-<div id="importOverwriteWarning" class="mt-3 hidden rounded-2xl border p-3 text-[10px] font-bold leading-relaxed"></div>
-        <div id="importProgress" class="mt-3 hidden">
-          <div class="flex justify-between text-[9px] font-black uppercase text-slate-500 mb-1"><span id="importProgressText">Procesando…</span><span>Shifter Pro v24</span></div>
-          <div class="import-progress-track"><div id="importProgressBar" class="import-progress-bar"></div></div>
-        </div>
 <div class="mt-3 flex flex-col md:flex-row gap-2">
-          <button id="analyzeImportBtn" onclick="analyzeImportFile()" class="flex-1 p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-2xl font-black uppercase text-[11px]">
-            🔎 Analizar archivo
+          <button onclick="analyzeImportFile()" class="flex-1 p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-2xl font-black uppercase text-[11px]">
+            🔎 Analizar
           </button>
-          <button id="runImportBtn" onclick="runImportSelected()" disabled class="flex-1 p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase text-[11px]">
-            🚀 Confirmar e importar
+          <button onclick="runImportSelected()" class="flex-1 p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase text-[11px]">
+            🚀 Importar Seleccionados
           </button>
           <button onclick="closeImportModalAndRefresh()" class="flex-1 p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-[11px]">
             ✅ Terminar y Volver
           </button>
         </div>
 
-        <div id="importInfo" role="status" aria-live="polite" class="mt-3 text-[11px] font-bold text-center text-gray-600"></div>
+        <div id="importInfo" class="mt-3 text-[11px] font-bold text-center text-gray-600"></div>
       </div>
 
       <button onclick="closeImportModal()" class="w-full mt-2 p-3 text-gray-400 font-bold uppercase text-[10px] hover:text-gray-600">
         Cancelar
       </button>
-    </div>
-  </div>
-</div>
-
-
-<!-- Modal Historial / Bitácora / Respaldos -->
-<div id="historyModal" class="modal">
-  <div class="bg-slate-50 w-full max-w-3xl rounded-3xl md:rounded-[36px] shadow-2xl mx-2 max-h-[88vh] overflow-hidden flex flex-col">
-    <div class="bg-gradient-to-r from-slate-900 to-blue-950 text-white p-5 flex items-start justify-between gap-4">
-      <div>
-        <div class="text-[10px] uppercase tracking-[.18em] font-black text-blue-200">Control y trazabilidad</div>
-        <h3 class="text-lg font-black mt-1">Historial, respaldos y registro de cambios</h3>
-        <p class="text-[10px] font-bold text-white/70 mt-1">La bitácora y los respaldos automáticos se guardan localmente en este dispositivo.</p>
-      </div>
-      <button onclick="closeHistoryModal()" class="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-xl flex-shrink-0" aria-label="Cerrar">✕</button>
-    </div>
-    <div class="p-4 md:p-5 overflow-y-auto space-y-5">
-      <section>
-        <div class="flex items-center justify-between gap-3 mb-3">
-          <div><h4 class="font-black text-[12px] uppercase text-slate-800">Respaldos de importación</h4><p class="text-[10px] font-bold text-slate-500 mt-1">Permiten deshacer las últimas importaciones Excel.</p></div>
-        </div>
-        <div id="importBackupsList" class="space-y-2"></div>
-      </section>
-      <section>
-        <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
-          <div><h4 class="font-black text-[12px] uppercase text-slate-800">Bitácora de actividad</h4><p class="text-[10px] font-bold text-slate-500 mt-1">Ediciones, importaciones y restauraciones recientes.</p></div>
-          <div class="flex gap-2">
-            <button onclick="exportActivityLog()" class="px-3 py-2 rounded-xl bg-blue-600 text-white text-[9px] font-black uppercase">Exportar JSON</button>
-            <button onclick="clearActivityLog()" class="px-3 py-2 rounded-xl bg-white border border-red-200 text-red-700 text-[9px] font-black uppercase">Vaciar</button>
-          </div>
-        </div>
-        <div id="historyList" class="space-y-2"></div>
-      </section>
-      <section class="rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
-        <h4 class="font-black text-[12px] uppercase text-indigo-950">Registro de cambios · v24</h4>
-        <div class="mt-3 grid gap-2 text-[10px] font-bold text-indigo-900 leading-relaxed">
-          <div>✓ Mes y año destino autoritativos en importación Excel.</div>
-          <div>✓ Vista previa de sobrescrituras, confirmación detallada y respaldo restaurable.</div>
-          <div>✓ Mapeo seguro de perfiles, control de colisiones y validación de días del mes.</div>
-          <div>✓ Renderizado del calendario en un solo lote, navegación por teclado y mejor contraste.</div>
-          <div>✓ Librerías pesadas cargadas bajo demanda para iniciar más rápido.</div>
-          <div>✓ Manifest PWA adaptado a rutas de GitHub Pages.</div>
-        </div>
-      </section>
     </div>
   </div>
 </div>
@@ -1850,52 +1647,49 @@
 </div>
 
 <!-- Modal Profiles - CORREGIDO: Nombres visibles en selects -->
-<div id="profilesModal" class="modal" style="padding:12px;align-items:flex-start;justify-content:center;">
-  <div class="modal-scroll-shell">
-    <div class="bg-white w-full max-w-3xl rounded-3xl md:rounded-[40px] p-4 md:p-6 lg:p-8 shadow-2xl mx-auto my-3 md:my-6 max-h-[calc(100vh-24px)] overflow-y-auto overscroll-contain" style="-webkit-overflow-scrolling:touch;touch-action:pan-y;position:relative;">
-      <button onclick="closeProfilesModal()" aria-label="Cerrar" class="absolute top-3 right-3 md:top-4 md:right-4 w-11 h-11 rounded-2xl bg-gray-100 hover:bg-gray-200 border border-gray-200 flex items-center justify-center text-gray-700 text-2xl leading-none font-black">✕</button>
-      <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3 pr-12">
-        <div>
-          <h3 class="font-black uppercase text-base md:text-lg">👤 Gestión de Perfiles</h3>
-          <p class="text-[11px] text-gray-500 font-bold">Crear, editar, asignar localidad o eliminar perfiles.</p>
-        </div>
-        <div class="flex gap-2 flex-wrap">
-          <button onclick="detectDuplicateProfiles()" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase whitespace-nowrap">🔍 Detectar duplicados</button>
-          <button onclick="deleteAllProfilesExceptAdmin()" class="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase whitespace-nowrap">🧹 Eliminar todos (dejar ADMIN)</button>
-          <button onclick="closeProfilesModal()" class="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase whitespace-nowrap">Cerrar</button>
-        </div>
+<div id="profilesModal" class="modal" style="overflow-y:auto;">
+  <div class="bg-white w-full max-w-3xl rounded-3xl md:rounded-[40px] p-4 md:p-6 lg:p-8 shadow-2xl mx-2 my-auto">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+      <div>
+        <h3 class="font-black uppercase text-base md:text-lg">👤 Gestión de Perfiles</h3>
+        <p class="text-[11px] text-gray-500 font-bold">Crear, editar, asignar localidad o eliminar perfiles.</p>
       </div>
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="detectDuplicateProfiles()" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase whitespace-nowrap">🔍 Detectar duplicados</button>
+        <button onclick="deleteAllProfilesExceptAdmin()" class="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase whitespace-nowrap">🧹 Eliminar todos (dejar ADMIN)</button>
+        <button onclick="closeProfilesModal()" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase whitespace-nowrap">Cerrar</button>
+      </div>
+    </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-3xl p-4">
-          <h4 class="text-[12px] font-black text-gray-700 uppercase mb-3">➕ Crear perfil</h4>
-          <div class="space-y-3">
-            <input id="createName" type="text" placeholder="Nombre completo" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900">
-            <input id="createPin" type="password" placeholder="PIN (4 dígitos)" maxlength="4" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900">
-            <div>
-              <label class="text-[11px] font-bold text-gray-600 block mb-2">Localidad</label>
-              <select id="createLoc" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900"></select>
-            </div>
-            <button onclick="createProfile()" class="w-full p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black uppercase text-[11px]">
-              Crear
-            </button>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-3xl p-4">
+        <h4 class="text-[12px] font-black text-gray-700 uppercase mb-3">➕ Crear perfil</h4>
+        <div class="space-y-3">
+          <input id="createName" type="text" placeholder="Nombre completo" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900">
+          <input id="createPin" type="password" placeholder="PIN (4 dígitos)" maxlength="4" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900">
+          <div>
+            <label class="text-[11px] font-bold text-gray-600 block mb-2">Localidad</label>
+            <select id="createLoc" class="w-full bg-white border-blue-200 focus:border-blue-400 text-gray-900"></select>
           </div>
-        </div>
-
-        <div class="bg-white border border-gray-200 rounded-3xl p-4">
-          <div class="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
-            <h4 class="text-[12px] font-black text-gray-700 uppercase">Perfiles existentes</h4>
-            <button onclick="renderProfilesList()" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase whitespace-nowrap">Actualizar</button>
-          </div>
-          <div id="profilesList" class="max-h-[300px] md:max-h-[360px] overflow-y-auto overscroll-contain space-y-2" style="-webkit-overflow-scrolling:touch;touch-action:pan-y;"></div>
+          <button onclick="createProfile()" class="w-full p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black uppercase text-[11px]">
+            Crear
+          </button>
         </div>
       </div>
 
-      <!-- Sección de duplicados -->
-      <div id="duplicateProfilesSection" class="hidden mt-4 bg-amber-50 border border-amber-200 rounded-3xl p-4">
-        <h4 class="text-[12px] font-black text-amber-800 uppercase mb-3">⚠️ Perfiles Duplicados Detectados</h4>
-        <div id="duplicateProfilesList" class="space-y-3"></div>
+      <div class="bg-white border border-gray-200 rounded-3xl p-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-2">
+          <h4 class="text-[12px] font-black text-gray-700 uppercase">Perfiles existentes</h4>
+          <button onclick="renderProfilesList()" class="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-[10px] font-black uppercase whitespace-nowrap">Actualizar</button>
+        </div>
+        <div id="profilesList" class="max-h-[300px] md:max-h-[360px] overflow-y-auto space-y-2"></div>
       </div>
+    </div>
+
+    <!-- Sección de duplicados -->
+    <div id="duplicateProfilesSection" class="hidden mt-4 bg-amber-50 border border-amber-200 rounded-3xl p-4">
+      <h4 class="text-[12px] font-black text-amber-800 uppercase mb-3">⚠️ Perfiles Duplicados Detectados</h4>
+      <div id="duplicateProfilesList" class="space-y-3"></div>
     </div>
   </div>
 </div>
@@ -2239,371 +2033,6 @@ let selectedColor = "Mañana";
 
 let importContext = null;
 
-
-const APP_VERSION = '24.0';
-const SHIFTER_ACTIVITY_KEY = 'shifter_v24_activity_log';
-const SHIFTER_IMPORT_BACKUP_KEY = 'shifter_v24_import_backups';
-const MAX_ACTIVITY_ENTRIES = 200;
-const MAX_IMPORT_BACKUPS = 5;
-const LIBRARY_URLS = {
-  xlsx: [
-    'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
-    'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
-  ],
-  tesseract: [
-    'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
-    'https://unpkg.com/tesseract.js@5/dist/tesseract.min.js'
-  ],
-  html2canvas: [
-    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-    'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'
-  ]
-};
-const _libraryPromises = {};
-let importPreviewTimer = null;
-
-function safeParseJSON(raw, fallback){
-  try { return raw ? JSON.parse(raw) : fallback; } catch(_e) { return fallback; }
-}
-function cloneJSON(value){
-  return value == null ? value : JSON.parse(JSON.stringify(value));
-}
-function loadScriptOnce(key, globalName){
-  if(globalName && window[globalName]) return Promise.resolve(window[globalName]);
-  if(_libraryPromises[key]) return _libraryPromises[key];
-
-  const sources = Array.isArray(LIBRARY_URLS[key]) ? LIBRARY_URLS[key] : [LIBRARY_URLS[key]].filter(Boolean);
-  _libraryPromises[key] = new Promise((resolve, reject) => {
-    let sourceIndex = 0;
-
-    const tryNextSource = () => {
-      if(globalName && window[globalName]) return resolve(window[globalName]);
-      document.querySelectorAll(`script[data-shifter-lib="${key}"]`).forEach(node => node.remove());
-      const src = sources[sourceIndex++];
-      if(!src) return reject(new Error(`No se pudo cargar ${key} desde los servidores disponibles. Revisa tu conexión.`));
-
-      const script = document.createElement('script');
-      script.src = src;
-      script.async = true;
-      script.crossOrigin = 'anonymous';
-      script.dataset.shifterLib = key;
-      script.dataset.shifterSource = String(sourceIndex);
-      script.onload = () => {
-        if(globalName && !window[globalName]){
-          script.remove();
-          tryNextSource();
-          return;
-        }
-        resolve(globalName ? window[globalName] : true);
-      };
-      script.onerror = () => {
-        script.remove();
-        tryNextSource();
-      };
-      document.head.appendChild(script);
-    };
-
-    tryNextSource();
-  }).catch(err => { delete _libraryPromises[key]; throw err; });
-  return _libraryPromises[key];
-}
-function ensureXLSXLoaded(){ return loadScriptOnce('xlsx','XLSX'); }
-function ensureTesseractLoaded(){ return loadScriptOnce('tesseract','Tesseract'); }
-function ensureHtml2CanvasLoaded(){ return loadScriptOnce('html2canvas','html2canvas'); }
-
-function getActivityLog(){
-  return safeParseJSON(localStorage.getItem(SHIFTER_ACTIVITY_KEY), []);
-}
-function addActivityLog(type, title, detail = '', meta = {}, level = 'info'){
-  try{
-    const entries = getActivityLog();
-    entries.unshift({
-      id: `log_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
-      at: new Date().toISOString(), type, title, detail, meta, level, version: APP_VERSION
-    });
-    localStorage.setItem(SHIFTER_ACTIVITY_KEY, JSON.stringify(entries.slice(0, MAX_ACTIVITY_ENTRIES)));
-  }catch(e){ console.warn('No se pudo registrar actividad', e); }
-}
-function getImportBackups(){
-  return safeParseJSON(localStorage.getItem(SHIFTER_IMPORT_BACKUP_KEY), []);
-}
-function persistImportBackup(snapshot){
-  let backups = getImportBackups().filter(b => b && b.id !== snapshot.id);
-  backups.unshift(snapshot);
-  backups = backups.slice(0, MAX_IMPORT_BACKUPS);
-  while(backups.length){
-    try{
-      localStorage.setItem(SHIFTER_IMPORT_BACKUP_KEY, JSON.stringify(backups));
-      return true;
-    }catch(e){
-      backups.pop();
-      if(backups.length === 0) console.warn('No se pudo guardar respaldo de importación', e);
-    }
-  }
-  return false;
-}
-function captureImportSnapshot(target, profileNames){
-  const prefix = `${target.year}-${target.monthIndex0 + 1}-`;
-  return {
-    id: `imp_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
-    createdAt: new Date().toISOString(),
-    version: APP_VERSION,
-    target: { monthIndex0:target.monthIndex0, year:target.year },
-    previousView: { profile:db.current, monthIndex0:current.getMonth(), year:current.getFullYear() },
-    profiles: Array.from(new Set(profileNames)).map(name => {
-      const user = db.users?.[name];
-      if(!user) return { name, existed:false };
-      const monthData = {};
-      Object.keys(user.data || {}).forEach(key => {
-        if(key.startsWith(prefix)) monthData[key] = cloneJSON(user.data[key]);
-      });
-      return { name, existed:true, monthData, config:cloneJSON(user.config || {}) };
-    })
-  };
-}
-function restoreImportSnapshot(snapshot, options = {}){
-  if(!snapshot || !snapshot.target || !Array.isArray(snapshot.profiles)) throw new Error('Respaldo inválido.');
-  const prefix = `${snapshot.target.year}-${snapshot.target.monthIndex0 + 1}-`;
-  snapshot.profiles.forEach(item => {
-    if(!item.existed){
-      if(db.users?.[item.name]) delete db.users[item.name];
-      return;
-    }
-    if(!db.users[item.name]) ensureUserExists(item.name);
-    const user = db.users[item.name];
-    user.config = cloneJSON(item.config || user.config || {});
-    user.data = user.data || {};
-    Object.keys(user.data).forEach(key => { if(key.startsWith(prefix)) delete user.data[key]; });
-    Object.assign(user.data, cloneJSON(item.monthData || {}));
-  });
-  const prev = snapshot.previousView || {};
-  const firstExisting = snapshot.profiles.map(p => p.name).find(n => db.users?.[n]);
-  db.current = (prev.profile && db.users?.[prev.profile]) ? prev.profile : (firstExisting || Object.keys(db.users || {})[0]);
-  current = new Date(Number.isInteger(prev.year) ? prev.year : snapshot.target.year, Number.isInteger(prev.monthIndex0) ? prev.monthIndex0 : snapshot.target.monthIndex0, 1);
-  saveDB();
-  updateUserDropdown(); updateUserInitial(); updateMonthDisplay(); render(); renderSummaryCategories(); calcSummary();
-  if(options.log !== false){
-    addActivityLog('restore','Importación restaurada',`${MONTHS[snapshot.target.monthIndex0]} ${snapshot.target.year}`,{backupId:snapshot.id},'success');
-  }
-}
-function restoreImportBackup(id){
-  const snapshot = getImportBackups().find(b => b.id === id);
-  if(!snapshot) return alert('El respaldo ya no está disponible.');
-  const label = `${MONTHS[snapshot.target.monthIndex0]} ${snapshot.target.year}`;
-  if(!confirm(`¿Restaurar el estado anterior a la importación de ${label}?\n\nEsto deshará esa importación para los perfiles incluidos en el respaldo.`)) return;
-  try{
-    restoreImportSnapshot(snapshot);
-    renderHistoryModal();
-    alert(`Respaldo de ${label} restaurado correctamente.`);
-  }catch(e){ console.error(e); alert(`No se pudo restaurar: ${e.message}`); }
-}
-function openHistoryModal(){
-  renderHistoryModal();
-  document.getElementById('historyModal')?.classList.add('active');
-}
-function closeHistoryModal(){ document.getElementById('historyModal')?.classList.remove('active'); }
-function renderHistoryModal(){
-  const historyBox = document.getElementById('historyList');
-  const backupBox = document.getElementById('importBackupsList');
-  if(historyBox){
-    const entries = getActivityLog();
-    historyBox.innerHTML = entries.length ? entries.slice(0,80).map(entry => {
-      const date = new Date(entry.at);
-      const when = Number.isNaN(date.getTime()) ? entry.at : date.toLocaleString('es-SV',{dateStyle:'short',timeStyle:'short'});
-      const levelClass = entry.level === 'error' ? 'danger' : entry.level === 'warning' ? 'warn' : 'safe';
-      return `<div class="history-entry"><div class="flex items-start justify-between gap-3"><div class="history-title">${escapeHTML(entry.title || entry.type || 'Actividad')}</div><span class="status-chip ${levelClass}">${escapeHTML(entry.type || 'evento')}</span></div><time>${escapeHTML(when)}</time>${entry.detail ? `<div class="history-detail">${escapeHTML(entry.detail)}</div>` : ''}</div>`;
-    }).join('') : '<div class="rounded-2xl border border-dashed border-slate-300 p-5 text-center text-[10px] font-bold text-slate-500">Todavía no hay actividad registrada.</div>';
-  }
-  if(backupBox){
-    const backups = getImportBackups();
-    backupBox.innerHTML = backups.length ? backups.map(b => {
-      const date = new Date(b.createdAt);
-      const when = Number.isNaN(date.getTime()) ? b.createdAt : date.toLocaleString('es-SV',{dateStyle:'short',timeStyle:'short'});
-      const profiles = (b.profiles || []).map(p => p.name).join(', ');
-      return `<div class="backup-card"><div class="flex items-start justify-between gap-3"><div><div class="text-[11px] font-black text-sky-950">${MONTHS[b.target.monthIndex0]} ${b.target.year}</div><div class="mt-1 text-[9px] font-bold text-sky-800">${escapeHTML(when)} · ${escapeHTML(profiles || 'Sin perfiles')}</div></div><button onclick="restoreImportBackup('${escapeHTML(b.id)}')" class="px-3 py-2 rounded-xl bg-sky-700 text-white text-[9px] font-black uppercase">Restaurar</button></div></div>`;
-    }).join('') : '<div class="rounded-2xl border border-dashed border-slate-300 p-5 text-center text-[10px] font-bold text-slate-500">Los respaldos se crearán automáticamente antes de importar.</div>';
-  }
-}
-function exportActivityLog(){
-  const payload = { app:'Shifter Pro', version:APP_VERSION, exportedAt:new Date().toISOString(), activity:getActivityLog(), importBackups:getImportBackups().map(b => ({id:b.id,createdAt:b.createdAt,target:b.target,profiles:(b.profiles||[]).map(p=>p.name)})) };
-  const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-  const url = URL.createObjectURL(blob); const a = document.createElement('a');
-  a.href = url; a.download = `shifter_historial_${new Date().toISOString().slice(0,10)}.json`; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-function clearActivityLog(){
-  if(!confirm('¿Vaciar la bitácora de actividad? Los respaldos de importación se conservarán.')) return;
-  localStorage.removeItem(SHIFTER_ACTIVITY_KEY); renderHistoryModal();
-}
-function ensureVersionLog(){
-  const key = `shifter_version_logged_${APP_VERSION}`;
-  if(localStorage.getItem(key)) return;
-  addActivityLog('system',`Shifter Pro v${APP_VERSION} activado`,'Mejoras de importación, respaldos, rendimiento, claridad y PWA.',{},'success');
-  localStorage.setItem(key,'1');
-}
-
-function getSelectedImportTarget(){
-  const monthIndex0 = parseInt(document.getElementById('importMonth')?.value,10);
-  const year = parseInt(document.getElementById('importYear')?.value,10);
-  if(!Number.isInteger(monthIndex0) || monthIndex0 < 0 || monthIndex0 > 11) throw new Error('Selecciona un mes destino válido.');
-  if(!Number.isInteger(year) || year < 2020 || year > 2035) throw new Error('Selecciona un año destino válido.');
-  return {monthIndex0, year};
-}
-function formatImportDetected(detected){
-  if(!detected || (detected.month == null && detected.year == null)) return 'No se detectó fecha en el archivo; no afecta el destino.';
-  const month = detected.month != null ? MONTHS[detected.month] : 'mes no detectado';
-  const year = detected.year != null ? detected.year : 'año no detectado';
-  return `Referencia detectada en el Excel: ${month} ${year}.`;
-}
-function refreshImportDestinationUI(){
-  try{
-    const target = getSelectedImportTarget();
-    const label = document.getElementById('importDestinationLabel');
-    if(label) label.textContent = `${MONTHS[target.monthIndex0]} ${target.year}`;
-    const detectedEl = document.getElementById('importDetectedSource');
-    if(detectedEl) detectedEl.textContent = importContext ? `${formatImportDetected(importContext.detectedSource)} Destino confirmado: ${MONTHS[target.monthIndex0]} ${target.year}.` : 'Archivo aún no analizado.';
-    scheduleImportPreview();
-  }catch(e){
-    const label = document.getElementById('importDestinationLabel'); if(label) label.textContent = 'Destino inválido';
-  }
-}
-function setImportBusy(busy, text='Procesando…'){
-  const analyze = document.getElementById('analyzeImportBtn');
-  const run = document.getElementById('runImportBtn');
-  const progress = document.getElementById('importProgress');
-  const bar = document.getElementById('importProgressBar');
-  const txt = document.getElementById('importProgressText');
-  if(analyze) analyze.disabled = busy;
-  if(run) run.disabled = busy || !importContext;
-  if(progress) progress.classList.toggle('hidden', !busy);
-  if(bar) bar.classList.toggle('busy', busy);
-  if(txt) txt.textContent = text;
-}
-function invalidateImportAnalysis(message='Selecciona un archivo y presiona Analizar.'){
-  importContext = null;
-  const list = document.getElementById('importUsersList'); if(list) list.innerHTML = `<div class="text-gray-400 font-bold">${escapeHTML(message)}</div>`;
-  const info = document.getElementById('importInfo'); if(info) info.textContent = '';
-  const turnsBox = document.getElementById('importTurnsBox'); if(turnsBox) turnsBox.classList.add('hidden');
-  const run = document.getElementById('runImportBtn'); if(run) run.disabled = true;
-  const warning = document.getElementById('importOverwriteWarning'); if(warning){ warning.classList.add('hidden'); warning.textContent=''; }
-  refreshImportDestinationUI();
-}
-function findNormalizedExactUserMatch(importedName){
-  const norm = normalizeName(importedName);
-  return Object.keys(db.users || {}).find(name => normalizeName(name) === norm) || null;
-}
-function renderImportUsersList(){
-  const list = document.getElementById('importUsersList');
-  if(!list || !importContext) return;
-  const existing = Object.keys(db.users || {}).sort((a,b)=>a.localeCompare(b,'es'));
-  list.innerHTML = importContext.users.length ? importContext.users.map(source => {
-    const exact = importContext.exactMatchMap[source] || null;
-    const suggestion = importContext.suggestionMap[source] || null;
-    const selectedTarget = importContext.nameMatchMap[source] || source;
-    const options = [`<option value="__new__" ${selectedTarget===source?'selected':''}>Crear/usar “${escapeHTML(source)}”</option>`]
-      .concat(existing.map(name => `<option value="${escapeHTML(name)}" ${selectedTarget===name?'selected':''}>Usar perfil: ${escapeHTML(name)}</option>`)).join('');
-    const hint = exact ? `<span class="status-chip safe">Coincidencia exacta</span>` : suggestion ? `<button type="button" class="impUseSuggestion status-chip warn" data-source="${escapeHTML(source)}" data-target="${escapeHTML(suggestion)}">Sugerencia: ${escapeHTML(suggestion)}</button>` : `<span class="status-chip safe">Perfil nuevo</span>`;
-    return `<div class="imp-user-row"><div class="flex items-start gap-2"><input class="impUserChk mt-1" type="checkbox" value="${escapeHTML(source)}" checked><div class="flex-1 min-w-0"><div class="flex items-center justify-between gap-2 flex-wrap"><span class="font-black text-slate-900">${escapeHTML(source)}</span>${hint}</div><select class="impUserTarget mt-2 w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-[10px] font-bold text-slate-900" data-source="${escapeHTML(source)}">${options}</select></div></div></div>`;
-  }).join('') : '<div class="text-gray-400 font-bold">No se detectaron usuarios.</div>';
-  list.querySelectorAll('.impUserTarget').forEach(sel => sel.addEventListener('change', () => {
-    const source = sel.dataset.source; importContext.nameMatchMap[source] = sel.value === '__new__' ? source : sel.value; scheduleImportPreview();
-  }));
-  list.querySelectorAll('.impUserChk').forEach(ch => ch.addEventListener('change', scheduleImportPreview));
-  list.querySelectorAll('.impUseSuggestion').forEach(btn => btn.addEventListener('click', () => {
-    const source = btn.dataset.source, target = btn.dataset.target;
-    const sel = Array.from(list.querySelectorAll('.impUserTarget')).find(x => x.dataset.source === source);
-    if(sel){ sel.value = target; importContext.nameMatchMap[source] = target; scheduleImportPreview(); }
-  }));
-}
-function getSelectedImportUsers(){
-  return Array.from(document.querySelectorAll('.impUserChk')).filter(x=>x.checked).map(x=>x.value);
-}
-function syncImportMappingsFromUI(){
-  if(!importContext) return;
-  document.querySelectorAll('.impUserTarget').forEach(sel => {
-    const source = sel.dataset.source; importContext.nameMatchMap[source] = sel.value === '__new__' ? source : sel.value;
-  });
-}
-function collectImportRowsBySource(selected){
-  const selectedSet = new Set(selected);
-  const rowsBySource = new Map();
-  const duplicateRows = {};
-  for(let r=importContext.headerIdx+1;r<importContext.rows.length;r++){
-    const row = importContext.rows[r] || [];
-    if(!isLikelyDataRow(row,importContext.nameCol,importContext.empCol,importContext.dayCols)) continue;
-    const source = safeNameCell(row[importContext.nameCol]).toUpperCase();
-    if(!selectedSet.has(source)) continue;
-    if(rowsBySource.has(source)) duplicateRows[source] = (duplicateRows[source] || 1) + 1;
-    rowsBySource.set(source,row); // determinista: última fila válida gana
-  }
-  return {rowsBySource,duplicateRows};
-}
-function buildImportPlan(selected,target,mode){
-  syncImportMappingsFromUI();
-  const maxDay = new Date(target.year,target.monthIndex0+1,0).getDate();
-  const validDays = Object.keys(importContext.dayCols).map(Number).filter(d=>Number.isInteger(d)&&d>=1&&d<=maxDay).sort((a,b)=>a-b);
-  const ignoredDays = Object.keys(importContext.dayCols).map(Number).filter(d=>d>maxDay);
-  const resolvedBySource = {};
-  const targetSources = {};
-  selected.forEach(source => {
-    const targetName = importContext.nameMatchMap[source] || source;
-    resolvedBySource[source] = targetName;
-    (targetSources[targetName] ||= []).push(source);
-  });
-  const collisions = Object.entries(targetSources).filter(([,sources])=>sources.length>1);
-  const {rowsBySource,duplicateRows} = collectImportRowsBySource(selected);
-  let writable=0, overwriteCount=0, mergeSkipped=0, invalidCodes=0;
-  selected.forEach(source => {
-    const row = rowsBySource.get(source); if(!row) return;
-    const targetName = resolvedBySource[source];
-    const user = db.users?.[targetName];
-    validDays.forEach(day => {
-      let code = normalizeCode(row[importContext.dayCols[day]]); if(!code || code==='X') code='L';
-      const def = codeToShiftDef(code); if(!def){ invalidCodes++; return; }
-      const existing = user?.data?.[dayKey(target.year,target.monthIndex0+1,day)];
-      if(mode==='merge' && !isEffectivelyEmptyDayData(existing)){ mergeSkipped++; return; }
-      writable++;
-      if(!isEffectivelyEmptyDayData(existing)) overwriteCount++;
-    });
-  });
-  const resolvedNames = Array.from(new Set(Object.values(resolvedBySource)));
-  const newProfiles = resolvedNames.filter(name => !db.users?.[name]);
-  return {selected,target,mode,validDays,ignoredDays,resolvedBySource,resolvedNames,collisions,rowsBySource,duplicateRows,writable,overwriteCount,mergeSkipped,invalidCodes,newProfiles,maxDay};
-}
-function scheduleImportPreview(){
-  clearTimeout(importPreviewTimer);
-  importPreviewTimer = setTimeout(updateImportPreflightUI,60);
-}
-function updateImportPreflightUI(){
-  const warning = document.getElementById('importOverwriteWarning');
-  const run = document.getElementById('runImportBtn');
-  if(!warning || !run) return;
-  if(!importContext){ warning.classList.add('hidden'); run.disabled=true; return; }
-  let target; try{ target=getSelectedImportTarget(); }catch(e){ warning.className='mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-[10px] font-bold text-red-800'; warning.textContent=e.message; run.disabled=true; return; }
-  const selected = getSelectedImportUsers();
-  const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'replace';
-  if(!selected.length){ warning.className='mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-[10px] font-bold text-amber-900'; warning.textContent='Selecciona al menos un usuario.'; run.disabled=true; return; }
-  const plan = buildImportPlan(selected,target,mode);
-  if(plan.collisions.length){
-    warning.className='mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-[10px] font-bold text-red-800';
-    warning.innerHTML=`Hay perfiles destino repetidos: ${plan.collisions.map(([targetName,sources])=>`${escapeHTML(sources.join(' + '))} → ${escapeHTML(targetName)}`).join('; ')}. Cambia el mapeo antes de importar.`;
-    run.disabled=true; return;
-  }
-  const partial = plan.validDays.length < plan.maxDay ? ` El Excel contiene ${plan.validDays.length} de ${plan.maxDay} días; los días no presentes quedarán intactos.` : '';
-  const ignored = plan.ignoredDays.length ? ` Se ignorarán los días ${plan.ignoredDays.join(', ')} porque no existen en el mes destino.` : '';
-  const invalid = plan.invalidCodes ? ` Hay ${plan.invalidCodes} código(s) no reconocido(s); esas celdas quedarán intactas.` : '';
-  const duplicates = Object.keys(plan.duplicateRows).length ? ` Se detectaron filas duplicadas para ${Object.keys(plan.duplicateRows).join(', ')}; se usará la última fila válida.` : '';
-  if(mode==='replace' && plan.overwriteCount>0){
-    warning.className='mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-[10px] font-bold text-red-900';
-    warning.innerHTML=`⚠️ <strong>${plan.overwriteCount}</strong> celda(s) con información serán reemplazadas en <strong>${MONTHS[target.monthIndex0]} ${target.year}</strong>. Se creará un respaldo automático antes de continuar.${escapeHTML(partial+ignored+invalid+duplicates)}`;
-  }else{
-    warning.className='mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-[10px] font-bold text-emerald-900';
-    warning.innerHTML=`✓ Listo para escribir <strong>${plan.writable}</strong> celda(s) en <strong>${MONTHS[target.monthIndex0]} ${target.year}</strong>${mode==='merge'?` y omitir ${plan.mergeSkipped} ocupada(s)`:''}.${escapeHTML(partial+ignored+invalid+duplicates)}`;
-  }
-  run.disabled = plan.writable===0;
-}
-
-
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const ALWAYS_VISIBLE_SHIFTS = ['Mañana','Tarde','16hrs','CENA','L','Vacaciones'];
 
@@ -2863,27 +2292,19 @@ function ensureShiftExistsForUser(userKey, shiftDef, enableNow=false){
   const user = db.users[userKey];
   if(!user || !shiftDef) return;
   if(!user.config[shiftDef.key]){
-    user.config[shiftDef.key] = { label: shiftDef.label, note: shiftDef.note || '', color: shiftDef.color || 'gris', cat: shiftDef.cat || 'work', in: shiftDef.in || '00:00', out: shiftDef.out || '00:00', enabled: !!enableNow };
+    user.config[shiftDef.key] = { label: shiftDef.label, color: shiftDef.color || 'gris', cat: shiftDef.cat || 'hosp', in: shiftDef.in || '00:00', out: shiftDef.out || '00:00', enabled: !!enableNow };
   }
   if(enableNow && user.config[shiftDef.key]) user.config[shiftDef.key].enabled = true;
-  if(user.config[shiftDef.key] && !user.config[shiftDef.key].note && shiftDef.note) user.config[shiftDef.key].note = shiftDef.note;
-}
 
-function ensureImportBaseShiftsForUser(userKey){
+}function ensureImportBaseShiftsForUser(userKey){
   Object.values(IMPORT_ABSENCE_MAP).forEach(def => ensureShiftExistsForUser(userKey, def, false));
   Object.values(IMPORT_SHIFT_CODE_MAP).forEach(def => ensureShiftExistsForUser(userKey, def, false));
 }
 
-function ensureUserExists(nameValue){
-  const requested = String(nameValue || '').replace(/\s+/g, ' ').trim();
-  if(!requested) return null;
-
-  // Reutilizar el perfil existente aunque cambien mayúsculas, tildes o espacios.
-  // Evita crear duplicados silenciosos durante la importación.
-  const normalized = normalizeName(requested);
-  const existingKey = Object.keys(db.users || {}).find(key => normalizeName(key) === normalized);
-  const name = existingKey || requested.toUpperCase();
-
+function ensureUserExists(nameUpper){
+  const name = String(nameUpper || '').trim().toUpperCase();
+  if(!name) return null;
+  
   if(!db.users[name]){
     db.users[name] = {
       pin: '0000',
@@ -3033,7 +2454,6 @@ function toISODate(y,m,d){
 // UI Initialization - CORREGIDO: Color de texto en selects
 // =========================================================
 function init(){
-  ensureVersionLog();
   // Cargar feriados por defecto
   loadDefaultHolidays();
   
@@ -3417,12 +2837,12 @@ function fitCalendarToViewport(){
   const weekHeaderH = weekHeader.getBoundingClientRect().height || 0;
   const bottomTabsH = bottomTabs.getBoundingClientRect().height || 0;
 
-  const available = Math.floor(viewportH - viewTop - weekHeaderH - bottomTabsH - 12);
+  const available = Math.floor(viewportH - viewTop - weekHeaderH - bottomTabsH - 8);
   if (available <= 0) return;
 
   const rowGap = 1;
   const totalGaps = Math.max(0, rows - 1) * rowGap;
-  const rowHeight = Math.max(54, Math.floor((available - totalGaps) / rows));
+  const rowHeight = Math.max(68, Math.floor((available - totalGaps) / rows));
   const gridHeight = rows * rowHeight + totalGaps;
 
   document.documentElement.style.setProperty('--calendar-row-height', rowHeight + 'px');
@@ -3433,8 +2853,7 @@ function render(){
   const grid = document.getElementById('calendar');
   if (!grid) return;
   
-  grid.setAttribute('aria-busy','true');
-  const fragment = document.createDocumentFragment();
+  grid.innerHTML = '';
   
   const y = current.getFullYear();
   const m = current.getMonth();
@@ -3459,7 +2878,7 @@ function render(){
     const info = user.data[key];
     
     const cell = createDayCell(prevDay, true, info, SHIFTS, user, key);
-    fragment.appendChild(cell);
+    grid.appendChild(cell);
   }
   
   // Días del mes actual
@@ -3469,7 +2888,7 @@ function render(){
     const isToday = key === todayKey;
     
     const cell = createDayCell(d, false, info, SHIFTS, user, key, isToday);
-    fragment.appendChild(cell);
+    grid.appendChild(cell);
   }
   
   // Días del mes siguiente
@@ -3481,11 +2900,9 @@ function render(){
     const key = dayKey(nextYear, nextMonth, i);
     
     const cell = createDayCell(i, true, null, SHIFTS, user, key);
-    fragment.appendChild(cell);
+    grid.appendChild(cell);
   }
 
-  grid.replaceChildren(fragment);
-  grid.setAttribute('aria-busy','false');
   requestAnimationFrame(fitCalendarToViewport);
 }
 
@@ -3502,17 +2919,8 @@ let suppressClickUntil = 0;
   const dow = date.getDay();
   if (dow === 0 || dow === 6) classes += ' weekend';
   if (isToday) classes += ' today';
-  const primaryShift = getDayPrimaryShiftKey(info);
-  if(!isEffectivelyEmptyDayData(info)) classes += ' has-data';
-  if(primaryShift === 'L' || primaryShift === 'Vacaciones') classes += ' free-day';
-  const holidayForCell = db.holidays[key];
-  if(holidayForCell && holidayApplies(holidayForCell.location, user.locality)) classes += ' holiday-day';
   
   cell.className = classes;
-  cell.dataset.date = key;
-  cell.setAttribute('role','button');
-  cell.tabIndex = isOffMonth ? -1 : 0;
-  cell.setAttribute('aria-label', `${key}: ${getDayPrimaryShiftLabel(info, SHIFTS)}`);
   
   // Contenido según tipo de turno
   if (info) {
@@ -3612,9 +3020,6 @@ let suppressClickUntil = 0;
   }
 
 
-  cell.addEventListener('keydown', (ev) => {
-    if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); cell.click(); }
-  });
   
   return cell;
 }
@@ -4152,27 +3557,6 @@ function autoCalcMixtoBottom(){
   }
 }
 
-function normalizeManualHours(inputId){
-  const input = document.getElementById(inputId);
-  if(!input) return 0;
-  let value = Number.parseFloat(input.value);
-  if(!Number.isFinite(value)) value = 0;
-  value = Math.min(24, Math.max(0, value));
-  input.value = value.toFixed(1);
-  return value;
-}
-function manualCalc(){
-  normalizeManualHours('tHrs');
-}
-function manualCalcMixtoTop(){
-  normalizeManualHours('tHrsTop');
-  updateMixtoTotal();
-}
-function manualCalcMixtoBottom(){
-  normalizeManualHours('tHrsBottom');
-  updateMixtoTotal();
-}
-
 function updateMixtoTotal(){
   const tHrsTop = document.getElementById('tHrsTop');
   const tHrsBottom = document.getElementById('tHrsBottom');
@@ -4272,11 +3656,8 @@ function pasteTo(key){
   const user = db.users[db.current]; if(!user) return;
   const src = clipboardDayData || clipboardShiftOnly;
   if(!src) return;
-  const previous = cloneJSON(user.data[key] || null);
   user.data[key] = deepCopy(src);
-  saveDB();
-  addActivityLog('day-paste','Turno pegado',`${db.current} · ${key}`,{previous,next:user.data[key]},'success');
-  render(); renderSummaryCategories(); calcSummary();
+  saveDB(); render(); renderSummaryCategories(); calcSummary();
 }
 
 function hideDayMenu(){
@@ -4457,7 +3838,6 @@ if(btnOpenTurnPicker){
 function saveDay(){
   const user = db.users[db.current];
   if (!user) return;
-  const previousDayData = cloneJSON(user.data[activeKey] || null);
 
   let data;
 
@@ -4547,7 +3927,6 @@ function saveDay(){
   try { if (window._setTurnArea) window._setTurnArea(false); } catch(e) {}
   closeModal();
   saveDB();
-  addActivityLog('day-edit','Día actualizado',`${db.current} · ${activeKey}`,{previous:previousDayData,next:data},'success');
   render();
   renderSummaryCategories();
   calcSummary();
@@ -5287,19 +4666,12 @@ function openProfilesModal(){
   renderProfilesList();
   
   const modal = document.getElementById('profilesModal');
-  if (modal) {
-    modal.classList.add('active');
-    document.body.dataset.prevOverflow = document.body.style.overflow || '';
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
-  }
+  if (modal) modal.classList.add('active');
 }
 
 function closeProfilesModal(){
   const modal = document.getElementById('profilesModal');
   if (modal) modal.classList.remove('active');
-  document.body.style.overflow = document.body.dataset.prevOverflow || '';
-  document.body.style.touchAction = '';
 }
 
 function createProfile(){
@@ -5528,7 +4900,6 @@ function mergeProfiles(source, target){
   delete db.users[source];
 
   saveDB();
-  addActivityLog('profile-merge','Perfiles fusionados',`${source} → ${target}`,{},'warning');
   updateUserDropdown();
   updateUserInitial();
   render();
@@ -5541,55 +4912,21 @@ function mergeProfiles(source, target){
 // Import Functions - CORREGIDO: Nombres visibles en lista
 // =========================================================
 function openImportModal(){
-  const file = document.getElementById('importFile'); if(file) file.value='';
+  document.getElementById('importFile').value = '';
+  document.getElementById('importInfo').innerText = '';
+  document.getElementById('importUsersList').innerHTML = `
+    <div class="text-gray-400 font-bold">Adjunta un Excel y presiona "Analizar".</div>
+  `;
+  
+  importContext = null;
+  
   const importMonth = document.getElementById('importMonth');
   const importYear = document.getElementById('importYear');
-  if(importMonth) importMonth.value = current.getMonth();
-  if(importYear) importYear.value = current.getFullYear();
-  invalidateImportAnalysis('Adjunta un Excel y presiona "Analizar archivo".');
+  if (importMonth) importMonth.value = current.getMonth();
+  if (importYear) importYear.value = current.getFullYear();
+  
   const modal = document.getElementById('importModal');
-  if(modal && !modal.dataset.importBound){
-    modal.dataset.importBound='1';
-    importMonth?.addEventListener('change',refreshImportDestinationUI);
-    importYear?.addEventListener('change',refreshImportDestinationUI);
-    file?.addEventListener('change',()=>invalidateImportAnalysis('Archivo seleccionado. Presiona “Analizar archivo”.'));
-    modal.addEventListener('change',e=>{
-      if(e.target?.name==='importMode') scheduleImportPreview();
-    });
-    modal.addEventListener('click',e=>{ if(e.target===modal) closeImportModal(); });
-  }
-  refreshImportDestinationUI();
-  modal?.classList.add('active');
-}
-
-// El MES DESTINO lo controla el usuario mediante los selectores del modal.
-// La detección automática del Excel es solo una SUGERENCIA (no sobrescribe la elección).
-function getImportTargetMonthYear(){
-  const mEl = document.getElementById('importMonth');
-  const yEl = document.getElementById('importYear');
-  const m = parseInt(mEl && mEl.value);
-  const y = parseInt(yEl && yEl.value);
-  return {
-    month: isNaN(m) ? current.getMonth() : m,
-    year: isNaN(y) ? current.getFullYear() : y
-  };
-}
-
-function updateImportTargetBanner(){
-  const banner = document.getElementById('importTargetBanner');
-  if(!banner) return;
-  const { month, year } = getImportTargetMonthYear();
-  banner.textContent = `Se importará sobre: ${MONTHS[month]} ${year}`.toUpperCase();
-}
-
-// Aplica al selector el mes/año detectado en el archivo (solo si el usuario lo pide).
-function applyDetectedMonthToTarget(){
-  if(!importContext || importContext.detectedMonth == null) return;
-  const mSel = document.getElementById('importMonth');
-  const ySel = document.getElementById('importYear');
-  if(mSel) mSel.value = importContext.detectedMonth;
-  if(ySel && importContext.detectedYear != null) ySel.value = importContext.detectedYear;
-  updateImportTargetBanner();
+  if (modal) modal.classList.add('active');
 }
 
 function closeImportModal(){
@@ -5715,7 +5052,7 @@ async function buildPreprocessedOCRCanvas(file){
 async function runImageOCR(){
   const fileInput = document.getElementById('imageImportFile');
   if(!fileInput.files || !fileInput.files[0]) return alert('Selecciona una imagen primero.');
-  try { await ensureTesseractLoaded(); } catch(e) { return alert(e.message); }
+  if(typeof Tesseract === 'undefined') return alert('La librería OCR aún está cargando. Espera un momento y vuelve a intentarlo.');
 
   const status = document.getElementById('ocrStatus');
   const resultsBox = document.getElementById('ocrResultsBox');
@@ -6204,7 +5541,6 @@ function applyOCRResults(){
   });
 
   saveDB();
-  addActivityLog('image-import','Importación desde imagen',`${db.current}: ${applied} día(s) con turno ${shift}.`,{applied,skipped,month,year},'success');
   render();
   renderSummaryCategories();
   calcSummary();
@@ -6213,9 +5549,131 @@ function applyOCRResults(){
 }
 
 function selectAllImportUsers(flag){
-  document.querySelectorAll('.impUserChk').forEach(ch => { ch.checked = flag; });
-  scheduleImportPreview();
+
+  document.querySelectorAll('.impUserChk').forEach(ch => {
+    ch.checked = flag;
+  });
 }
+
+async function analyzeImportFile(){
+  const fileInput = document.getElementById('importFile');
+  if(!fileInput.files || !fileInput.files[0]) {
+    return alert("Selecciona un archivo Excel.");
+  }
+
+  try {
+    const data = await fileInput.files[0].arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array' });
+
+    // Elegir la hoja más probable (no asumir la primera)
+    let best = null;
+    for(const sn of wb.SheetNames){
+      const ws = wb.Sheets[sn];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+      const headerIdx = findHeaderRow(rows);
+      if(headerIdx < 0) continue;
+      const headerRow = rows[headerIdx] || [];
+      const dayCols = buildDayColumnMap(headerRow);
+      const score = Object.keys(dayCols).length;
+
+      // Preferir hojas con más días detectados, y con keywords típicas
+      const joined = headerRow.map(x => String(x||'').trim()).join(' | ').toUpperCase();
+      const kw = (joined.includes('PERSONAL')||joined.includes('NOMBRE')?2:0) + (joined.includes('EMP')||joined.includes('EMPLE')||joined.includes('ID')?1:0);
+
+      const finalScore = score*10 + kw;
+      if(!best || finalScore > best.finalScore){
+        best = { sn, rows, headerIdx, headerRow, dayCols, finalScore };
+      }
+    }
+
+    if(!best){
+      return alert("No se pudo detectar una hoja válida. Verifica que el archivo tenga una tabla con días (1..31 o fechas).");
+    }
+
+    const { sn: sheetName, rows, headerIdx, headerRow, dayCols } = best;
+
+    // Detectar mes y año (en esa hoja)
+    const detected = detectMonthYearFromRows(rows);
+    const fallbackMonth = parseInt(document.getElementById('importMonth').value);
+    const fallbackYear = parseInt(document.getElementById('importYear').value);
+    const monthIndex0 = (detected.month ?? fallbackMonth);
+    const year = (detected.year ?? fallbackYear);
+
+    // Detectar columnas nombre/empleado (robusto)
+    const cols = inferNameEmpCols(rows, headerIdx, headerRow, dayCols);
+    const nameCol = cols.nameCol;
+    const empCol  = cols.empCol;
+
+    if(nameCol < 0 || Object.keys(dayCols).length < 10) {
+      return alert("Formato no reconocido: no se pudo detectar columna de nombre o suficientes días.");
+    }
+
+    // Extraer usuarios y turnos detectados
+    const usersSet = new Set();
+    const codesSet = new Set();
+    const nameMatchMap = {}; // importName -> existingProfileKey (si hay coincidencia fuzzy)
+
+    for(let r = headerIdx + 1; r < rows.length; r++){
+      const row = rows[r] || [];
+      if(!isLikelyDataRow(row, nameCol, empCol, dayCols)) continue;
+
+      const name = safeNameCell(row[nameCol]).toUpperCase();
+      if(name){
+        usersSet.add(name);
+        // Buscar perfil existente con coincidencia fuzzy
+        if(!db.users[name]){
+          const fuzzyMatch = findFuzzyUserMatch(name);
+          if(fuzzyMatch && fuzzyMatch !== name) nameMatchMap[name] = fuzzyMatch;
+        }
+      }
+
+      for(const d of Object.keys(dayCols)){
+        const code = normalizeCode(row[dayCols[d]]);
+        if(code && code !== 'X') codesSet.add(code);
+      }
+    }
+
+    // Construir mapeo categoría por código (solo para turnos, no ausencias)
+    const turnCodes = Array.from(codesSet)
+      .filter(c => !!codeToShiftDef(c))
+      .filter(c => !IMPORT_ABSENCE_MAP[c]) // excluir L/V/... (estatus)
+      .sort();
+
+    importContext = {
+      wb, sheetName, rows, headerIdx, nameCol, empCol, dayCols, monthIndex0, year,
+      users: Array.from(usersSet).sort(),
+      codeCatMap: {}, nameMatchMap
+    };
+
+    // Mostrar usuarios
+    const list = document.getElementById('importUsersList');
+    if(importContext.users.length === 0){
+      list.innerHTML = `<div class="text-gray-400 font-bold">No se detectaron usuarios.</div>`;
+    } else {
+      list.innerHTML = importContext.users.map(u => {
+        const matchedProfile = nameMatchMap[u];
+        const matchLabel = matchedProfile ? ` <span style="color:#1e40af;font-size:10px;">→ usa perfil: ${escapeHTML(matchedProfile)}</span>` : '';
+        return `
+        <label class="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-50 cursor-pointer" style="color: #111827;">
+          <input class="impUserChk" type="checkbox" value="${escapeHTML(u)}" checked>
+          <span class="font-black">${escapeHTML(u)}${matchLabel}</span>
+        </label>`;
+      }).join('');
+    }
+
+    // Mostrar mapeo de turnos -> categoría (si aplica)
+    buildImportTurnsCategoryMapUI(turnCodes);
+
+    document.getElementById('importInfo').innerText =
+      `Hoja: ${sheetName} | Detectado: ${MONTHS[monthIndex0]} ${year}. Usuarios: ${importContext.users.length}. Turnos: ${turnCodes.length}.`;
+
+  } catch (error) {
+    console.error('Error analizando archivo:', error);
+    alert(`Error al analizar el archivo: ${error.message}`);
+  }
+}
+
+
 
 function inferNameEmpCols(rows, headerIdx, headerRow, dayCols){
   let nameCol = -1, empCol = -1;
@@ -6500,154 +5958,249 @@ function findFuzzyUserMatch(importedName){
 
 async function analyzeImportFile(){
   const fileInput = document.getElementById('importFile');
-  if(!fileInput?.files?.[0]) return alert('Selecciona un archivo Excel.');
-  let target;
-  try{ target = getSelectedImportTarget(); }catch(e){ return alert(e.message); }
-  setImportBusy(true,'Cargando lector Excel…');
-  const info = document.getElementById('importInfo');
-  try{
-    await ensureXLSXLoaded();
-    setImportBusy(true,'Analizando estructura y usuarios…');
-    const file = fileInput.files[0];
-    const data = await file.arrayBuffer();
-    const wb = XLSX.read(data,{type:'array',cellDates:true});
+  if(!fileInput.files || !fileInput.files[0]) {
+    return alert("Selecciona un archivo Excel.");
+  }
+
+  try {
+    const data = await fileInput.files[0].arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array' });
+
+    // Elegir la hoja más probable (no asumir la primera)
     let best = null;
     for(const sn of wb.SheetNames){
       const ws = wb.Sheets[sn];
-      const rows = XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:'',dateNF:'d/m/yyyy'});
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
       const headerIdx = findHeaderRow(rows);
-      if(headerIdx<0) continue;
+      if(headerIdx < 0) continue;
       const headerRow = rows[headerIdx] || [];
       const dayCols = buildDayColumnMap(headerRow);
-      const dayCount = Object.keys(dayCols).length;
-      const joined = headerRow.map(x=>String(x||'').trim()).join(' | ').toUpperCase();
-      const keywordScore = (joined.includes('PERSONAL')||joined.includes('NOMBRE')?3:0)+(joined.includes('EMP')||joined.includes('ID')?2:0);
-      const populatedRows = rows.slice(headerIdx+1,headerIdx+80).filter(row=>Object.values(dayCols).some(c=>String(row?.[c]??'').trim())).length;
-      const finalScore = dayCount*20 + keywordScore*5 + Math.min(populatedRows,30);
-      if(!best || finalScore>best.finalScore) best={sn,rows,headerIdx,headerRow,dayCols,finalScore};
+      const score = Object.keys(dayCols).length;
+
+      // Preferir hojas con más días detectados, y con keywords típicas
+      const joined = headerRow.map(x => String(x||'').trim()).join(' | ').toUpperCase();
+      const kw = (joined.includes('PERSONAL')||joined.includes('NOMBRE')?2:0) + (joined.includes('EMP')||joined.includes('EMPLE')||joined.includes('ID')?1:0);
+
+      const finalScore = score*10 + kw;
+      if(!best || finalScore > best.finalScore){
+        best = { sn, rows, headerIdx, headerRow, dayCols, finalScore };
+      }
     }
-    if(!best) throw new Error('No se encontró una tabla válida con encabezados de días (1…31 o fechas).');
-    const {sn:sheetName,rows,headerIdx,headerRow,dayCols}=best;
-    const cols=inferNameEmpCols(rows,headerIdx,headerRow,dayCols);
-    if(cols.nameCol<0 || Object.keys(dayCols).length<10) throw new Error('Formato no reconocido: falta una columna de nombre o hay menos de 10 columnas de días.');
-    const usersSet=new Set(), codesSet=new Set();
-    for(let r=headerIdx+1;r<rows.length;r++){
-      const row=rows[r]||[];
-      if(!isLikelyDataRow(row,cols.nameCol,cols.empCol,dayCols)) continue;
-      const name=safeNameCell(row[cols.nameCol]).toUpperCase();
-      if(name) usersSet.add(name);
-      Object.keys(dayCols).forEach(d=>{ const code=normalizeCode(row[dayCols[d]]); if(code&&code!=='X') codesSet.add(code); });
+
+    if(!best){
+      return alert("No se pudo detectar una hoja válida. Verifica que el archivo tenga una tabla con días (1..31 o fechas).");
     }
-    const users=Array.from(usersSet).sort((a,b)=>a.localeCompare(b,'es'));
-    if(!users.length) throw new Error('No se detectaron filas de usuarios con turnos.');
-    const exactMatchMap={}, suggestionMap={}, nameMatchMap={};
-    users.forEach(name=>{
-      const exact=findNormalizedExactUserMatch(name);
-      const suggestion=exact || findFuzzyUserMatch(name);
-      if(exact) exactMatchMap[name]=exact;
-      else if(suggestion) suggestionMap[name]=suggestion;
-      nameMatchMap[name]=exact || name;
-    });
-    const turnCodes=Array.from(codesSet).filter(c=>!!codeToShiftDef(c)).filter(c=>!IMPORT_ABSENCE_MAP[c]).sort();
-    importContext={
-      wb,sheetName,rows,headerIdx,headerRow,nameCol:cols.nameCol,empCol:cols.empCol,dayCols,
-      detectedSource:detectMonthYearFromRows(rows),analyzedTarget:target,
-      users,codeCatMap:{},nameMatchMap,exactMatchMap,suggestionMap,
-      fileMeta:{name:file.name,size:file.size,lastModified:file.lastModified},analyzedAt:new Date().toISOString()
+
+    const { sn: sheetName, rows, headerIdx, headerRow, dayCols } = best;
+
+    // Detectar mes y año (en esa hoja)
+    const detected = detectMonthYearFromRows(rows);
+    const fallbackMonth = parseInt(document.getElementById('importMonth').value);
+    const fallbackYear = parseInt(document.getElementById('importYear').value);
+    const monthIndex0 = (detected.month ?? fallbackMonth);
+    const year = (detected.year ?? fallbackYear);
+
+    // Detectar columnas nombre/empleado (robusto)
+    const cols = inferNameEmpCols(rows, headerIdx, headerRow, dayCols);
+    const nameCol = cols.nameCol;
+    const empCol  = cols.empCol;
+
+    if(nameCol < 0 || Object.keys(dayCols).length < 10) {
+      return alert("Formato no reconocido: no se pudo detectar columna de nombre o suficientes días.");
+    }
+
+    // Extraer usuarios y turnos detectados
+    const usersSet = new Set();
+    const codesSet = new Set();
+    const nameMatchMap = {}; // importName -> existingProfileKey (si hay coincidencia fuzzy)
+
+    for(let r = headerIdx + 1; r < rows.length; r++){
+      const row = rows[r] || [];
+      if(!isLikelyDataRow(row, nameCol, empCol, dayCols)) continue;
+
+      const name = safeNameCell(row[nameCol]).toUpperCase();
+      if(name){
+        usersSet.add(name);
+        // Buscar perfil existente con coincidencia fuzzy
+        if(!db.users[name]){
+          const fuzzyMatch = findFuzzyUserMatch(name);
+          if(fuzzyMatch && fuzzyMatch !== name) nameMatchMap[name] = fuzzyMatch;
+        }
+      }
+
+      for(const d of Object.keys(dayCols)){
+        const code = normalizeCode(row[dayCols[d]]);
+        if(code && code !== 'X') codesSet.add(code);
+      }
+    }
+
+    // Construir mapeo categoría por código (solo para turnos, no ausencias)
+    const turnCodes = Array.from(codesSet)
+      .filter(c => !!codeToShiftDef(c))
+      .filter(c => !IMPORT_ABSENCE_MAP[c]) // excluir L/V/... (estatus)
+      .sort();
+
+    importContext = {
+      wb, sheetName, rows, headerIdx, nameCol, empCol, dayCols, monthIndex0, year,
+      users: Array.from(usersSet).sort(),
+      codeCatMap: {}, nameMatchMap
     };
-    };
-    renderImportUsersList();
+
+    // Mostrar usuarios
+    const list = document.getElementById('importUsersList');
+    if(importContext.users.length === 0){
+      list.innerHTML = `<div class="text-gray-400 font-bold">No se detectaron usuarios.</div>`;
+    } else {
+      list.innerHTML = importContext.users.map(u => {
+        const matchedProfile = nameMatchMap[u];
+        const matchLabel = matchedProfile ? ` <span style="color:#1e40af;font-size:10px;">→ usa perfil: ${escapeHTML(matchedProfile)}</span>` : '';
+        return `
+        <label class="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-50 cursor-pointer" style="color: #111827;">
+          <input class="impUserChk" type="checkbox" value="${escapeHTML(u)}" checked>
+          <span class="font-black">${escapeHTML(u)}${matchLabel}</span>
+        </label>`;
+      }).join('');
+    }
+
+    // Mostrar mapeo de turnos -> categoría (si aplica)
     buildImportTurnsCategoryMapUI(turnCodes);
-    refreshImportDestinationUI();
-    if(info) info.innerHTML=`<div class="rounded-2xl bg-slate-100 border border-slate-200 p-3 text-left"><div class="font-black text-slate-900">Archivo analizado correctamente</div><div class="mt-1 text-[10px] text-slate-600">Hoja: ${escapeHTML(sheetName)} · ${Object.keys(dayCols).length} días · ${users.length} usuarios · ${turnCodes.length} turnos.</div><div class="mt-1 text-[10px] text-blue-800 font-black">Destino autorizado: ${MONTHS[target.monthIndex0]} ${target.year}</div></div>`;
-    scheduleImportPreview();
-  }catch(error){
-    console.error('Error analizando archivo:',error);
-    invalidateImportAnalysis('No se pudo completar el análisis.');
-    if(info) info.innerHTML=`<div class="rounded-2xl bg-red-50 border border-red-200 p-3 text-red-800">${escapeHTML(error.message||String(error))}</div>`;
-    alert(`Error al analizar el archivo: ${error.message||error}`);
-  }finally{
-    setImportBusy(false);
-    scheduleImportPreview();
+
+    document.getElementById('importInfo').innerText =
+      `Hoja: ${sheetName} | Detectado: ${MONTHS[monthIndex0]} ${year}. Usuarios: ${importContext.users.length}. Turnos: ${turnCodes.length}.`;
+
+  } catch (error) {
+    console.error('Error analizando archivo:', error);
+    alert(`Error al analizar el archivo: ${error.message}`);
   }
 }
 
 
 
 function runImportSelected(){
-  if(!importContext) return alert('Primero analiza el archivo.');
-  let target;
-  try{ target=getSelectedImportTarget(); }catch(e){ return alert(e.message); }
-  const mode=document.querySelector('input[name="importMode"]:checked')?.value||'replace';
-  const selected=getSelectedImportUsers();
-  if(!selected.length) return alert('Selecciona al menos un usuario.');
-  const plan=buildImportPlan(selected,target,mode);
-  if(plan.collisions.length){
-    return alert('Hay dos o más usuarios dirigidos al mismo perfil. Corrige el mapeo antes de importar.');
-  }
-  if(!plan.validDays.length || !plan.writable) return alert('No hay celdas válidas para importar con la selección actual.');
-  const partial=plan.validDays.length<plan.maxDay?`\nEl archivo solo incluye ${plan.validDays.length} de ${plan.maxDay} días; los demás días no se tocarán.`:'';
-  const ignored=plan.ignoredDays.length?`\nDías inexistentes en el destino que se ignorarán: ${plan.ignoredDays.join(', ')}.`:'';
-  const invalid=plan.invalidCodes?`\nCódigos no reconocidos que se conservarán sin cambios: ${plan.invalidCodes}.`:'';
-  const overwrite=mode==='replace'?`\nCeldas con datos que serán reemplazadas: ${plan.overwriteCount}.`:`\nCeldas ocupadas que se omitirán: ${plan.mergeSkipped}.`;
-  const message=`CONFIRMACIÓN DE IMPORTACIÓN\n\nDestino autoritativo: ${MONTHS[target.monthIndex0]} ${target.year}\nModo: ${mode==='replace'?'REEMPLAZAR DÍAS PRESENTES':'COMBINAR SOLO VACÍOS'}\nPerfiles: ${plan.resolvedNames.join(', ')}\nCeldas a escribir: ${plan.writable}.${overwrite}${partial}${ignored}${invalid}\n\nLa fecha detectada en el Excel NO cambiará este destino. ¿Continuar?`;
-  if(!confirm(message)) return;
+  if(!importContext) return alert("Primero analiza el archivo.");
+  
+  const importMode = document.querySelector('input[name="importMode"]:checked')?.value || 'replace';
+  const selected = Array.from(document.querySelectorAll('.impUserChk'))
+    .filter(x => x.checked)
+    .map(x => x.value);
+  
+  if(selected.length === 0) return alert("Selecciona al menos un usuario.");
+  
+  const { rows, headerIdx, nameCol, empCol, dayCols, monthIndex0, year } = importContext;
 
-  const snapshot=captureImportSnapshot(target,plan.resolvedNames);
-  const backupStored=persistImportBackup(snapshot);
-  if(!backupStored && plan.overwriteCount>0 && !confirm('No fue posible guardar el respaldo automático por falta de espacio local. ¿Continuar sin respaldo?')) return;
+  // Resolver nombres fuzzy: si hay match con perfil existente, usar el perfil existente
+  const nameMatchMap = (importContext && importContext.nameMatchMap) || {};
+  const resolvedNames = selected.map(u => nameMatchMap[u] || u);
 
-  setImportBusy(true,'Aplicando importación…');
-  let written=0,cleared=0,mergeSkipped=0,invalidCodes=0;
-  try{
-    plan.resolvedNames.forEach(name=>ensureUserExists(name));
-    if(mode==='replace'){
-      selected.forEach(source=>{
-        const row=plan.rowsBySource.get(source); if(!row) return;
-        const user=db.users[plan.resolvedBySource[source]]; if(!user) return;
-        plan.validDays.forEach(day=>{
-          let code=normalizeCode(row[importContext.dayCols[day]]); if(!code||code==='X') code='L';
-          if(!codeToShiftDef(code)) return;
-          const key=dayKey(target.year,target.monthIndex0+1,day);
-          if(user.data?.[key]!==undefined){ delete user.data[key]; cleared++; }
-        });
-      });
-    }
-    selected.forEach(source=>{
-      const row=plan.rowsBySource.get(source); if(!row) return;
-      const userKey=plan.resolvedBySource[source];
-      const user=db.users[userKey]; if(!user) return;
-      ensureImportBaseShiftsForUser(userKey);
-      plan.validDays.forEach(day=>{
-        let code=normalizeCode(row[importContext.dayCols[day]]); if(!code||code==='X') code='L';
-        let def=codeToShiftDef(code); if(!def){ invalidCodes++; return; }
-        def={...def};
-        if(importContext.codeCatMap?.[code]&&!IMPORT_ABSENCE_MAP[code]) def.cat=importContext.codeCatMap[code];
-        const key=dayKey(target.year,target.monthIndex0+1,day);
-        if(mode==='merge'&&!isEffectivelyEmptyDayData(user.data[key])){ mergeSkipped++; return; }
-        ensureShiftExistsForUser(userKey,def,true);
-        const tIn=def.in||'00:00',tOut=def.out||'00:00';
-        user.data[key]={mode:'simple',s:def.key,tIn,tOut,h:calculateHours(tIn,tOut),n:def.note||((tIn!=='00:00'||tOut!=='00:00')?`${tIn}-${tOut}`:(def.label||def.key).toUpperCase()),importMeta:{source:'excel',file:importContext.fileMeta?.name||'',sheet:importContext.sheetName,importedAt:new Date().toISOString(),targetMonth:target.monthIndex0,targetYear:target.year}};
-        written++;
+  // Asegurar que los usuarios existen
+  resolvedNames.forEach(u => ensureUserExists(u));
+
+  // Limpiar mes si es modo reemplazar (usar nombres resueltos)
+  if(importMode === 'replace'){
+    resolvedNames.forEach(u => {
+      const user = db.users[u];
+      if (!user) return;
+
+      const prefix = `${year}-${monthIndex0 + 1}-`;
+      Object.keys(user.data).forEach(k => {
+        if(k.startsWith(prefix)) delete user.data[k];
       });
     });
-    db.current=plan.resolvedNames.find(name=>db.users[name])||db.current;
-    current=new Date(target.year,target.monthIndex0,1);
-    saveDB();
-    addActivityLog('excel-import','Importación Excel completada',`${MONTHS[target.monthIndex0]} ${target.year}: ${written} celdas en ${plan.resolvedNames.length} perfil(es).`,{mode,written,cleared,mergeSkipped,invalidCodes,profiles:plan.resolvedNames,file:importContext.fileMeta?.name,backupId:backupStored?snapshot.id:null,detectedSource:importContext.detectedSource},'success');
-    updateUserDropdown(); updateUserInitial(); updateMonthDisplay(); render(); renderSummaryCategories(); calcSummary();
-    const info=document.getElementById('importInfo');
-    if(info) info.innerHTML=`<div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-emerald-900"><div class="font-black text-[12px]">✅ Importación completada</div><div class="mt-1 text-[10px]">Destino: ${MONTHS[target.monthIndex0]} ${target.year} · Perfiles: ${plan.resolvedNames.length} · Celdas: ${written}${mergeSkipped?` · Omitidas: ${mergeSkipped}`:''}</div>${backupStored?'<div class="mt-1 text-[10px] font-black">Respaldo automático disponible en Historial.</div>':''}<button onclick="closeImportModalAndRefresh()" class="mt-3 px-4 py-2 bg-emerald-700 text-white rounded-xl font-black text-[10px]">Ver calendario</button></div>`;
-    const run=document.getElementById('runImportBtn'); if(run) run.disabled=true;
-    renderHistoryModal();
-  }catch(error){
-    console.error('Error importando',error);
-    try{ restoreImportSnapshot(snapshot,{log:false}); }catch(restoreError){ console.error('Error restaurando transacción',restoreError); }
-    addActivityLog('excel-import','Importación Excel revertida',error.message||String(error),{target,profiles:plan.resolvedNames},'error');
-    alert(`La importación falló y se intentó restaurar el estado anterior: ${error.message||error}`);
-  }finally{
-    setImportBusy(false);
   }
+  
+  let written = 0;
+  
+  // Procesar filas
+  for(let r = headerIdx + 1; r < rows.length; r++){
+    const row = rows[r] || [];
+    if(!isLikelyDataRow(row, nameCol, empCol, dayCols)) continue;
+    
+    const name = safeNameCell(row[nameCol]).toUpperCase();
+    if(!selected.includes(name)) continue;
+
+    // Resolver a perfil existente si hay coincidencia fuzzy
+    const resolvedName = nameMatchMap[name] || name;
+    const userKey = ensureUserExists(resolvedName);
+    const user = db.users[userKey];
+    if (!user) continue;
+    
+    ensureImportBaseShiftsForUser(userKey);
+    
+    // Procesar cada día
+    for(const dStr of Object.keys(dayCols)){
+      const day = parseInt(dStr);
+      let code = normalizeCode(row[dayCols[dStr]]);
+      if(!code || code === 'X') code = 'L';
+      
+      let def = codeToShiftDef(code);
+      if(!def) continue;
+
+      // Aplicar categoría asignada en el asistente (solo para turnos, no ausencias)
+      if(importContext && importContext.codeCatMap && importContext.codeCatMap[code] && !IMPORT_ABSENCE_MAP[code]){
+        def.cat = importContext.codeCatMap[code];
+      }
+      // Asegurar que el turno exista y quede habilitado (si viene del Excel)
+      ensureShiftExistsForUser(userKey, def, true);
+      
+      const key = dayKey(year, monthIndex0 + 1, day);
+
+      // Saltar si es modo merge y el día ya tiene información real
+      if(importMode === 'merge' && !isEffectivelyEmptyDayData(user.data[key])) continue;
+
+      // Proteger meses pasados: en modo replace, no tocar meses anteriores al actual
+      {
+        const now = new Date();
+        const curY = now.getFullYear(), curM = now.getMonth() + 1;
+        const keyY = year, keyM = monthIndex0 + 1;
+        if(importMode === 'replace' && (keyY < curY || (keyY === curY && keyM < curM))){
+          // Mes pasado en modo replace: solo escribir si el día está vacío
+          if(user.data[key]) continue;
+        }
+      }
+
+      // Crear entrada
+      const tIn = def.in || '00:00';
+      const tOut = def.out || '00:00';
+      const hrs = calculateHours(tIn, tOut);
+      const note = def.note || ((tIn !== '00:00' || tOut !== '00:00') ? `${tIn}-${tOut}` : (def.label || def.key).toUpperCase());
+      
+      user.data[key] = {
+        mode: 'simple',
+        s: def.key,
+        tIn: tIn,
+        tOut: tOut,
+        h: hrs,
+        n: note
+      };
+      
+      written++;
+    }
+  }
+  
+  saveDB();
+  
+  // Cambiar al primer usuario importado
+  db.current = selected[0];
+  current = new Date(year, monthIndex0, 1);
+  saveDB();
+  
+  updateUserDropdown();
+  updateUserInitial();
+  updateMonthDisplay();
+  render();
+  renderSummaryCategories();
+  calcSummary();
+  
+  document.getElementById('importInfo').innerHTML = `
+    <div class="text-green-600 font-bold">
+      Importación completada!<br>
+      Perfiles: ${selected.length} | Celdas: ${written}<br>
+      Mes: ${MONTHS[monthIndex0]} ${year}<br>
+      <button onclick="closeImportModalAndRefresh()" class="mt-2 px-4 py-2 bg-emerald-600 text-white rounded-xl font-black text-[10px]">
+        ✅ Cerrar y ver calendario
+      </button>
+    </div>
+  `;
 }
 
 // =========================================================
@@ -6823,7 +6376,6 @@ if(d.mode === 'mixto'){
 
   freeDays = Math.max(0, freeDays);
   
-  await ensureHtml2CanvasLoaded();
   // Crear elemento temporal para html2canvas
   const temp = document.createElement('div');
   temp.style.position = 'fixed';
@@ -7115,33 +6667,12 @@ function buildExportHTML(userKey, locality, year, monthIndex0, todayStr, catHour
       <!-- Pie de página -->
       <div style="margin-top:25px;border-top:1px solid #e5e7eb;padding-top:15px;text-align:center;">
         <div style="font-size:10px;color:#94a3b8;font-weight:800;">
-          Generado con Shifter Pro v24 • ${escapeHTML(userKey)} • ${monthName} ${year}
+          Generado con Shifter Pro v23 • ${escapeHTML(userKey)} • ${monthName} ${year}
         </div>
       </div>
     </div>
   `;
 }
-
-
-
-document.addEventListener('keydown', (event) => {
-  if(event.key === 'Escape'){
-    closeHistoryModal();
-    closeImportModal();
-    closeImageImportModal();
-    closeExportModal?.();
-    return;
-  }
-  const active = document.activeElement;
-  const typing = active && ['INPUT','TEXTAREA','SELECT'].includes(active.tagName);
-  const modalOpen = !!document.querySelector('.modal.active');
-  const calendarVisible = document.getElementById('view-calendar')?.classList.contains('view-active');
-  if(typing || modalOpen || !calendarVisible) return;
-  if(event.key === 'ArrowLeft'){ event.preventDefault(); changeMonth(-1); }
-  if(event.key === 'ArrowRight'){ event.preventDefault(); changeMonth(1); }
-});
-window.addEventListener('online',()=>toast?.('Conexión restablecida'));
-window.addEventListener('offline',()=>toast?.('Modo sin conexión: los datos locales siguen disponibles'));
 
 // =========================================================
 // Initialize App
@@ -7685,7 +7216,30 @@ function scheduleCloudPush(){
   showLocalUploadBanner();
 }
 
-// manualSyncNow consolidado en la implementación de diálogo de sincronización.
+async function manualSyncNow(){
+  if(!isCloudEnabled()){
+    openAuthModal();
+    return;
+  }
+  if(remoteConflictPending){
+    showCloudUpdateBanner(hasLocalPendingChanges() ? 'conflict' : 'remote');
+    if(typeof toast === 'function') toast('Hay cambios pendientes de otro dispositivo. Decide primero qué hacer.');
+    return;
+  }
+  if(localCloudUploadPending){
+    showLocalUploadBanner();
+    if(typeof toast === 'function') toast('Tienes cambios locales pendientes de decidir.');
+    return;
+  }
+  try{
+    await smartInitialSync();
+    updateSyncStatusUI();
+    alert("Revisión de sincronización completada.");
+  }catch(e){
+    alert("Error sincronizando: " + (e.message||e));
+  }
+}
+
 async function pullFromCloudUI(){
   if(!isCloudEnabled()) return openAuthModal();
   try{
@@ -8137,22 +7691,17 @@ window.addEventListener('load', () => {
     const link = document.getElementById('appTouchIcon');
     if(link) link.href = iconDataUrl;
 
-    // Manifest inline compatible con subcarpetas de GitHub Pages
-    const basePath = location.pathname.endsWith('/') ? location.pathname : location.pathname.replace(/[^/]*$/, '');
+    // Manifest inline
     const manifest = {
-      id: location.pathname,
       name: 'Shifter Pro',
       short_name: 'Shifter',
-      description: 'Calendario profesional de turnos con importación, historial y sincronización.',
-      start_url: location.pathname + location.search,
-      scope: basePath || '/',
+      start_url: './',
       display: 'standalone',
-      display_override: ['window-controls-overlay','standalone','minimal-ui'],
-      orientation: 'any',
-      background_color: '#f1f5f9',
+      background_color: '#0f172a',
       theme_color: '#1e293b',
       icons: [
-        { src: iconDataUrl, sizes: '192x192', type: 'image/png', purpose:'any maskable' }
+        { src: iconDataUrl, sizes: '192x192', type: 'image/png' },
+        { src: iconDataUrl, sizes: '512x512', type: 'image/png' }
       ]
     };
     const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
@@ -8294,18 +7843,6 @@ window.addEventListener('load', () => {
     </div>
   </div>
 </div>
-
-
-<script>
-(function(){
-  const profilesModal = document.getElementById('profilesModal');
-  if(profilesModal){
-    profilesModal.addEventListener('click', (e)=>{
-      if(e.target === profilesModal || e.target.classList?.contains('modal-scroll-shell')) closeProfilesModal();
-    }, { passive: true });
-  }
-})();
-</script>
 
 </body>
 </html>
