@@ -1140,7 +1140,7 @@
       /* El alto se fija a un número EXACTO de líneas. Antes se reservaban
          siempre 2 y, cuando la celda no daba para tanto, la segunda quedaba
          cortada por la mitad y se veía desordenada. */
-      --nl: var(--cell-note-lines, 2);
+      --nl: var(--cell-note-lines, 1);
       --nlh: 1.24;
       font-size:var(--cell-note-size,11px)!important;
       line-height:var(--nlh)!important;
@@ -1205,44 +1205,68 @@
        ======================================================= */
 
     /* --- Calendario --- */
-    .day-cell .note-text{
-      background:#f6f8fb!important;
-      border:0!important;
-      border-radius:7px!important;
-      color:#465569!important;
-      font-weight:700!important;
-      box-shadow:inset 0 0 0 1px rgba(15,23,42,.055)!important;
+    /* Capa de color: abarca toda la celda y queda DETRÁS del contenido. */
+    .day-cell .day-bg{
+      position:absolute; inset:0; z-index:0;
     }
+    /* El contenido EN FLUJO (nombre y nota) debe quedar por encima del color:
+       un elemento posicionado con z-index:0 (.day-bg) tapa a los estáticos, así
+       que se los eleva con position:relative. Los elementos ABSOLUTOS (número
+       de día, insignia de asueto, foto) ya llevan z-index alto y NO se tocan,
+       para no perder su posición en la esquina. */
+    .day-cell > .shift-label,
+    .day-cell > .note-text,
+    .day-cell > .mixto-top-note,
+    .day-cell > .mixto-bottom-note{ position:relative; z-index:1; }
+
+    /* Nombre del turno: texto oscuro sobre el color (sin recuadro propio). */
     .day-cell .shift-label{
-      border-radius:7px!important;
+      background:transparent!important;
+      box-shadow:none!important;
+      color:#0f172a!important;
       letter-spacing:.015em;
+      border-radius:0!important;
+    }
+    /* En modo mixto sí se conservan los dos recuadros de color. */
+    .day-cell .shift-label.mixto-half{
+      border-radius:6px!important;
       box-shadow:0 1px 1.5px rgba(15,23,42,.10);
     }
+
+    /* Recuadro de horario: SIEMPRE blanco, una sola línea por defecto. */
+    .day-cell .note-text{
+      background:#ffffff!important;
+      border:0!important;
+      border-radius:7px!important;
+      color:#334155!important;
+      font-weight:800!important;
+      box-shadow:0 1px 2px rgba(15,23,42,.14)!important;
+    }
+
+    /* Número del día: oscuro y legible sobre el color de fondo. */
     .day-cell .day-number{
       background:transparent!important;
-      color:#94a3b8!important;
+      color:#1e293b!important;
       font-weight:900!important;
       border-radius:0!important;
     }
-    .day-cell:not(.day-off-month) .day-number{ color:#64748b!important; }
+    .day-cell.day-off-month .day-number{ color:#94a3b8!important; }
 
-    /* Hoy: anillo ROJO sólido, dibujado por encima de todo (outline) para
-       que el borde completo se vea y no quede detrás de la etiqueta de
-       color. Sin desplazar el layout. */
+    /* Hoy: anillo ROJO sólido por encima de todo (outline) para que el borde
+       completo se vea y no quede detrás del color. Número en NEGRO. */
     .today{
       border:0!important;
       box-shadow:none!important;
       outline:3px solid #ef4444!important;
       outline-offset:-3px!important;
-      background:#fff6f6!important;
       z-index:6;
     }
     .today .day-number{
-      background:#ef4444!important;
-      color:#ffffff!important;
-      border-radius:0 0 0 9px!important;
-      padding:1px 7px!important;
+      background:transparent!important;
+      color:#000000!important;
       font-weight:1000!important;
+      border-radius:0!important;
+      padding:2px 6px!important;
       z-index:22;
     }
 
@@ -1357,22 +1381,16 @@
     .pref-switch:focus-visible{ box-shadow:0 0 0 3px rgba(37,99,235,.25); }
 
     /* --- Modos de visualización del calendario --- */
-    /* Horario en una sola línea */
-    .calendar-grid.note-1line .day-cell .note-text{
-      white-space:nowrap!important;
-      display:block!important;
-      -webkit-line-clamp:unset!important;
-      text-overflow:ellipsis!important;
-      max-height:none!important;
-    }
     /* Ocultar la nota "LIBRE" en días libres */
     .calendar-grid.hide-libre .day-cell.is-libre .note-text{ display:none!important; }
-    /* Resaltar fines de semana */
-    .calendar-grid.mark-weekend .day-cell.weekend:not(.day-off-month):not(.today){
-      background:#f4f7fc!important;
+    /* Resaltar fines de semana: velo azul suave por encima del color de fondo
+       (el fondo lo pinta .day-bg, así que un `background` en la celda no se
+       vería). Y número en azul. */
+    .calendar-grid.mark-weekend .day-cell.weekend:not(.day-off-month) .day-bg::after{
+      content:''; position:absolute; inset:0; background:rgba(37,99,235,.10);
     }
     .calendar-grid.mark-weekend .day-cell.weekend:not(.day-off-month) .day-number{
-      color:#3b82f6!important;
+      color:#2563eb!important;
     }
 
     #view-settings h3{
@@ -1861,10 +1879,10 @@
       <div class="space-y-3">
         <label class="pref-row">
           <div>
-            <div class="pref-title">Horario en una sola línea</div>
-            <div class="pref-sub">Muestra "06:00–14:00" completo en una línea, sin partirlo. El texto se ajusta al ancho de la celda.</div>
+            <div class="pref-title">Horario detallado</div>
+            <div class="pref-sub">Por defecto el horario se muestra compacto en una línea ("6–14"). Actívalo para ver el formato completo "06:00–14:00" (puede ocupar dos líneas).</div>
           </div>
-          <input type="checkbox" id="prefSingleLineNote" class="pref-switch" onchange="setDisplayPref('singleLineNote', this.checked)">
+          <input type="checkbox" id="prefDetailedSchedule" class="pref-switch" onchange="setDisplayPref('detailedSchedule', this.checked)">
         </label>
 
         <label class="pref-row">
@@ -4010,7 +4028,9 @@ function showConfigTab(tab){
 // Preferencias de visualización (por dispositivo)
 // =========================================================
 const DISPLAY_PREFS_KEY = 'shifter_v24_display_prefs';
-const DISPLAY_PREFS_DEFAULT = { singleLineNote:false, hideLibreNote:false, highlightWeekend:false };
+// Por defecto el horario va compacto en una sola línea ("6–14"); quien quiera
+// el formato completo activa "detailedSchedule".
+const DISPLAY_PREFS_DEFAULT = { detailedSchedule:false, hideLibreNote:false, highlightWeekend:false };
 
 function getDisplayPrefs(){
   return { ...DISPLAY_PREFS_DEFAULT, ...safeParseJSON(localStorage.getItem(DISPLAY_PREFS_KEY), {}) };
@@ -4025,7 +4045,7 @@ function setDisplayPref(key, value){
 function syncDisplayPrefsUI(){
   const prefs = getDisplayPrefs();
   const map = {
-    singleLineNote:'prefSingleLineNote',
+    detailedSchedule:'prefDetailedSchedule',
     hideLibreNote:'prefHideLibreNote',
     highlightWeekend:'prefHighlightWeekend'
   };
@@ -4050,7 +4070,7 @@ function applyDisplayPrefs(){
   const grid = document.getElementById('calendar');
   if(!grid) return;
   const prefs = getDisplayPrefs();
-  grid.classList.toggle('note-1line', prefs.singleLineNote);
+  grid.classList.toggle('detailed-sched', prefs.detailedSchedule);
   grid.classList.toggle('hide-libre', prefs.hideLibreNote);
   grid.classList.toggle('mark-weekend', prefs.highlightWeekend);
 }
@@ -4278,50 +4298,47 @@ function fitCalendarToViewport(){
   enableCalendarSwipe();
 }
 
-// Con "Horario en una sola línea" activo, reduce el tamaño de la nota hasta
-// que "06:00–14:00" (y similares) quepan completos en una sola línea, sin
-// puntos suspensivos. Las notas manuales muy largas sí se recortan.
+// Por defecto el horario va en UNA línea (formato compacto "6–14"). Se
+// reduce el tamaño sólo si hiciera falta para que quepa sin cortarse.
+// En "horario detallado" no se toca (puede usar dos líneas).
 function fitNotesOneLine(){
   const grid = document.getElementById('calendar');
-  if(!grid || !grid.classList.contains('note-1line')) return;
+  if(!grid || grid.classList.contains('detailed-sched')) return;
 
   const d = document.documentElement;
-  d.style.setProperty('--cell-note-lines', '1');
-
-  const shortNotes = Array.from(grid.querySelectorAll('.day-cell .note-text'))
-    .filter(n => (n.textContent || '').trim().length <= 12); // horarios y códigos
-  if(!shortNotes.length) return;
+  const notes = Array.from(grid.querySelectorAll('.day-cell .note-text'));
+  if(!notes.length) return;
 
   let size = parseFloat(getComputedStyle(d).getPropertyValue('--cell-note-size')) || 10;
   let guard = 0;
   while(guard++ < 14 && size > 7){
-    const overflow = shortNotes.some(n => n.scrollWidth > n.clientWidth + 1);
+    const overflow = notes.some(n => n.scrollWidth > n.clientWidth + 1);
     if(!overflow) break;
     size = Math.max(7, size - 0.5);
     d.style.setProperty('--cell-note-size', size.toFixed(1) + 'px');
   }
 }
 
-// Decide cuántas líneas completas de nota caben de verdad en la celda.
-// Reservar 2 siempre hacía que la segunda saliera cortada por la mitad.
+// Cuántas líneas de nota caben. En modo compacto (por defecto) es 1; sólo
+// el "horario detallado" puede usar 2 cuando la fila da altura para ello.
 function fitNoteLines(rowHeight){
   const d = document.documentElement;
+  const grid = document.getElementById('calendar');
+  const detailed = grid && grid.classList.contains('detailed-sched');
+
+  if(!detailed){
+    d.style.setProperty('--cell-note-lines', '1');
+    return;
+  }
+
   const num = name => parseFloat(getComputedStyle(d).getPropertyValue(name)) || 0;
-
-  const padTop    = num('--cell-pad-top');
-  const padBottom = num('--cell-pad-bottom');
-  const gap       = num('--cell-gap');
-  const labelSize = num('--cell-label-size');
-  const noteSize  = num('--cell-note-size');
-  const notePadY  = num('--cell-note-pad-y');
-
-  const lineH   = noteSize * 1.24;
-  const labelH  = labelSize * 1.15;
-  const usable  = rowHeight - padTop - padBottom - labelH - gap - (notePadY * 2) - 2;
+  const lineH   = num('--cell-note-size') * 1.24;
+  const labelH  = num('--cell-label-size') * 1.15;
+  const usable  = rowHeight - num('--cell-pad-top') - num('--cell-pad-bottom')
+                - labelH - num('--cell-gap') - (num('--cell-note-pad-y') * 2) - 2;
 
   let lines = Math.floor(usable / lineH);
   lines = Math.max(1, Math.min(2, lines));
-
   d.style.setProperty('--cell-note-lines', String(lines));
 }
 
@@ -4437,17 +4454,20 @@ let suppressClickUntil = 0;
   cell.tabIndex = isOffMonth ? -1 : 0;
   cell.setAttribute('aria-label', `${key}: ${getDayPrimaryShiftLabel(info, SHIFTS)}`);
   
-  // Contenido según tipo de turno
+  // Contenido según tipo de turno.
+  // El COLOR del turno se pinta como un fondo (.day-bg) que abarca toda la
+  // celda y queda DETRÁS del contenido; el horario va en un recuadro blanco
+  // encima. El nombre del turno se muestra como texto sobre el color.
   if (info) {
     if (info.mode === 'mixto') {
       const topShift = SHIFTS[info.t] || {color: 'L', label: 'L'};
       const bottomShift = SHIFTS[info.b] || {color: 'L', label: 'L'};
-      
+
       cell.innerHTML = `
-        <div class="shift-label ${shiftBgClass(topShift.color)}" style="${shiftBgStyle(topShift.color)}">${escapeHTML(topShift.label)}</div>
-        <div class="shift-label ${shiftBgClass(bottomShift.color)}" style="${shiftBgStyle(bottomShift.color)}">${escapeHTML(bottomShift.label)}</div>
+        <div class="shift-label mixto-half ${shiftBgClass(topShift.color)}" style="${shiftBgStyle(topShift.color)}">${escapeHTML(topShift.label)}</div>
+        <div class="shift-label mixto-half ${shiftBgClass(bottomShift.color)}" style="${shiftBgStyle(bottomShift.color)}">${escapeHTML(bottomShift.label)}</div>
       `;
-      
+
       if (info.noteTop) {
         cell.innerHTML += `<div class="mixto-top-note">${escapeHTML(info.noteTop)}</div>`;
       }
@@ -4457,14 +4477,16 @@ let suppressClickUntil = 0;
     } else {
       const shift = SHIFTS[info.s] || {color: 'L', label: 'L'};
       let noteText = (info.n || '').toString().trim();
-      if (activeDisplayPrefs.singleLineNote) noteText = compactScheduleNote(noteText);
-      cell.innerHTML = `<div class="shift-label ${shiftBgClass(shift.color)}" style="${shiftBgStyle(shift.color)}">${escapeHTML(shift.label)}</div>`;
+      // Compacto en una línea salvo que el usuario pida "horario detallado".
+      if (!activeDisplayPrefs.detailedSchedule) noteText = compactScheduleNote(noteText);
+      cell.innerHTML = `<div class="day-bg" style="background:${shiftToHex(shift.color)};"></div>`;
+      cell.innerHTML += `<div class="shift-label">${escapeHTML(shift.label)}</div>`;
       if (noteText) {
         cell.innerHTML += `<div class="note-text">${escapeHTML(noteText)}</div>`;
       }
     }
   } else {
-    cell.innerHTML = `<div class="shift-label bg-L">L</div>`;
+    cell.innerHTML = `<div class="day-bg" style="background:#ffffff;"></div><div class="shift-label">L</div>`;
   }
   
   // Indicador de asueto
