@@ -1676,8 +1676,6 @@
           <select id="importYear" class="w-full bg-blue-50 border-blue-200 text-gray-900"></select>
         </div>
       </div>
-        </div>
-      </div>
 
       <div class="import-destination-card" id="importDestinationCard">
         <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -5546,7 +5544,7 @@ function openImportModal(){
   const importYear = document.getElementById('importYear');
   if(importMonth) importMonth.value = current.getMonth();
   if(importYear) importYear.value = current.getFullYear();
-  invalidateImportAnalysis('Adjunta un Excel y presiona "Analizar archivo".');
+  invalidateImportAnalysis('Adjunta un Excel y presiona “Analizar archivo”.');
   const modal = document.getElementById('importModal');
   if(modal && !modal.dataset.importBound){
     modal.dataset.importBound='1';
@@ -5560,36 +5558,6 @@ function openImportModal(){
   }
   refreshImportDestinationUI();
   modal?.classList.add('active');
-}
-
-// El MES DESTINO lo controla el usuario mediante los selectores del modal.
-// La detección automática del Excel es solo una SUGERENCIA (no sobrescribe la elección).
-function getImportTargetMonthYear(){
-  const mEl = document.getElementById('importMonth');
-  const yEl = document.getElementById('importYear');
-  const m = parseInt(mEl && mEl.value);
-  const y = parseInt(yEl && yEl.value);
-  return {
-    month: isNaN(m) ? current.getMonth() : m,
-    year: isNaN(y) ? current.getFullYear() : y
-  };
-}
-
-function updateImportTargetBanner(){
-  const banner = document.getElementById('importTargetBanner');
-  if(!banner) return;
-  const { month, year } = getImportTargetMonthYear();
-  banner.textContent = `Se importará sobre: ${MONTHS[month]} ${year}`.toUpperCase();
-}
-
-// Aplica al selector el mes/año detectado en el archivo (solo si el usuario lo pide).
-function applyDetectedMonthToTarget(){
-  if(!importContext || importContext.detectedMonth == null) return;
-  const mSel = document.getElementById('importMonth');
-  const ySel = document.getElementById('importYear');
-  if(mSel) mSel.value = importContext.detectedMonth;
-  if(ySel && importContext.detectedYear != null) ySel.value = importContext.detectedYear;
-  updateImportTargetBanner();
 }
 
 function closeImportModal(){
@@ -6217,6 +6185,9 @@ function selectAllImportUsers(flag){
   scheduleImportPreview();
 }
 
+
+
+
 function inferNameEmpCols(rows, headerIdx, headerRow, dayCols){
   let nameCol = -1, empCol = -1;
 
@@ -6555,7 +6526,6 @@ async function analyzeImportFile(){
       users,codeCatMap:{},nameMatchMap,exactMatchMap,suggestionMap,
       fileMeta:{name:file.name,size:file.size,lastModified:file.lastModified},analyzedAt:new Date().toISOString()
     };
-    };
     renderImportUsersList();
     buildImportTurnsCategoryMapUI(turnCodes);
     refreshImportDestinationUI();
@@ -6600,8 +6570,10 @@ function runImportSelected(){
   setImportBusy(true,'Aplicando importación…');
   let written=0,cleared=0,mergeSkipped=0,invalidCodes=0;
   try{
+    // Crear perfiles solo después de confirmar y capturar el respaldo.
     plan.resolvedNames.forEach(name=>ensureUserExists(name));
     if(mode==='replace'){
+      // Una celda solo se limpia cuando su valor entrante es válido; un código malformado nunca borra datos previos.
       selected.forEach(source=>{
         const row=plan.rowsBySource.get(source); if(!row) return;
         const user=db.users[plan.resolvedBySource[source]]; if(!user) return;
