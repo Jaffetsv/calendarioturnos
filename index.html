@@ -1137,12 +1137,22 @@
     }
 
     .day-cell .note-text{
+      /* El alto se fija a un número EXACTO de líneas. Antes se reservaban
+         siempre 2 y, cuando la celda no daba para tanto, la segunda quedaba
+         cortada por la mitad y se veía desordenada. */
+      --nl: var(--cell-note-lines, 2);
+      --nlh: 1.24;
       font-size:var(--cell-note-size,11px)!important;
-      line-height:1.2!important;
+      line-height:var(--nlh)!important;
       padding:var(--cell-note-pad-y,3px) var(--cell-note-pad-x,6px)!important;
       margin:0 var(--cell-note-margin,4px)!important;
       width:calc(100% - 2*var(--cell-note-margin,4px))!important;
-      max-height:none!important;
+      height:auto!important;
+      max-height:calc(
+        var(--cell-note-size,11px) * var(--nlh) * var(--nl)
+        + var(--cell-note-pad-y,3px) * 2 + 2px
+      )!important;
+      flex:0 0 auto;
       overflow:hidden!important;
       /* Nunca partir una palabra a la mitad (evita "LIBR/E"), pero sí
          permitir el salto natural en el guion: "06:00-" / "14:00". */
@@ -1152,13 +1162,15 @@
       white-space:normal!important;
       text-align:center!important;
       display:-webkit-box;
-      -webkit-line-clamp:2;
+      -webkit-line-clamp:var(--nl);
       -webkit-box-orient:vertical;
     }
-    /* Filas muy bajas: una sola línea con puntos suspensivos */
+    /* Una sola línea: se recorta con puntos suspensivos al final */
+    .day-cell.note-1 .note-text,
     .calendar-grid.tight .day-cell .note-text{
+      --nl:1;
       white-space:nowrap!important;
-      display:block;
+      display:block!important;
       text-overflow:ellipsis!important;
     }
     .day-cell .shift-label{
@@ -1184,6 +1196,157 @@
     .day-cell .mixto-bottom-note{
       font-size:var(--cell-note-size,10px)!important;
       line-height:1.15!important;
+    }
+
+    /* =======================================================
+       ACABADO PROFESIONAL
+       Sólo color, borde, sombra y radio. No toca tamaños ni
+       alturas, para no romper el ajuste adaptativo de arriba.
+       ======================================================= */
+
+    /* --- Calendario --- */
+    .day-cell .note-text{
+      background:#f6f8fb!important;
+      border:0!important;
+      border-radius:7px!important;
+      color:#465569!important;
+      font-weight:700!important;
+      box-shadow:inset 0 0 0 1px rgba(15,23,42,.055)!important;
+    }
+    .day-cell .shift-label{
+      border-radius:7px!important;
+      letter-spacing:.015em;
+      box-shadow:0 1px 1.5px rgba(15,23,42,.10);
+    }
+    .day-cell .day-number{
+      background:transparent!important;
+      color:#94a3b8!important;
+      font-weight:900!important;
+      border-radius:0!important;
+    }
+    .day-cell:not(.day-off-month) .day-number{ color:#64748b!important; }
+
+    /* Hoy: acento limpio en vez de un borde grueso */
+    .today{
+      border:0!important;
+      box-shadow:inset 0 0 0 2px #2563eb!important;
+      background:#f7faff!important;
+    }
+    .today .day-number{
+      background:#2563eb!important;
+      color:#fff!important;
+      border-radius:0 0 0 8px!important;
+      padding:1px 6px!important;
+    }
+
+    /* Asueto: insignia discreta */
+    .day-cell .holiday-indicator{
+      background:#fee2e2!important;
+      color:#b91c1c!important;
+      border-radius:0 0 8px 0!important;
+      font-weight:1000!important;
+      letter-spacing:.04em;
+    }
+
+    .day-cell.day-off-month{ background:#fbfcfe!important; opacity:1!important; }
+    .day-cell.day-off-month .shift-label,
+    .day-cell.day-off-month .note-text{ opacity:.42!important; }
+
+    #weekHeader .wday{
+      background:#fff!important;
+      color:#8b98a9!important;
+      font-size:10.5px!important;
+      letter-spacing:.09em;
+      text-transform:uppercase;
+      border-bottom:1px solid #e8edf4;
+    }
+
+    .calendar-grid{ background:#e6ebf3!important; }
+
+    /* --- Ajustes --- */
+    .config-tabs-container{
+      background:#fff!important;
+      border-bottom:1px solid #e8edf4!important;
+      padding:9px 10px!important;
+      gap:7px;
+      box-shadow:0 1px 0 rgba(15,23,42,.03);
+    }
+    .config-tab{
+      border:1px solid transparent!important;
+      border-radius:999px!important;
+      background:#f2f5fa!important;
+      color:#5b6879!important;
+      font-weight:900!important;
+      padding:8px 14px!important;
+      font-size:11px!important;
+      transition:background .15s,color .15s,border-color .15s;
+    }
+    .config-tab:hover{ background:#e8edf6!important; color:#334155!important; }
+    .config-tab.active{
+      background:#1e293b!important;
+      color:#fff!important;
+      border-color:#1e293b!important;
+      box-shadow:0 2px 8px rgba(30,41,59,.22);
+    }
+
+    /* Turnos plegables */
+    .shift-item{
+      border:1px solid #e4eaf3;
+      border-radius:15px;
+      background:#fff;
+      overflow:hidden;
+      box-shadow:0 1px 2px rgba(15,23,42,.045);
+    }
+    .shift-item[open]{ box-shadow:0 4px 16px rgba(15,23,42,.09); border-color:#cfdcef; }
+    .shift-summary{
+      display:flex; align-items:center; gap:10px;
+      padding:12px 13px; cursor:pointer; list-style:none;
+      user-select:none; min-width:0;
+    }
+    .shift-summary::-webkit-details-marker{ display:none; }
+    .shift-summary:hover{ background:#f7f9fd; }
+    .shift-dot{
+      width:22px; height:22px; border-radius:7px; flex:0 0 auto;
+      box-shadow:inset 0 0 0 1px rgba(15,23,42,.12);
+    }
+    .shift-sum-name{
+      font-size:12.5px; font-weight:1000; color:#1e293b;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
+    }
+    .shift-sum-meta{
+      margin-left:auto; font-size:10px; font-weight:800; color:#8695a8;
+      white-space:nowrap; flex:0 0 auto;
+    }
+    .shift-chevron{
+      flex:0 0 auto; color:#b6c2d2; font-size:17px; font-weight:900;
+      transform:rotate(90deg); transition:transform .18s;
+    }
+    .shift-item[open] .shift-chevron{ transform:rotate(-90deg); color:#2563eb; }
+
+    #view-settings h3{
+      letter-spacing:.045em;
+      color:#334155!important;
+    }
+    #view-settings input:not([type=checkbox]):not([type=radio]),
+    #view-settings select,
+    #view-settings textarea{
+      border:1px solid #dde4ee!important;
+      border-radius:11px!important;
+      background:#fff!important;
+      padding:9px 11px!important;
+      font-weight:700;
+      transition:border-color .15s, box-shadow .15s;
+    }
+    #view-settings input:focus,
+    #view-settings select:focus,
+    #view-settings textarea:focus{
+      border-color:#2563eb!important;
+      box-shadow:0 0 0 3px rgba(37,99,235,.13)!important;
+      outline:none!important;
+    }
+    #view-settings .text-\[9px\].font-black.text-gray-400{
+      letter-spacing:.07em;
+      color:#94a3b8!important;
     }
 
   </style>
@@ -3966,7 +4129,31 @@ function fitCalendarToViewport(){
   grid.classList.toggle('tight', rowHeight < 68);
 
   fitShiftLabels();
+  fitNoteLines(rowHeight);
   enableCalendarSwipe();
+}
+
+// Decide cuántas líneas completas de nota caben de verdad en la celda.
+// Reservar 2 siempre hacía que la segunda saliera cortada por la mitad.
+function fitNoteLines(rowHeight){
+  const d = document.documentElement;
+  const num = name => parseFloat(getComputedStyle(d).getPropertyValue(name)) || 0;
+
+  const padTop    = num('--cell-pad-top');
+  const padBottom = num('--cell-pad-bottom');
+  const gap       = num('--cell-gap');
+  const labelSize = num('--cell-label-size');
+  const noteSize  = num('--cell-note-size');
+  const notePadY  = num('--cell-note-pad-y');
+
+  const lineH   = noteSize * 1.24;
+  const labelH  = labelSize * 1.15;
+  const usable  = rowHeight - padTop - padBottom - labelH - gap - (notePadY * 2) - 2;
+
+  let lines = Math.floor(usable / lineH);
+  lines = Math.max(1, Math.min(2, lines));
+
+  d.style.setProperty('--cell-note-lines', String(lines));
 }
 
 // Reduce la etiqueta de turno hasta que ninguna quede cortada.
@@ -5188,11 +5375,23 @@ function renderSettings(){
   
   sortedShifts.forEach(id => {
     const conf = SHIFTS[id];
+    // Cada turno va plegado: con 18 turnos, la lista abierta obligaba a
+    // desplazarse casi 8000px. Los campos siguen en el DOM aunque esté
+    // cerrado, así que saveShiftSettings los lee igual.
+    const horarioTxt = (conf.in && conf.out && !(conf.in === '00:00' && conf.out === '00:00'))
+      ? `${conf.in}–${conf.out}`
+      : (conf.note || '—');
+    const catTxt = (db.categories[conf.cat] && db.categories[conf.cat].name) || '';
+
     container.innerHTML += `
-      <div class="flex items-start gap-3 bg-gradient-to-r from-gray-50 to-white p-4 rounded-2xl border border-gray-200">
-        <div class="w-10 h-10 rounded-full ${shiftBgClass(conf.color)} border-2 border-white shadow-sm flex items-center justify-center flex-shrink-0" style="${shiftBgStyle(conf.color)}">
-          <span class="text-[10px] font-black text-gray-800">${(conf.label||id).charAt(0)}</span>
-        </div>
+      <details class="shift-item">
+        <summary class="shift-summary">
+          <span class="shift-dot ${shiftBgClass(conf.color)}" style="${shiftBgStyle(conf.color)}"></span>
+          <span class="shift-sum-name">${escapeHTML(conf.label || id)}</span>
+          <span class="shift-sum-meta">${escapeHTML(horarioTxt)}${catTxt ? ' · ' + escapeHTML(catTxt) : ''}</span>
+          <span class="shift-chevron" aria-hidden="true">›</span>
+        </summary>
+      <div class="flex items-start gap-3 bg-white p-4 rounded-b-2xl border-t border-gray-100">
         <div class="flex-1">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
@@ -5214,8 +5413,8 @@ function renderSettings(){
             </div>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
-            <div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+            <div class="col-span-2 md:col-span-1">
               <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Color</p>
               <div class="flex items-center gap-2">
               <select id="set-color-${cssSafe(id)}" onchange="syncShiftColorPicker('${id}')" class="flex-1 bg-white border-gray-200 focus:border-blue-400 rounded-xl text-gray-900">
@@ -5250,6 +5449,7 @@ function renderSettings(){
         
         <button onclick="deleteShift('${id}')" class="p-2 text-red-600 hover:text-red-800 font-black" title="Eliminar turno">🗑️</button>
       </div>
+      </details>
     `;
   });
   
