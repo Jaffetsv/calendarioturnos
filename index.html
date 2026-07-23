@@ -1602,14 +1602,25 @@
         <input type="file" id="importFile" accept=".xlsx,.xls" class="w-full bg-gray-50 border-gray-200">
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label class="text-[12px] font-bold text-gray-600 block mb-2">Mes (si no detecta)</label>
-          <select id="importMonth" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
+      <!-- MES DESTINO: control principal (el usuario decide, NO solo un respaldo) -->
+      <div class="rounded-2xl border-2 border-sky-200 bg-sky-50 p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-lg">📅</span>
+          <p class="text-[12px] font-black text-sky-800 uppercase tracking-wide">Mes destino de la importación</p>
         </div>
-        <div>
-          <label class="text-[12px] font-bold text-gray-600 block mb-2">Año (si no detecta)</label>
-          <select id="importYear" class="w-full bg-gray-50 border-gray-200 text-gray-900"></select>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="text-[11px] font-bold text-sky-700 block mb-1">Mes</label>
+            <select id="importMonth" onchange="updateImportTargetBanner()" class="w-full bg-white border-sky-200 text-gray-900 font-bold"></select>
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-sky-700 block mb-1">Año</label>
+            <select id="importYear" onchange="updateImportTargetBanner()" class="w-full bg-white border-sky-200 text-gray-900 font-bold"></select>
+          </div>
+        </div>
+        <div id="importDetectedHint" class="mt-2 text-[11px] font-bold text-sky-700 hidden"></div>
+        <div id="importTargetBanner" class="mt-3 rounded-xl bg-sky-600 text-white text-center font-black py-2 px-3 text-[13px]">
+          Se importará sobre: —
         </div>
       </div>
 
@@ -5563,14 +5574,48 @@ function openImportModal(){
   `;
   
   importContext = null;
-  
+
   const importMonth = document.getElementById('importMonth');
   const importYear = document.getElementById('importYear');
   if (importMonth) importMonth.value = current.getMonth();
   if (importYear) importYear.value = current.getFullYear();
-  
+
+  const hint = document.getElementById('importDetectedHint');
+  if (hint) { hint.classList.add('hidden'); hint.innerHTML = ''; }
+  updateImportTargetBanner();
+
   const modal = document.getElementById('importModal');
   if (modal) modal.classList.add('active');
+}
+
+// El MES DESTINO lo controla el usuario mediante los selectores del modal.
+// La detección automática del Excel es solo una SUGERENCIA (no sobrescribe la elección).
+function getImportTargetMonthYear(){
+  const mEl = document.getElementById('importMonth');
+  const yEl = document.getElementById('importYear');
+  const m = parseInt(mEl && mEl.value);
+  const y = parseInt(yEl && yEl.value);
+  return {
+    month: isNaN(m) ? current.getMonth() : m,
+    year: isNaN(y) ? current.getFullYear() : y
+  };
+}
+
+function updateImportTargetBanner(){
+  const banner = document.getElementById('importTargetBanner');
+  if(!banner) return;
+  const { month, year } = getImportTargetMonthYear();
+  banner.textContent = `Se importará sobre: ${MONTHS[month]} ${year}`.toUpperCase();
+}
+
+// Aplica al selector el mes/año detectado en el archivo (solo si el usuario lo pide).
+function applyDetectedMonthToTarget(){
+  if(!importContext || importContext.detectedMonth == null) return;
+  const mSel = document.getElementById('importMonth');
+  const ySel = document.getElementById('importYear');
+  if(mSel) mSel.value = importContext.detectedMonth;
+  if(ySel && importContext.detectedYear != null) ySel.value = importContext.detectedYear;
+  updateImportTargetBanner();
 }
 
 function closeImportModal(){
@@ -6749,126 +6794,6 @@ function selectAllImportUsers(flag){
   });
 }
 
-async function analyzeImportFile(){
-  const fileInput = document.getElementById('importFile');
-  if(!fileInput.files || !fileInput.files[0]) {
-    return alert("Selecciona un archivo Excel.");
-  }
-
-  try {
-    const data = await fileInput.files[0].arrayBuffer();
-    const wb = XLSX.read(data, { type: 'array' });
-
-    // Elegir la hoja más probable (no asumir la primera)
-    let best = null;
-    for(const sn of wb.SheetNames){
-      const ws = wb.Sheets[sn];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
-      const headerIdx = findHeaderRow(rows);
-      if(headerIdx < 0) continue;
-      const headerRow = rows[headerIdx] || [];
-      const dayCols = buildDayColumnMap(headerRow);
-      const score = Object.keys(dayCols).length;
-
-      // Preferir hojas con más días detectados, y con keywords típicas
-      const joined = headerRow.map(x => String(x||'').trim()).join(' | ').toUpperCase();
-      const kw = (joined.includes('PERSONAL')||joined.includes('NOMBRE')?2:0) + (joined.includes('EMP')||joined.includes('EMPLE')||joined.includes('ID')?1:0);
-
-      const finalScore = score*10 + kw;
-      if(!best || finalScore > best.finalScore){
-        best = { sn, rows, headerIdx, headerRow, dayCols, finalScore };
-      }
-    }
-
-    if(!best){
-      return alert("No se pudo detectar una hoja válida. Verifica que el archivo tenga una tabla con días (1..31 o fechas).");
-    }
-
-    const { sn: sheetName, rows, headerIdx, headerRow, dayCols } = best;
-
-    // Detectar mes y año (en esa hoja)
-    const detected = detectMonthYearFromRows(rows);
-    const fallbackMonth = parseInt(document.getElementById('importMonth').value);
-    const fallbackYear = parseInt(document.getElementById('importYear').value);
-    const monthIndex0 = (detected.month ?? fallbackMonth);
-    const year = (detected.year ?? fallbackYear);
-
-    // Detectar columnas nombre/empleado (robusto)
-    const cols = inferNameEmpCols(rows, headerIdx, headerRow, dayCols);
-    const nameCol = cols.nameCol;
-    const empCol  = cols.empCol;
-
-    if(nameCol < 0 || Object.keys(dayCols).length < 10) {
-      return alert("Formato no reconocido: no se pudo detectar columna de nombre o suficientes días.");
-    }
-
-    // Extraer usuarios y turnos detectados
-    const usersSet = new Set();
-    const codesSet = new Set();
-    const nameMatchMap = {}; // importName -> existingProfileKey (si hay coincidencia fuzzy)
-
-    for(let r = headerIdx + 1; r < rows.length; r++){
-      const row = rows[r] || [];
-      if(!isLikelyDataRow(row, nameCol, empCol, dayCols)) continue;
-
-      const name = safeNameCell(row[nameCol]).toUpperCase();
-      if(name){
-        usersSet.add(name);
-        // Buscar perfil existente con coincidencia fuzzy
-        if(!db.users[name]){
-          const fuzzyMatch = findFuzzyUserMatch(name);
-          if(fuzzyMatch && fuzzyMatch !== name) nameMatchMap[name] = fuzzyMatch;
-        }
-      }
-
-      for(const d of Object.keys(dayCols)){
-        const code = normalizeCode(row[dayCols[d]]);
-        if(code && code !== 'X') codesSet.add(code);
-      }
-    }
-
-    // Construir mapeo categoría por código (solo para turnos, no ausencias)
-    const turnCodes = Array.from(codesSet)
-      .filter(c => !!codeToShiftDef(c))
-      .filter(c => !IMPORT_ABSENCE_MAP[c]) // excluir L/V/... (estatus)
-      .sort();
-
-    importContext = {
-      wb, sheetName, rows, headerIdx, nameCol, empCol, dayCols, monthIndex0, year,
-      users: Array.from(usersSet).sort(),
-      codeCatMap: {}, nameMatchMap
-    };
-
-    // Mostrar usuarios
-    const list = document.getElementById('importUsersList');
-    if(importContext.users.length === 0){
-      list.innerHTML = `<div class="text-gray-400 font-bold">No se detectaron usuarios.</div>`;
-    } else {
-      list.innerHTML = importContext.users.map(u => {
-        const matchedProfile = nameMatchMap[u];
-        const matchLabel = matchedProfile ? ` <span style="color:#1e40af;font-size:10px;">→ usa perfil: ${escapeHTML(matchedProfile)}</span>` : '';
-        return `
-        <label class="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-50 cursor-pointer" style="color: #111827;">
-          <input class="impUserChk" type="checkbox" value="${escapeHTML(u)}" checked>
-          <span class="font-black">${escapeHTML(u)}${matchLabel}</span>
-        </label>`;
-      }).join('');
-    }
-
-    // Mostrar mapeo de turnos -> categoría (si aplica)
-    buildImportTurnsCategoryMapUI(turnCodes);
-
-    document.getElementById('importInfo').innerText =
-      `Hoja: ${sheetName} | Detectado: ${MONTHS[monthIndex0]} ${year}. Usuarios: ${importContext.users.length}. Turnos: ${turnCodes.length}.`;
-
-  } catch (error) {
-    console.error('Error analizando archivo:', error);
-    alert(`Error al analizar el archivo: ${error.message}`);
-  }
-}
-
-
-
 function inferNameEmpCols(rows, headerIdx, headerRow, dayCols){
   let nameCol = -1, empCol = -1;
 
@@ -7187,12 +7112,11 @@ async function analyzeImportFile(){
 
     const { sn: sheetName, rows, headerIdx, headerRow, dayCols } = best;
 
-    // Detectar mes y año (en esa hoja)
+    // Detectar mes y año (solo como SUGERENCIA; el destino real lo fija el usuario)
     const detected = detectMonthYearFromRows(rows);
-    const fallbackMonth = parseInt(document.getElementById('importMonth').value);
-    const fallbackYear = parseInt(document.getElementById('importYear').value);
-    const monthIndex0 = (detected.month ?? fallbackMonth);
-    const year = (detected.year ?? fallbackYear);
+    const target = getImportTargetMonthYear();
+    const monthIndex0 = target.month;
+    const year = target.year;
 
     // Detectar columnas nombre/empleado (robusto)
     const cols = inferNameEmpCols(rows, headerIdx, headerRow, dayCols);
@@ -7236,6 +7160,7 @@ async function analyzeImportFile(){
 
     importContext = {
       wb, sheetName, rows, headerIdx, nameCol, empCol, dayCols, monthIndex0, year,
+      detectedMonth: (detected.month ?? null), detectedYear: (detected.year ?? null),
       users: Array.from(usersSet).sort(),
       codeCatMap: {}, nameMatchMap
     };
@@ -7259,8 +7184,23 @@ async function analyzeImportFile(){
     // Mostrar mapeo de turnos -> categoría (si aplica)
     buildImportTurnsCategoryMapUI(turnCodes);
 
+    // Sugerencia de mes detectado en el archivo (el usuario decide si la aplica)
+    const hint = document.getElementById('importDetectedHint');
+    if(hint){
+      if(detected.month != null){
+        const detY = detected.year ?? year;
+        hint.innerHTML = `📄 En el archivo detecté <b>${MONTHS[detected.month]} ${detY}</b>. ` +
+          `<button type="button" onclick="applyDetectedMonthToTarget()" class="underline font-black text-sky-800">Usar este mes</button>`;
+        hint.classList.remove('hidden');
+      } else {
+        hint.classList.add('hidden');
+        hint.innerHTML = '';
+      }
+    }
+    updateImportTargetBanner();
+
     document.getElementById('importInfo').innerText =
-      `Hoja: ${sheetName} | Detectado: ${MONTHS[monthIndex0]} ${year}. Usuarios: ${importContext.users.length}. Turnos: ${turnCodes.length}.`;
+      `Hoja: ${sheetName} | Usuarios: ${importContext.users.length} | Turnos: ${turnCodes.length}. Revisa el MES DESTINO arriba antes de importar.`;
 
   } catch (error) {
     console.error('Error analizando archivo:', error);
@@ -7280,11 +7220,27 @@ function runImportSelected(){
   
   if(selected.length === 0) return alert("Selecciona al menos un usuario.");
   
-  const { rows, headerIdx, nameCol, empCol, dayCols, monthIndex0, year } = importContext;
+  const { rows, headerIdx, nameCol, empCol, dayCols } = importContext;
+
+  // ⚠️ MES DESTINO AUTORITATIVO: lo decide el usuario en los selectores del modal,
+  // NO la detección automática del Excel. Esto evita escribir sobre el mes equivocado
+  // (p. ej. sobre Julio cuando el usuario pidió Agosto).
+  const { month: monthIndex0, year } = getImportTargetMonthYear();
 
   // Resolver nombres fuzzy: si hay match con perfil existente, usar el perfil existente
   const nameMatchMap = (importContext && importContext.nameMatchMap) || {};
   const resolvedNames = selected.map(u => nameMatchMap[u] || u);
+
+  // Confirmación clara antes de sobrescribir un mes completo
+  if(importMode === 'replace'){
+    const proceed = confirm(
+      `Vas a IMPORTAR en modo REEMPLAZAR sobre:\n\n` +
+      `📅  ${MONTHS[monthIndex0]} ${year}\n\n` +
+      `Se borrarán los turnos existentes de ese mes en ${resolvedNames.length} perfil(es) ` +
+      `y se reemplazarán con los del Excel.\n\n¿Continuar?`
+    );
+    if(!proceed) return;
+  }
 
   // Asegurar que los usuarios existen
   resolvedNames.forEach(u => ensureUserExists(u));
