@@ -1000,6 +1000,36 @@
     .hist-arrow{color:#94a3b8;font-weight:1000}
     .hist-to{color:#15803d;background:#f0fdf4;border-radius:6px;padding:1px 6px}
     .hist-more{font-size:9px;font-weight:900;color:#64748b;padding-top:2px}
+    /* Tarjeta compacta de categoría (vista Resumen) */
+    .cat-card{
+      display:flex;align-items:center;gap:10px;min-width:0;
+      background:#fff;border-radius:16px;padding:11px 14px;
+      border-left:7px solid #3b82f6;
+      box-shadow:0 1px 2px rgba(15,23,42,.06);
+      border-top:1px solid #eef2f7;border-right:1px solid #eef2f7;border-bottom:1px solid #eef2f7;
+    }
+    .cat-icon{
+      width:28px;height:28px;flex:0 0 auto;border-radius:9px;
+      display:inline-flex;align-items:center;justify-content:center;font-size:14px;
+    }
+    .cat-name{
+      font-size:11px;font-weight:1000;color:#475569;text-transform:uppercase;
+      letter-spacing:.03em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+    }
+    .cat-figures{margin-left:auto;text-align:right;flex:0 0 auto;line-height:1.15}
+    .cat-hrs{display:block;font-size:17px;font-weight:1000;color:#0f172a;letter-spacing:-.02em}
+    .cat-days{display:block;font-size:9.5px;font-weight:800;color:#94a3b8;margin-top:1px}
+
+    /* Distribución del mes (vista Resumen) */
+    .dist-bar{display:flex;height:15px;border-radius:999px;overflow:hidden;background:#f1f5f9;gap:1px}
+    .dist-seg{height:100%;transition:width .35s ease}
+    .dist-legend{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px 10px}
+    .dist-item{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;color:#334155;min-width:0}
+    .dist-dot{width:9px;height:9px;border-radius:3px;flex:0 0 auto}
+    .dist-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dist-count{margin-left:auto;font-weight:1000;color:#0f172a;flex:0 0 auto}
+    .dist-empty{font-size:10px;font-weight:800;color:#94a3b8;text-align:center;padding:6px 0}
+
     .hist-actions{margin-top:8px;display:flex;justify-content:flex-end}
     .hist-undo{
       border:1px solid #cbd5e1;background:#fff;color:#0f172a;
@@ -1329,7 +1359,7 @@
 </div>
 
 <!-- Summary -->
-<div id="view-summary" class="view-section p-4 md:p-5 bg-gray-50 min-h-screen">
+<div id="view-summary" class="view-section p-4 md:p-5 bg-gray-50">
   <div class="space-y-4 md:space-y-5">
 
     <!-- Categorías dinámicas -->
@@ -1376,26 +1406,19 @@
       </div>
     </div>
 
-    <!-- Panel descanso compacto -->
-    <div class="bg-gradient-to-r from-emerald-500 to-teal-600 p-4 rounded-3xl text-white shadow-xl">
-      <p class="text-[10px] font-black uppercase opacity-80 mb-1 tracking-widest">Días de Descanso</p>
-      <h2 id="total-off" class="text-4xl font-black mb-3">0</h2>
-      <div class="flex flex-wrap gap-2">
-        <div class="bg-white/20 backdrop-blur px-4 py-2.5 rounded-2xl flex-1 min-w-[110px]">
-          <div class="text-[9px] font-black uppercase opacity-75 mb-0.5">Libres</div>
-          <div class="text-2xl font-black leading-none" id="free-days2">0</div>
-          <div class="text-[10px] font-bold opacity-80 mt-0.5" id="free-hours2">0 hrs</div>
-        </div>
-        <div class="bg-white/20 backdrop-blur px-4 py-2.5 rounded-2xl flex-1 min-w-[110px]">
-          <div class="text-[9px] font-black uppercase opacity-75 mb-0.5">Vacaciones</div>
-          <div class="text-2xl font-black leading-none" id="vac-days2">0</div>
-        </div>
-        <div class="bg-white/20 backdrop-blur px-4 py-2.5 rounded-2xl flex-1 min-w-[110px]">
-          <div class="text-[9px] font-black uppercase opacity-75 mb-0.5">Asuetos Trab.</div>
-          <div class="text-2xl font-black leading-none" id="holiday-worked">0</div>
-        </div>
+    <!-- Distribución del mes por categoría -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+      <div class="flex justify-between items-center mb-3 gap-2">
+        <span class="text-[11px] font-black text-gray-500 uppercase tracking-wide">Distribución del mes</span>
+        <span class="text-[11px] font-black text-emerald-600"><span id="total-off">0</span> días de descanso</span>
       </div>
-      <p class="text-[10px] mt-2 font-bold opacity-70">* Asueto laborado cuenta si aplica a tu localidad.</p>
+      <div id="distBar" class="dist-bar"></div>
+      <div id="distLegend" class="dist-legend"></div>
+      <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+        <span class="text-[10px] font-bold text-gray-500">Asuetos trabajados</span>
+        <span id="holiday-worked" class="text-[16px] font-black text-gray-900">0</span>
+      </div>
+      <p class="text-[9px] mt-1 font-bold text-gray-400">Un asueto laborado cuenta si aplica a tu localidad.</p>
     </div>
 
     <!-- IDs legacy ocultos para compatibilidad -->
@@ -1407,7 +1430,7 @@
 </div>
 
 <!-- Settings - CORREGIDO: Tabs separados correctamente -->
-<div id="view-settings" class="view-section bg-white min-h-screen">
+<div id="view-settings" class="view-section bg-white">
   <!-- CORREGIDO: Ahora los tabs están en un contenedor con scroll -->
   <div class="config-tabs-container">
     <button onclick="showConfigTab('turnos')" id="config-turnos" class="config-tab active whitespace-nowrap">🎨 Turnos</button>
@@ -4154,14 +4177,16 @@ function renderSummaryCategories(){
     if (!cat) return;
     
     const color = cat.color || '#3b82f6';
+    // Tarjeta compacta: icono + nombre a la izquierda, horas y días a la
+    // derecha. Ocupa ~la mitad de alto que la versión anterior.
     html += `
-      <div class="bg-white p-4 md:p-6 rounded-3xl shadow-sm border-l-[10px]" style="border-color: ${color};">
-        <div class="flex items-center justify-between mb-2">
-          <p class="text-[11px] font-black text-gray-400 uppercase">${escapeHTML(cat.name)}</p>
-          <span class="text-[10px] font-black px-2 py-1 rounded-full" style="background: ${color}20; color: ${color};">${escapeHTML(cat.icon)}</span>
-        </div>
-        <h2 id="hrs-${cssSafe(catId)}" class="text-3xl md:text-4xl font-black text-gray-900 tracking-tighter">0.0 HRS</h2>
-        <div class="mt-2 text-[10px] text-gray-500 font-bold" id="days-${cssSafe(catId)}">0 días</div>
+      <div class="cat-card" style="border-color:${color};">
+        <span class="cat-icon" style="background:${color}1f;color:${color};">${escapeHTML(cat.icon || '🏷️')}</span>
+        <span class="cat-name">${escapeHTML(cat.name)}</span>
+        <span class="cat-figures">
+          <span id="hrs-${cssSafe(catId)}" class="cat-hrs">0.0 HRS</span>
+          <span id="days-${cssSafe(catId)}" class="cat-days">0 días</span>
+        </span>
       </div>
     `;
   });
@@ -4286,8 +4311,13 @@ function calcSummary(){
     if (el) el.textContent = value;
   });
   
-  // Calcular totales
-  const totalHours = Object.values(catHours).reduce((a, b) => a + b, 0);
+  // Calcular totales.
+  // OJO: las horas "trabajadas" excluyen las categorías de descanso ('off'),
+  // porque si no el promedio por día trabajado sale inflado con las horas
+  // libres (p. ej. 248h/20d en vez de 184h/20d).
+  const totalHours = Object.keys(catHours)
+    .filter(cid => cid !== 'off')
+    .reduce((a, cid) => a + catHours[cid], 0);
   const avg = workedDays > 0 ? totalHours / workedDays : 0;
   const avgEl = document.getElementById('avg-hours');
   if (avgEl) avgEl.textContent = `${avg.toFixed(1)}h`;
@@ -4321,10 +4351,53 @@ function calcSummary(){
       if (sub && subEl) subEl.textContent = sub;
     }
   };
-  setCard('statCardWorked',  workedDays,           `${totalHours.toFixed(1)} hrs totales`);
+  setCard('statCardWorked',  workedDays,           `${totalHours.toFixed(1)} hrs trabajadas`);
   setCard('statCardFree',    freeDays,             `${freeHoursText} de descanso`);
   setCard('statCardAvg',     `${avg.toFixed(1)}h`, `promedio por día trabajado`);
   setCard('statCardVac',     vacDays,              vacDays === 1 ? '1 día de vacaciones' : `${vacDays} días de vacaciones`);
+
+  renderMonthDistribution(catDays, catHours, categories);
+}
+
+// Barra apilada + leyenda con el reparto de días del mes por categoría.
+function renderMonthDistribution(catDays, catHours, categories){
+  const bar = document.getElementById('distBar');
+  const legend = document.getElementById('distLegend');
+  if(!bar || !legend) return;
+
+  const items = Object.keys(catDays || {})
+    .filter(cid => catDays[cid] > 0)
+    .map(cid => ({
+      cid,
+      days: catDays[cid],
+      hours: (catHours && catHours[cid]) || 0,
+      cat: (categories && categories[cid]) || {}
+    }))
+    .sort((a, b) => b.days - a.days);
+
+  const total = items.reduce((s, i) => s + i.days, 0);
+
+  if(!total){
+    bar.innerHTML = '<div class="dist-seg" style="width:100%;background:#e2e8f0"></div>';
+    legend.innerHTML = '<div class="dist-empty">Sin días registrados este mes.</div>';
+    return;
+  }
+
+  bar.innerHTML = items.map(i => {
+    const pct = (i.days / total * 100).toFixed(2);
+    const name = i.cat.name || i.cid;
+    return `<div class="dist-seg" style="width:${pct}%;background:${escapeHTML(i.cat.color || '#94a3b8')}" title="${escapeHTML(name)}: ${i.days} día(s)"></div>`;
+  }).join('');
+
+  legend.innerHTML = items.map(i => {
+    const name = i.cat.name || i.cid;
+    const hrs = i.hours ? ` · ${i.hours.toFixed(0)}h` : '';
+    return `<div class="dist-item" title="${escapeHTML(name)}: ${i.days} día(s)${hrs}">
+      <span class="dist-dot" style="background:${escapeHTML(i.cat.color || '#94a3b8')}"></span>
+      <span class="dist-name">${escapeHTML(i.cat.icon || '')} ${escapeHTML(name)}</span>
+      <span class="dist-count">${i.days}</span>
+    </div>`;
+  }).join('');
 }
 
 // =========================================================
@@ -6242,20 +6315,79 @@ async function ensurePdfJs(){
   return real;
 }
 
-// Mejora un canvas ya renderizado para OCR (gris + contraste + binarizado suave)
+// Umbral óptimo de Otsu a partir del histograma de grises.
+// Se adapta a la iluminación real de la foto, en vez de usar un corte fijo
+// que arruina las fotos con sombras o papel amarillento.
+function otsuThreshold(histogram, totalPixels){
+  let sum = 0;
+  for(let i = 0; i < 256; i++) sum += i * histogram[i];
+
+  // La varianza entre clases suele quedar empatada en todo el hueco que
+  // separa los dos picos. Quedarse con el primer índice deja el umbral
+  // pegado al texto; hay que devolver el centro de esa meseta.
+  let sumB = 0, wB = 0, best = -1, tLow = 127, tHigh = 127;
+  for(let t = 0; t < 256; t++){
+    wB += histogram[t];
+    if(wB === 0) continue;
+    const wF = totalPixels - wB;
+    if(wF === 0) break;
+    sumB += t * histogram[t];
+    const mB = sumB / wB;
+    const mF = (sum - sumB) / wF;
+    const between = wB * wF * (mB - mF) * (mB - mF);
+    if(between > best){ best = between; tLow = t; tHigh = t; }
+    else if(between === best){ tHigh = t; }
+  }
+  return Math.round((tLow + tHigh) / 2);
+}
+
+// Convierte a gris y binariza usando Otsu, dejando una franja intermedia
+// sin tocar para no romper los trazos finos de las letras.
+function binarizeImageDataForOCR(data, totalPixels){
+  const hist = new Uint32Array(256);
+  const grays = new Uint8ClampedArray(totalPixels);
+
+  for(let p = 0, i = 0; p < totalPixels; p++, i += 4){
+    const g = (0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]) | 0;
+    grays[p] = g;
+    hist[g]++;
+  }
+
+  const t = otsuThreshold(hist, totalPixels);
+
+  // Media de cada clase, para que la franja intermedia sea proporcional a la
+  // separación real. Con una franja fija, una imagen de bajo contraste caía
+  // entera dentro de ella y quedaba toda gris.
+  let sumLo = 0, nLo = 0, sumHi = 0, nHi = 0;
+  for(let g = 0; g < 256; g++){
+    if(g <= t){ sumLo += g * hist[g]; nLo += hist[g]; }
+    else { sumHi += g * hist[g]; nHi += hist[g]; }
+  }
+  const mLo = nLo ? sumLo / nLo : 0;
+  const mHi = nHi ? sumHi / nHi : 255;
+  const band = Math.max(4, Math.min(28, (mHi - mLo) * 0.25));
+
+  const lo = Math.max(0, t - band);
+  const hi = Math.min(255, t + band);
+
+  for(let p = 0, i = 0; p < totalPixels; p++, i += 4){
+    const g = grays[p];
+    let v;
+    if(g <= lo) v = 0;
+    else if(g >= hi) v = 255;
+    else v = g < t ? Math.max(0, (g - lo) * 90 / (t - lo || 1)) : Math.min(255, 165 + (g - t) * 90 / (hi - t || 1));
+    data[i] = data[i+1] = data[i+2] = v;
+    data[i+3] = 255;
+  }
+  return t;
+}
+
+// Mejora un canvas ya renderizado para OCR
 function enhanceCanvasForOCR(canvas){
   try{
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    for(let i=0; i<data.length; i+=4){
-      let gray = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
-      gray = ((gray - 128) * 2.25) + 128;
-      gray = Math.max(0, Math.min(255, gray));
-      if(gray > 185) gray = 255;
-      else if(gray < 95) gray = 0;
-      data[i] = data[i+1] = data[i+2] = gray;
-    }
+    binarizeImageDataForOCR(imageData.data, canvas.width * canvas.height);
     ctx.putImageData(imageData, 0, 0);
   }catch(_e){}
   return canvas;
@@ -6294,7 +6426,11 @@ async function pdfOcrToRows(pdf, onProgress){
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     await page.render({ canvasContext: ctx, viewport }).promise;
     enhanceCanvasForOCR(canvas);
-    const result = await Tesseract.recognize(canvas, 'spa+eng');
+    const result = await Tesseract.recognize(canvas, 'spa+eng', {
+      tessedit_pageseg_mode: '6',
+      preserve_interword_spaces: '1',
+      user_defined_dpi: '300'
+    });
     const text = (result && result.data && result.data.text) || '';
     text.split('\n').forEach(line => {
       const cells = line.trim().split(/\s{2,}|\t|\|/).map(s => s.trim()).filter(Boolean);
@@ -6349,18 +6485,11 @@ async function buildPreprocessedOCRCanvas(file){
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  for(let i=0; i<data.length; i+=4){
-    const r = data[i], g = data[i+1], b = data[i+2];
-    let gray = 0.299*r + 0.587*g + 0.114*b;
-    gray = ((gray - 128) * 2.25) + 128;
-    gray = Math.max(0, Math.min(255, gray));
-    if(gray > 185) gray = 255;
-    else if(gray < 95) gray = 0;
-    data[i] = data[i+1] = data[i+2] = gray;
-  }
+  // Binarizado adaptativo (Otsu): funciona con fotos mal iluminadas,
+  // papel amarillento o sombras, donde un umbral fijo perdía texto.
+  const threshold = binarizeImageDataForOCR(imageData.data, canvas.width * canvas.height);
   ctx.putImageData(imageData, 0, 0);
-  return { canvas, width: canvas.width, height: canvas.height };
+  return { canvas, width: canvas.width, height: canvas.height, threshold };
 }
 
 async function runImageOCR(){
@@ -6384,11 +6513,21 @@ async function runImageOCR(){
     const result = await Tesseract.recognize(
       prep.canvas,
       'spa+eng',
-      { logger: m => {
-        if(m.status === 'recognizing text'){
-          status.textContent = `Leyendo imagen: ${Math.round(m.progress * 100)}%`;
-        }
-      }}
+      {
+        logger: m => {
+          if(m.status === 'recognizing text'){
+            status.textContent = `Leyendo imagen: ${Math.round(m.progress * 100)}%`;
+          }
+        },
+        // Una planilla de turnos es un bloque tabular uniforme: con PSM 6
+        // Tesseract deja de partirla en columnas sueltas y respeta las filas.
+        tessedit_pageseg_mode: '6',
+        // Conserva los espacios entre columnas: el analizador de filas los
+        // usa para separar celdas.
+        preserve_interword_spaces: '1',
+        // Evita el aviso de DPI y mejora el escalado interno.
+        user_defined_dpi: '300'
+      }
     );
 
     const rawText = String(result?.data?.text || '');
