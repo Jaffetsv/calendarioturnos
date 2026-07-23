@@ -1000,6 +1000,21 @@
     .hist-arrow{color:#94a3b8;font-weight:1000}
     .hist-to{color:#15803d;background:#f0fdf4;border-radius:6px;padding:1px 6px}
     .hist-more{font-size:9px;font-weight:900;color:#64748b;padding-top:2px}
+    .hist-actions{margin-top:8px;display:flex;justify-content:flex-end}
+    .hist-undo{
+      border:1px solid #cbd5e1;background:#fff;color:#0f172a;
+      border-radius:10px;padding:5px 10px;font-size:9.5px;font-weight:1000;
+      text-transform:uppercase;letter-spacing:.03em;cursor:pointer;
+      transition:background .15s,border-color .15s;
+    }
+    .hist-undo:hover{background:#f1f5f9;border-color:#94a3b8}
+    .history-entry.is-undone{opacity:.62;background:#f8fafc}
+    .history-entry.is-undone .history-title{text-decoration:line-through;text-decoration-thickness:1px}
+    .hist-undone-tag{
+      margin-left:6px;font-size:8.5px;font-weight:1000;text-transform:uppercase;
+      letter-spacing:.05em;color:#92400e;background:#fef3c7;border-radius:999px;padding:2px 7px;
+      text-decoration:none;display:inline-block;vertical-align:middle;
+    }
     .backup-card{border:1px solid #bae6fd;background:#f0f9ff;border-radius:16px;padding:12px}
     .status-chip{display:inline-flex;align-items:center;border-radius:999px;padding:4px 8px;font-size:9px;font-weight:1000}
     .status-chip.safe{background:#dcfce7;color:#166534}.status-chip.warn{background:#fef3c7;color:#92400e}.status-chip.danger{background:#fee2e2;color:#991b1b}
@@ -2638,6 +2653,71 @@ function setHistoryFilter(key){
   renderHistoryModal();
 }
 
+// ---------------------------------------------------------
+// DESHACER desde el historial
+// Sólo se ofrece cuando el registro guarda el estado previo
+// completo, para que revertir sea fiel y no una aproximación.
+// ---------------------------------------------------------
+function canUndoEntry(entry){
+  if(!entry || entry.undone) return false;
+  const m = entry.meta || {};
+  if((entry.type === 'day-edit' || entry.type === 'day-paste') && m.day && m.profile) return true;
+  if(entry.type === 'shift-config' && m.beforeShifts && Object.keys(m.beforeShifts).length) return true;
+  if(entry.type === 'category' && m.beforeCats && Object.keys(m.beforeCats).length) return true;
+  return false;
+}
+
+function undoActivityEntry(id){
+  const entries = getActivityLog();
+  const entry = entries.find(e => e.id === id);
+  if(!entry) return toast('Ese registro ya no está disponible');
+  if(!canUndoEntry(entry)) return toast('Este cambio no se puede deshacer');
+
+  const m = entry.meta || {};
+  let resumen = '';
+
+  if(entry.type === 'day-edit' || entry.type === 'day-paste'){
+    const user = db.users[m.profile];
+    if(!user) return toast(`El perfil «${m.profile}» ya no existe`);
+    if(!confirm(`¿Restaurar ${formatDayKeyLong(m.day)} de ${m.profile} a como estaba antes?`)) return;
+    if(m.previous) user.data[m.day] = cloneJSON(m.previous);
+    else delete user.data[m.day];
+    resumen = `${m.profile} · ${formatDayKeyLong(m.day)}`;
+  }
+
+  else if(entry.type === 'shift-config'){
+    const user = db.users[m.profile];
+    if(!user) return toast(`El perfil «${m.profile}» ya no existe`);
+    const ids = Object.keys(m.beforeShifts);
+    if(!confirm(`¿Revertir ${ids.length} turno(s) de ${m.profile} a su configuración anterior?`)) return;
+    ids.forEach(sid => { user.config[sid] = cloneJSON(m.beforeShifts[sid]); });
+    resumen = `${m.profile} · ${ids.join(', ')}`;
+  }
+
+  else if(entry.type === 'category'){
+    const ids = Object.keys(m.beforeCats);
+    if(!confirm(`¿Revertir ${ids.length} categoría(s) a su estado anterior?`)) return;
+    ids.forEach(cid => { if(db.categories[cid]) db.categories[cid] = cloneJSON(m.beforeCats[cid]); });
+    resumen = ids.join(', ');
+  }
+
+  // Marcar el registro como deshecho (no se borra: queda la traza)
+  entry.undone = true;
+  try{ localStorage.setItem(SHIFTER_ACTIVITY_KEY, JSON.stringify(entries)); }catch(_e){}
+
+  addActivityLog('undo','Cambio deshecho',`Se revirtió: ${entry.title} — ${resumen}`,
+    {undoneId:id, undoneType:entry.type},'warning');
+
+  saveDB();
+  render();
+  renderSummaryCategories();
+  calcSummary();
+  if(typeof renderSettings === 'function') renderSettings();
+  if(typeof renderCategories === 'function') renderCategories();
+  renderHistoryModal();
+  toast('Cambio deshecho');
+}
+
 function renderHistoryModal(){
   const historyBox = document.getElementById('historyList');
   const backupBox = document.getElementById('importBackupsList');
@@ -2684,14 +2764,22 @@ function renderHistoryModal(){
           ${changes.length > 12 ? `<div class="hist-more">+${changes.length - 12} cambio(s) más</div>` : ''}
         </div>` : '';
 
-      return `<div class="history-entry">
+      const undoBtn = canUndoEntry(entry)
+        ? `<button onclick="undoActivityEntry('${escapeHTML(entry.id)}')" class="hist-undo" title="Restaurar el estado anterior">↩︎ Deshacer</button>`
+        : '';
+      const undoneTag = entry.undone
+        ? `<span class="hist-undone-tag">deshecho</span>`
+        : '';
+
+      return `<div class="history-entry${entry.undone ? ' is-undone' : ''}">
         <div class="flex items-start justify-between gap-3">
-          <div class="history-title">${escapeHTML(entry.title || entry.type || 'Actividad')}</div>
+          <div class="history-title">${escapeHTML(entry.title || entry.type || 'Actividad')}${undoneTag}</div>
           <span class="status-chip ${levelClass}">${escapeHTML(entry.type || 'evento')}</span>
         </div>
         <time>${escapeHTML(when)}</time> ${who}
         ${entry.detail ? `<div class="history-detail">${escapeHTML(entry.detail)}</div>` : ''}
         ${changeRows}
+        ${undoBtn ? `<div class="hist-actions">${undoBtn}</div>` : ''}
       </div>`;
     }).join('') : `<div class="rounded-2xl border border-dashed border-slate-300 p-5 text-center text-[10px] font-bold text-slate-500">${q || historyFilter !== 'all' ? 'Sin resultados para este filtro.' : 'Todavía no hay ajustes registrados.'}</div>`;
 
@@ -3685,6 +3773,45 @@ function switchUser(){
 // Calendar Rendering
 // =========================================================
 
+// Tras un deslizamiento, se ignora el clic que el navegador emite al soltar,
+// para no abrir el día por accidente.
+let suppressCellClickUntil = 0;
+
+// Deslizar horizontalmente sobre el calendario cambia de mes.
+// El contenedor #calendar no se reemplaza en cada render, así que basta
+// con enlazar los eventos una sola vez.
+function enableCalendarSwipe(){
+  const grid = document.getElementById('calendar');
+  if(!grid || grid.dataset.swipeBound === '1') return;
+  grid.dataset.swipeBound = '1';
+
+  let x0 = 0, y0 = 0, t0 = 0, tracking = false;
+
+  grid.addEventListener('touchstart', ev => {
+    if(ev.touches.length !== 1){ tracking = false; return; }
+    const t = ev.touches[0];
+    x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); tracking = true;
+  }, { passive: true });
+
+  grid.addEventListener('touchend', ev => {
+    if(!tracking) return;
+    tracking = false;
+    const t = ev.changedTouches && ev.changedTouches[0];
+    if(!t) return;
+    const dx = t.clientX - x0;
+    const dy = t.clientY - y0;
+    const dt = Date.now() - t0;
+
+    // Debe ser un gesto rápido, largo y claramente horizontal
+    if(dt > 700) return;
+    if(Math.abs(dx) < 55) return;
+    if(Math.abs(dx) < Math.abs(dy) * 1.7) return;
+
+    suppressCellClickUntil = Date.now() + 450;
+    changeMonth(dx < 0 ? 1 : -1);
+  }, { passive: true });
+}
+
 // Reajustar la rejilla cuando cambia el tamaño/orientación del dispositivo
 let _fitRaf = null;
 function scheduleCalendarFit(){
@@ -3758,6 +3885,7 @@ function fitCalendarToViewport(){
   grid.classList.toggle('tight', rowHeight < 68);
 
   fitShiftLabels();
+  enableCalendarSwipe();
 }
 
 // Reduce la etiqueta de turno hasta que ninguna quede cortada.
@@ -3912,6 +4040,8 @@ let suppressClickUntil = 0;
   // Evento click
   cell.onclick = (ev) => {
     if (wasLongPress) { wasLongPress = false; return; }
+    // Si el usuario acaba de deslizar para cambiar de mes, no abrir el día
+    if (Date.now() < suppressCellClickUntil) return;
     if (!isEditMode()) {
       // Mostrar toast más amigable en lugar de alert
       if(typeof toast === 'function') toast('🔒 Activa el modo edición desde el menú ☰');
@@ -4626,7 +4756,7 @@ function pasteTo(key){
   const previous = cloneJSON(user.data[key] || null);
   user.data[key] = deepCopy(src);
   saveDB();
-  addActivityLog('day-paste','Turno pegado',`${db.current} · ${key}`,{previous,next:user.data[key]},'success');
+  addActivityLog('day-paste','Turno pegado',`${db.current} · ${formatDayKeyLong(key)}`,{previous,next:user.data[key],day:key,profile:db.current},'success');
   render(); renderSummaryCategories(); calcSummary();
 }
 
@@ -5089,7 +5219,13 @@ function saveShiftSettings(){
 
   // Bitácora: registrar exactamente qué ajustes cambiaron
   const shiftChanges = diffShiftConfigs(oldConfig, SHIFTS);
-  logSettingsChange('shift-config', 'Ajustes de turnos', shiftChanges, { propagated: propagate });
+  // Guardar sólo los turnos tocados para poder deshacer sin inflar el registro
+  const touchedShifts = {};
+  new Set(shiftChanges.map(c => c.shift)).forEach(id => {
+    if(oldConfig[id]) touchedShifts[id] = cloneJSON(oldConfig[id]);
+  });
+  logSettingsChange('shift-config', 'Ajustes de turnos', shiftChanges,
+    { propagated: propagate, beforeShifts: touchedShifts });
 
   saveDB();
   render();
@@ -5312,7 +5448,11 @@ function saveCategories(){
       if(av !== bv) catChanges.push({ shift:cid, field:f, from:av, to:bv, text:`«${b.name || cid}» · ${catLabels[f]}: ${av} → ${bv}` });
     });
   });
-  logSettingsChange('category','Ajustes de categorías', catChanges);
+  const touchedCats = {};
+  new Set(catChanges.map(c => c.shift)).forEach(cid => {
+    if(beforeCats[cid]) touchedCats[cid] = cloneJSON(beforeCats[cid]);
+  });
+  logSettingsChange('category','Ajustes de categorías', catChanges, { beforeCats: touchedCats });
 
   saveDB();
   renderCategories();
