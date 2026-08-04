@@ -3169,13 +3169,32 @@ function addActivityLog(type, title, detail = '', meta = {}, level = 'info'){
   }catch(e){ console.warn('No se pudo registrar actividad', e); }
 }
 
+// Marca de vaciado. Un historial vacío NO se puede representar sólo con una
+// lista vacía: como la bitácora se fusiona en vez de reemplazarse, la primera
+// sincronización volvería a traer lo borrado y el vaciado se desharía solo.
+// Por eso se guarda CUÁNDO se vació, y todo lo anterior a esa marca se
+// descarta en cualquier fusión, venga del dispositivo que venga.
+function getActivityClearedAt(){
+  return (db && typeof db._activityClearedAt === 'string') ? db._activityClearedAt : '';
+}
+// De dos marcas de vaciado gana la más reciente (ISO se compara como texto).
+function maxCorte(a, b){
+  const x = typeof a === 'string' ? a : '';
+  const y = typeof b === 'string' ? b : '';
+  return x > y ? x : y;
+}
+
 // Une listas de registros deduplicando por id, de la más reciente a la más
-// antigua. Sin recortes: quien llame decide qué hacer con el excedente.
-function unirRegistros(...listas){
+// antigua, descartando lo anterior al último vaciado. Sin recortes: quien
+// llame decide qué hacer con el excedente.
+function unirRegistros(listas, corte){
+  const limite = (corte === undefined) ? getActivityClearedAt() : (corte || '');
   const out = new Map();
-  listas.forEach(list => {
+  (Array.isArray(listas) ? listas : []).forEach(list => {
     (Array.isArray(list) ? list : []).forEach(e => {
       if(!e || !e.id) return;
+      // Anterior al último vaciado: se ignora, aunque llegue desde la nube.
+      if(limite && String(e.at || '') < limite) return;
       const prev = out.get(e.id);
       // Si el mismo registro llega por los dos lados, gana el que ya está
       // deshecho: es el estado más avanzado de esa entrada.
@@ -3189,9 +3208,9 @@ function unirRegistros(...listas){
 // Une dos bitácoras sin perder nada. Es lo que permite que convivan los
 // registros de varios dispositivos cuando ambos escribieron entre dos
 // sincronizaciones. Lo que excede el tope se guarda en el archivo local.
-function mergeActivityLogs(a, b){
-  const todas = unirRegistros(a, b);
-  archiveActivityEntries(todas.slice(MAX_ACTIVITY_ENTRIES));
+function mergeActivityLogs(a, b, corte){
+  const todas = unirRegistros([a, b], corte);
+  archiveActivityEntries(todas.slice(MAX_ACTIVITY_ENTRIES), corte);
   return todas.slice(0, MAX_ACTIVITY_ENTRIES);
 }
 
@@ -3202,10 +3221,10 @@ function getActivityArchive(){
   const v = safeParseJSON(localStorage.getItem(SHIFTER_ACTIVITY_ARCHIVE_KEY), []);
   return Array.isArray(v) ? v : [];
 }
-function archiveActivityEntries(entries){
+function archiveActivityEntries(entries, corte){
   if(!entries || !entries.length) return;
   try{
-    const todas = unirRegistros(entries, getActivityArchive()).slice(0, MAX_ACTIVITY_ARCHIVE);
+    const todas = unirRegistros([entries, getActivityArchive()], corte).slice(0, MAX_ACTIVITY_ARCHIVE);
     localStorage.setItem(SHIFTER_ACTIVITY_ARCHIVE_KEY, JSON.stringify(todas));
   }catch(e){
     // El archivo es un extra: si no cabe en localStorage, no se interrumpe nada.
@@ -3629,7 +3648,7 @@ function renderHistoryModal(){
 
   const archivadas = getActivityArchive();
   const allEntries = historyIncludeArchive
-    ? unirRegistros(getActivityLog(), archivadas)
+    ? unirRegistros([getActivityLog(), archivadas])
     : getActivityLog();
 
   // El acceso al archivo sólo aparece si de verdad hay algo archivado.
@@ -3759,23 +3778,53 @@ function exportActivityLog(){
   // La exportación incluye el archivo antiguo: es el respaldo completo.
   const payload = { app:'Shifter Pro', version:APP_VERSION, exportedAt:new Date().toISOString(),
     device:{ id:getDeviceId(), name:getDeviceName() },
-    activity:unirRegistros(getActivityLog(), getActivityArchive()),
+    activity:unirRegistros([getActivityLog(), getActivityArchive()]),
     importBackups:getImportBackups().map(b => ({id:b.id,createdAt:b.createdAt,target:b.target,profiles:(b.profiles||[]).map(p=>p.name)})) };
   const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url = URL.createObjectURL(blob); const a = document.createElement('a');
   a.href = url; a.download = `shifter_historial_${new Date().toISOString().slice(0,10)}.json`; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+// Pide el PIN del perfil activo antes de una acción sensible. Acepta también
+// el PIN universal, igual que el resto de acciones protegidas de la app.
+// Devuelve true sólo si la autorización es correcta.
+function pedirPinDeUsuario(motivo){
+  const user = db.users[db.current];
+  if(!user) return false;
+  const p = prompt(motivo);
+  if(p === null) return false;                 // el usuario canceló
+  if(p === user.pin || p === ADMIN_UNIVERSAL_PIN) return true;
+  alert('PIN incorrecto. Operación cancelada.');
+  return false;
+}
+
 function clearActivityLog(){
+  // Vaciar la bitácora es irreversible y además se propaga a los demás
+  // dispositivos, así que va detrás del PIN como las otras acciones
+  // destructivas (eliminar perfiles, bloquear edición).
+  if(!pedirPinDeUsuario(`Ingresa el PIN de «${db.current}» para vaciar la bitácora:`)) return;
   if(!confirm('¿Vaciar la bitácora de actividad?\n\nSe borrará también el historial antiguo archivado, y se vaciará en los demás dispositivos al sincronizar. Los respaldos de importación se conservarán.')) return;
+  const borrados = ensureActivityStore().length + getActivityArchive().length;
+
+  // La marca se pone ANTES de registrar el vaciado, para que el registro que
+  // lo documenta (posterior al corte) sí sobreviva a la fusión.
+  db._activityClearedAt = new Date().toISOString();
   db._activity = [];
   historyIncludeArchive = false;
   try{
     localStorage.removeItem(SHIFTER_ACTIVITY_KEY);
     localStorage.removeItem(SHIFTER_ACTIVITY_ARCHIVE_KEY);
   }catch(_e){}
+
+  // Queda constancia del propio vaciado: en un módulo de trazabilidad, que el
+  // historial aparezca vacío sin explicación es peor que no tenerlo.
+  addActivityLog('system','Bitácora vaciada',
+    `${db.current} vació el historial (${borrados} registro(s)).`,
+    {borrados, profile:db.current},'warning');
+
   saveDB();   // sí propaga: vaciar es una decisión que debe viajar a la nube
   renderHistoryModal();
+  toast('Bitácora vaciada');
 }
 function ensureVersionLog(){
   const key = `shifter_version_logged_${APP_VERSION}`;
@@ -9443,9 +9492,14 @@ function applyCloudDb(newDb, {clearRemotePending=true, cloudTS=null} = {}){
   // La bitácora NUNCA se reemplaza, se fusiona: aunque el usuario elija
   // "usar la versión de la nube" para los datos, el registro de lo que pasó
   // en este dispositivo tiene que seguir ahí. Se calcula antes de pisar `db`.
-  const mergedActivity = mergeActivityLogs(ensureActivityStore(), (newDb && newDb._activity) || []);
+  // Del vaciado gana la marca más reciente de los dos lados, y esa marca
+  // descarta todo lo anterior a ella: así un vaciado hecho aquí no lo deshace
+  // la nube, ni al revés.
+  const corte = maxCorte(getActivityClearedAt(), newDb && newDb._activityClearedAt);
+  const mergedActivity = mergeActivityLogs(ensureActivityStore(), (newDb && newDb._activity) || [], corte);
   db = JSON.parse(JSON.stringify(newDb || db));
   db._activity = mergedActivity;
+  if(corte) db._activityClearedAt = corte;
   // Alinear _meta con el TS reconocido para que al recargar local === nube
   if(cloudTS){
     db._meta = db._meta || {};
@@ -9729,16 +9783,22 @@ async function pullFromCloud(){
 async function mergeRemoteActivityIntoLocal(){
   const {data, error} = await sb
     .from('shifter_state')
-    .select('act:data->_activity')
+    .select('act:data->_activity, corte:data->_activityClearedAt')
     .eq('user_id', sbUser.id)
     .maybeSingle();
   if(error) throw error;
   const remote = (data && Array.isArray(data.act)) ? data.act : [];
+
+  // El vaciado remoto también cuenta: si otro dispositivo vació después que
+  // este, su marca manda y aquí se descarta lo anterior a ella.
+  const corte = maxCorte(getActivityClearedAt(), data && data.corte);
+  if(corte) db._activityClearedAt = corte;
+
   if(!remote.length) return 0;
 
   const locales = ensureActivityStore();
   const idsAntes = new Set(locales.map(e => e && e.id));
-  const fusion = mergeActivityLogs(locales, remote);
+  const fusion = mergeActivityLogs(locales, remote, corte);
   db._activity = fusion;
   // Se cuenta por id y no por longitud: con la bitácora en su tope, entrar
   // registros nuevos no cambia el total.
@@ -9782,11 +9842,15 @@ function mergeSmartPull(cloudDb, localDb){
 
     const merged = JSON.parse(JSON.stringify(cloudDb || localDb));
     if(!merged.users) merged.users = {};
-    // Bitácora: unión de ambos lados, nunca uno u otro.
+    // Bitácora: unión de ambos lados, nunca uno u otro, respetando el
+    // vaciado más reciente de los dos.
+    const corte = maxCorte(localDb && localDb._activityClearedAt, cloudDb && cloudDb._activityClearedAt);
     merged._activity = mergeActivityLogs(
       (localDb && localDb._activity) || [],
-      (cloudDb && cloudDb._activity) || []
+      (cloudDb && cloudDb._activity) || [],
+      corte
     );
+    if(corte) merged._activityClearedAt = corte;
 
     // Para cada usuario local, conservar datos de meses pasados
     if(localDb && localDb.users){
