@@ -855,15 +855,9 @@
     .month-today-btn:hover { background: rgba(255,255,255,0.22); }
 
     @media (max-width: 640px) {
-      #view-calendar {
-        min-height: calc(100vh - 210px);
-      }
-      .calendar-grid {
-        grid-auto-rows: minmax(132px, 1fr);
-      }
-      .day-cell {
-        min-height: 132px !important;
-      }
+      /* Nada de alturas mínimas en móvil: las imponía el layout antiguo y son
+         justo lo que empujaba la última fila fuera de la pantalla. El alto de
+         fila lo reparte ahora la rejilla (ver #calendar). */
       #bottomTabs {
         min-height: 66px;
       }
@@ -882,15 +876,20 @@
     #calendar {
       flex: 1 1 auto;
       min-height: 0;
-      height: var(--calendar-grid-height, auto);
-      max-height: var(--calendar-grid-height, none);
+      /* Las filas reparten EXACTAMENTE el alto disponible. Antes se fijaba una
+         altura en píxeles calculada por JS, y bastaba un desfase (cambiar de
+         mes, girar la pantalla, que aparezca la barra del navegador) para que
+         la última fila quedara fuera. Con minmax(0,1fr) el reparto lo hace el
+         navegador y siempre cuadra, con 5 filas o con 6. */
+      grid-template-rows: repeat(var(--cal-rows, 6), minmax(0, 1fr));
       align-content: stretch;
-      grid-auto-rows: var(--calendar-row-height, 1fr);
       overflow: hidden;
     }
+    /* Ninguna altura mínima puede ganarle al reparto de la rejilla: si una
+       celda se niega a encogerse, la fila de abajo se sale. */
     .day-cell {
-      min-height: var(--calendar-row-height, 1fr) !important;
-      height: var(--calendar-row-height, auto);
+      min-height: 0 !important;
+      height: auto;
     }
 
     /* Ocultar tabs viejos (reemplazados por bottom tabs) */
@@ -1030,6 +1029,63 @@
       border-radius:10px;padding:7px 11px;cursor:pointer;transition:background .15s;
     }
     .hist-device-btn:hover{background:#dbeafe}
+    /* --- Bloque de filtros del historial ---
+       Rejilla fija de dos columnas: los criterios quedan alineados en lugar de
+       repartirse solos por el ancho disponible. */
+    .hist-filters{
+      background:#f8fafc;border:1px solid #e8edf4;border-radius:15px;
+      padding:11px;margin-bottom:11px;
+    }
+    .hist-search{
+      width:100%;border:1px solid #e2e8f0;border-radius:11px;background:#fff;
+      padding:9px 11px;font-size:11px;font-weight:700;color:#1e293b;
+      margin-bottom:9px;
+    }
+    .hist-search:focus{border-color:#2563eb;outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.13)}
+
+    .hist-filter-grid{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+    }
+    /* El dispositivo suele traer el nombre más largo: fila entera para él. */
+    .hist-field-wide{grid-column:1 / -1}
+    .hist-field{display:flex;flex-direction:column;gap:3px;min-width:0}
+    .hist-field-label{
+      font-size:8.5px;font-weight:1000;text-transform:uppercase;
+      letter-spacing:.09em;color:#94a3b8;padding-left:2px;
+    }
+    .hist-select{
+      width:100%;min-width:0;
+      border:1px solid #e2e8f0;border-radius:10px;background:#fff;
+      padding:8px 9px;font-size:10.5px;font-weight:800;color:#1e293b;
+      cursor:pointer;transition:border-color .15s;
+    }
+    .hist-select:hover{border-color:#cbd5e1}
+    .hist-select:focus{border-color:#2563eb;outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.13)}
+    /* Un filtro activo se marca en azul: así se ve qué está acotando la lista. */
+    .hist-select.is-active{border-color:#93c5fd;background:#eff6ff;color:#1d4ed8}
+
+    .hist-actions-row{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+    .hist-reload,.hist-clear{
+      flex:1 1 auto;border-radius:10px;
+      font-size:9px;font-weight:900;text-transform:uppercase;
+      letter-spacing:.04em;padding:9px 10px;cursor:pointer;
+      transition:background .15s,opacity .15s;white-space:nowrap;
+    }
+    .hist-reload{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8}
+    .hist-reload:hover{background:#dbeafe}
+    .hist-reload.is-busy,.hist-reload:disabled{opacity:.55;cursor:default}
+    .hist-clear{border:1px solid #e2e8f0;background:#fff;color:#64748b}
+    .hist-clear:hover{background:#f1f5f9;color:#334155}
+
+    .hist-archive{
+      display:block;width:100%;margin-bottom:9px;
+      border:1px dashed #cbd5e1;border-radius:11px;background:#fff;
+      color:#64748b;font-size:9.5px;font-weight:900;padding:8px 10px;
+      cursor:pointer;transition:border-color .15s,color .15s,background .15s;
+    }
+    .hist-archive:hover{border-color:#94a3b8;color:#334155}
+    .hist-archive.is-on{border-style:solid;border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}
+
     .hist-sync{font-size:9px;font-weight:900;color:#64748b;margin-bottom:8px;min-height:12px}
     .hist-sync:empty{display:none}
     .hist-sync.is-loading{color:#64748b}
@@ -1065,6 +1121,56 @@
     .dist-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .dist-count{margin-left:auto;font-weight:1000;color:#0f172a;flex:0 0 auto}
     .dist-empty{font-size:10px;font-weight:800;color:#94a3b8;text-align:center;padding:6px 0}
+
+    /* =======================================================
+       DENSIDAD ADAPTATIVA DEL RESUMEN
+       Mismo principio que el calendario: si el resumen cabe en
+       la pantalla se muestra amplio, y sólo se comprime lo justo
+       cuando no cabe, en vez de obligar a desplazarse siempre.
+       Los valores los calcula fitSummaryToViewport().
+       ======================================================= */
+    #view-summary{ padding:var(--sum-outer,16px)!important; }
+    /* space-y-* de Tailwind reparte con márgenes; aquí estorba porque el
+       hueco entre bloques también tiene que escalar. */
+    #view-summary > div{ display:flex; flex-direction:column; gap:var(--sum-gap,16px); }
+    #view-summary > div > *{ margin-top:0!important; }
+
+    #view-summary .stat-card{
+      padding:var(--sum-pad,16px);
+      border-radius:var(--sum-radius,20px);
+      gap:var(--sum-card-gap,4px);
+    }
+    #view-summary .stat-card-value{ font-size:var(--sum-value,26px); }
+    #view-summary .stat-card-label{ font-size:var(--sum-label,10px); }
+    #view-summary .stat-card-sub{ font-size:var(--sum-sub,11px); }
+    #view-summary .grid.grid-cols-2{ gap:var(--sum-gap-sm,12px)!important; }
+    #view-summary .progress-bar-wrap{ height:var(--sum-bar-h,6px); margin-top:var(--sum-bar-mt,6px); }
+
+    #view-summary .cat-card{
+      padding:var(--sum-cat-pad-y,11px) var(--sum-cat-pad-x,14px);
+      border-radius:var(--sum-radius-sm,16px);
+    }
+    #view-summary .cat-icon{
+      width:var(--sum-icon,28px); height:var(--sum-icon,28px);
+      font-size:calc(var(--sum-icon,28px) * .5);
+    }
+    #view-summary .cat-hrs{ font-size:var(--sum-hrs,17px); }
+    #view-summary #summary-categories{ gap:var(--sum-gap-sm,12px)!important; }
+
+    /* Tarjetas blancas genéricas (progreso del mes y distribución) */
+    #view-summary .bg-white.rounded-2xl{
+      padding:var(--sum-pad,16px)!important;
+      border-radius:var(--sum-radius,20px)!important;
+    }
+    #view-summary .dist-bar{ height:var(--sum-dist-h,15px); }
+    #view-summary .dist-legend{ margin-top:var(--sum-legend-mt,10px); gap:var(--sum-legend-gap,6px) 10px; }
+    #view-summary .dist-legend .dist-item{ font-size:var(--sum-legend-size,10px); }
+    /* Separadores internos y encabezados de esas tarjetas */
+    #view-summary .bg-white.rounded-2xl .mb-2{ margin-bottom:var(--sum-inner-gap,8px)!important; }
+    #view-summary .bg-white.rounded-2xl .mb-3{ margin-bottom:var(--sum-inner-gap,12px)!important; }
+    #view-summary .bg-white.rounded-2xl .mt-2{ margin-top:var(--sum-inner-gap,8px)!important; }
+    #view-summary .bg-white.rounded-2xl .mt-3{ margin-top:var(--sum-inner-gap,12px)!important; }
+    #view-summary .bg-white.rounded-2xl .pt-3{ padding-top:var(--sum-inner-gap,12px)!important; }
 
     .hist-actions{margin-top:8px;display:flex;justify-content:flex-end}
     .hist-undo{
@@ -1124,8 +1230,19 @@
       flex-direction:column;
     }
 
-    /* Calendario: encaja sin scroll */
-    #view-calendar.view-active{overflow:hidden}
+    /* Calendario: encaja sin scroll.
+       Arriba hay un `.view-active{display:block!important}` que ganaba a la
+       regla flex de este bloque, así que la vista del calendario nunca llegó
+       a ser un contenedor flex y su rejilla nunca se estiraba: el alto lo
+       imponía un valor en píxeles que calculaba el JS. De ahí que bastara un
+       desfase para ver la última fila cortada o las celdas de distinto
+       tamaño. Con el flex restaurado, la rejilla ocupa por sí sola el espacio
+       libre exacto. */
+    #view-calendar.view-active{
+      overflow:hidden;
+      display:flex!important;
+      flex-direction:column;
+    }
     #view-calendar #weekHeader{flex:0 0 auto;position:relative!important;top:auto!important}
     #view-calendar .calendar-grid{flex:1 1 auto;min-height:0}
 
@@ -1303,12 +1420,25 @@
       content:'';
       position:absolute;
       inset:0;
+      /* Imprescindible: sin esto el pseudo-elemento mide el ancho de la celda
+         MÁS el borde, sobresale por los cuatro lados y el overflow:hidden lo
+         recorta dejando un segundo trazo visible en las esquinas. */
+      box-sizing:border-box;
       border:2.5px solid #ef4444;
       border-radius:8px;
-      /* Encima del color (.day-bg z-index:0) y de las notas (z-index:1),
-         debajo del número del día (z-index:22) y del asueto (z-index:20). */
-      z-index:15;
+      /* Encima de todo lo que pinta dentro de la celda. La insignia de asueto
+         (z-index:20) quedaba por delante y partía el anillo justo en la
+         esquina: su rojo y el del anillo, juntos, se leían como un borde
+         doble. */
+      z-index:21;
       pointer-events:none;
+    }
+    /* Y la insignia de asueto se mete DENTRO del anillo, para que no lo toque
+       y se vea entera en lugar de cortada por él. */
+    .today .holiday-indicator{
+      top:2.5px!important;
+      left:2.5px!important;
+      border-radius:5px 0 8px 0!important;
     }
     .today .day-number{
       background:transparent!important;
@@ -1346,6 +1476,70 @@
     #weekHeader .wday-sun{ color:#dc2626!important; }
 
     .calendar-grid{ background:#e6ebf3!important; }
+
+    /* Nombre del mes y año: con line-height 1.05 la caja quedaba más baja que
+       el propio glifo, y el `truncate` del botón (overflow:hidden) recortaba
+       los descendentes — la "g" de Agosto, la "j" de Junio. Se les da el aire
+       vertical que necesitan; el recorte horizontal con puntos suspensivos se
+       mantiene igual. */
+    .month-year-row,
+    .month-picker-trigger,
+    #currentMonthLabel,
+    #currentYearLabel{ line-height:1.32!important; }
+    .month-picker-trigger{ padding-top:1px!important; padding-bottom:2px!important; }
+
+    /* --- Franja de mes: una sola fila y compacta ---
+       Antes eran dos filas (mes/año arriba, "Hoy" debajo) y ocupaba ~100px,
+       espacio que le quitaba altura a las celdas del calendario. Ahora todo
+       va en línea y la franja baja a poco más de la mitad. */
+    /* La franja ocupa todo el ancho y se une a la barra superior, en vez de
+       ser una tarjeta flotante con márgenes: así el título dispone del ancho
+       completo de la pantalla (que es lo que le faltaba a los meses largos) y
+       de paso se ahorra el hueco de arriba. */
+    #monthNavWrap{ padding:0!important; }
+    #monthNav{
+      min-height:0!important;
+      /* Franja recta de borde a borde: continuación de la barra superior. */
+      border-radius:0!important;
+      border-left:0!important; border-right:0!important; border-top:0!important;
+      padding:7px 10px!important;
+      box-shadow:0 3px 10px rgba(15,23,42,.14)!important;
+    }
+    #monthNav .month-nav-btn{
+      width:34px!important; height:34px!important; border-radius:11px!important;
+    }
+    #monthNav .month-nav-btn svg{ width:17px!important; height:17px!important; }
+    #currentMonthLabel,
+    #currentYearLabel{
+      color:#fff; font-weight:900;
+      /* El cuerpo lo ajusta fitMonthTitle() según el ancho disponible: a
+         tamaño fijo, "Septiembre / 2026" se montaba sobre el botón contiguo
+         en pantallas estrechas. */
+      font-size:var(--month-title-size,20px);
+      display:inline-flex; align-items:center;
+    }
+    /* Barrera dura: pase lo que pase, el título no invade a sus vecinos. */
+    #monthNav > div{ min-width:0!important; }
+    .month-year-row{
+      gap:5px!important;
+      min-width:0!important;
+      max-width:100%;
+      overflow:hidden;
+    }
+    .month-year-sep{ font-size:calc(var(--month-title-size,20px) * .85)!important; }
+
+    /* Botón "ir al mes actual": mismo tratamiento que las flechas, para que se
+       lea como un control de navegación más. */
+    #monthTodayBtn{
+      background:rgba(255,255,255,.17)!important;
+      border:1px solid rgba(255,255,255,.20);
+    }
+    /* Mismo ancho que el botón al que hace de contrapeso. */
+    .month-nav-spacer{ width:34px; flex:0 0 auto; }
+    #monthTodayBtn:hover{ background:rgba(255,255,255,.28)!important; }
+    /* Oculto pero conservando su sitio: así el mes no se descentra de golpe
+       al entrar o salir del mes actual. */
+    #monthTodayBtn.is-hidden{ visibility:hidden; pointer-events:none; }
 
     /* Esquinas ligeramente redondeadas: la celda recorta el color de fondo
        (tiene overflow:hidden), así que el color queda con el mismo redondeo
@@ -1552,18 +1746,20 @@
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
 
+    <!-- Contrapeso del botón "ir a hoy" de la derecha. Sin él los dos lados
+         miden distinto y el nombre del mes queda descentrado hacia la
+         izquierda, aunque esté centrado dentro de su propia caja. -->
+    <span class="month-nav-spacer" aria-hidden="true"></span>
+
     <div class="flex flex-1 min-w-0 flex-col items-center justify-center text-center">
       <div class="month-year-row">
         <button type="button" id="monthTriggerBtn" class="month-picker-trigger truncate" onclick="openMonthPicker()" aria-label="Seleccionar mes">
-          <span id="currentMonthLabel" class="truncate" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1.05;display:inline-flex;align-items:center;">Marzo</span>
+          <span id="currentMonthLabel" class="truncate">Marzo</span>
         </button>
         <span class="month-year-sep" aria-hidden="true">/</span>
         <button type="button" id="yearTriggerBtn" class="month-picker-trigger" onclick="openYearPicker()" aria-label="Seleccionar año">
-          <span id="currentYearLabel" style="color:#ffffff;font-weight:900;font-size:24px;line-height:1.05;display:inline-flex;align-items:center;">2026</span>
+          <span id="currentYearLabel">2026</span>
         </button>
-      </div>
-      <div class="mt-1 flex items-center justify-center">
-        <button onclick="goToday()" class="month-today-btn">Hoy</button>
       </div>
       <div id="currentMonthDisplay" class="hidden"></div>
       <div class="hidden">
@@ -1571,6 +1767,17 @@
         <select id="selectYear" onchange="jumpToDate()"></select>
       </div>
     </div>
+
+    <!-- Volver al mes actual. Va en la zona de controles y no junto al año:
+         pegado al título se leía como una etiqueta que afirmaba "este es el
+         mes de hoy" en vez de como un botón para ir. El icono de diana (el
+         mismo gesto de "céntrame aquí" de los mapas) refuerza que es acción.
+         Cuando ya estás en el mes actual se oculta, pero conservando el hueco,
+         para que el título no dé un salto al cambiar de mes. -->
+    <button onclick="goToday()" class="month-nav-btn month-today-btn" id="monthTodayBtn"
+      aria-label="Ir al mes actual" title="Ir al mes actual">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="6.6" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.1" fill="currentColor"/><path d="M12 2.6v2.4M12 19v2.4M21.4 12H19M5 12H2.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
 
     <button onclick="changeMonth(1)" class="month-nav-btn" aria-label="Mes siguiente">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -2303,11 +2510,39 @@
         </div>
         <div id="historySyncState" class="hist-sync"></div>
 
-        <input id="historySearch" type="search" oninput="renderHistoryModal()"
-          placeholder="Buscar (turno, color, día, perfil, dispositivo…)"
-          class="w-full mb-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-800"/>
+        <!-- Filtros en rejilla fija de dos columnas. Antes el tipo eran ocho
+             chips que se repartían solos en tres o cuatro renglones y no había
+             forma de saber de un vistazo qué estaba filtrado; ahora los tres
+             criterios son desplegables alineados. -->
+        <div class="hist-filters">
+          <input id="historySearch" type="search" oninput="renderHistoryModal()"
+            placeholder="Buscar (turno, color, día, perfil, dispositivo…)"
+            class="hist-search"/>
 
-        <div id="historyFilters" class="flex flex-wrap gap-1.5 mb-3"></div>
+          <div class="hist-filter-grid">
+            <label class="hist-field">
+              <span class="hist-field-label">Tipo de cambio</span>
+              <select id="historyType" class="hist-select" onchange="setHistoryFilter(this.value)"></select>
+            </label>
+            <label class="hist-field">
+              <span class="hist-field-label">Mes</span>
+              <select id="historyMonth" class="hist-select" onchange="setHistoryMonthFilter(this.value)"></select>
+            </label>
+            <label class="hist-field hist-field-wide">
+              <span class="hist-field-label">Dispositivo</span>
+              <select id="historyDevice" class="hist-select" onchange="setHistoryDeviceFilter(this.value)"></select>
+            </label>
+          </div>
+
+          <div class="hist-actions-row">
+            <button type="button" id="historyReloadBtn" onclick="refreshActivityFromCloud(true)"
+              class="hist-reload" title="Volver a consultar la nube y traer los registros que falten">↻ Traer de la nube</button>
+            <button type="button" id="historyClearBtn" onclick="limpiarFiltrosHistorial()"
+              class="hist-clear hidden">✕ Quitar filtros</button>
+          </div>
+
+          <button type="button" id="historyArchiveBtn" onclick="toggleHistoryArchive()" class="hist-archive hidden"></button>
+        </div>
         <div id="historyList" class="space-y-2"></div>
         <div id="historyCount" class="mt-2 text-center text-[9px] font-black uppercase tracking-wider text-slate-400"></div>
       </section>
@@ -2758,6 +2993,10 @@ const SHIFTER_IMPORT_BACKUP_KEY = 'shifter_v24_import_backups';
 // Con varios dispositivos la bitácora se llena más rápido (se fusionan las
 // entradas de todos), así que hay algo más de holgura que antes.
 const MAX_ACTIVITY_ENTRIES = 300;
+// Lo que se sale de ese tope va a un archivo que sólo vive en este
+// dispositivo, para poder consultarlo sin engordar lo que se sube a la nube.
+const SHIFTER_ACTIVITY_ARCHIVE_KEY = 'shifter_v24_activity_archive';
+const MAX_ACTIVITY_ARCHIVE = 1200;
 const MAX_IMPORT_BACKUPS = 5;
 const LIBRARY_URLS = {
   xlsx: [
@@ -2923,17 +3162,18 @@ function addActivityLog(type, title, detail = '', meta = {}, level = 'info'){
       at: new Date().toISOString(), type, title, detail, meta, level, version: APP_VERSION,
       dev: getDeviceId(), devName: getDeviceName()
     });
+    // Lo que rebasa el tope se archiva en vez de perderse.
+    archiveActivityEntries(entries.slice(MAX_ACTIVITY_ENTRIES));
     db._activity = entries.slice(0, MAX_ACTIVITY_ENTRIES);
     persistActivity();
   }catch(e){ console.warn('No se pudo registrar actividad', e); }
 }
 
-// Une dos bitácoras sin perder nada: deduplica por id y ordena de la más
-// reciente a la más antigua. Es lo que permite que convivan los registros de
-// varios dispositivos cuando ambos escribieron entre dos sincronizaciones.
-function mergeActivityLogs(a, b){
+// Une listas de registros deduplicando por id, de la más reciente a la más
+// antigua. Sin recortes: quien llame decide qué hacer con el excedente.
+function unirRegistros(...listas){
   const out = new Map();
-  const add = list => {
+  listas.forEach(list => {
     (Array.isArray(list) ? list : []).forEach(e => {
       if(!e || !e.id) return;
       const prev = out.get(e.id);
@@ -2941,12 +3181,36 @@ function mergeActivityLogs(a, b){
       // deshecho: es el estado más avanzado de esa entrada.
       if(!prev || (e.undone && !prev.undone)) out.set(e.id, e);
     });
-  };
-  add(a);
-  add(b);
+  });
   return [...out.values()]
-    .sort((x, y) => String(y.at || '').localeCompare(String(x.at || '')))
-    .slice(0, MAX_ACTIVITY_ENTRIES);
+    .sort((x, y) => String(y.at || '').localeCompare(String(x.at || '')));
+}
+
+// Une dos bitácoras sin perder nada. Es lo que permite que convivan los
+// registros de varios dispositivos cuando ambos escribieron entre dos
+// sincronizaciones. Lo que excede el tope se guarda en el archivo local.
+function mergeActivityLogs(a, b){
+  const todas = unirRegistros(a, b);
+  archiveActivityEntries(todas.slice(MAX_ACTIVITY_ENTRIES));
+  return todas.slice(0, MAX_ACTIVITY_ENTRIES);
+}
+
+// Archivo local de registros antiguos. No viaja a la nube (inflaría el blob
+// que se sube en cada cambio), pero evita que el historial se pierda del todo
+// al llegar al tope: se puede volver a mostrar desde el propio historial.
+function getActivityArchive(){
+  const v = safeParseJSON(localStorage.getItem(SHIFTER_ACTIVITY_ARCHIVE_KEY), []);
+  return Array.isArray(v) ? v : [];
+}
+function archiveActivityEntries(entries){
+  if(!entries || !entries.length) return;
+  try{
+    const todas = unirRegistros(entries, getActivityArchive()).slice(0, MAX_ACTIVITY_ARCHIVE);
+    localStorage.setItem(SHIFTER_ACTIVITY_ARCHIVE_KEY, JSON.stringify(todas));
+  }catch(e){
+    // El archivo es un extra: si no cabe en localStorage, no se interrumpe nada.
+    console.warn('No se pudo archivar historial antiguo', e);
+  }
 }
 // ---------------------------------------------------------
 // Bitácora de AJUSTES DEL USUARIO
@@ -3120,16 +3384,30 @@ function openHistoryModal(){
 }
 
 // Refresca la bitácora desde la nube sin tocar el resto de los datos.
-async function refreshActivityFromCloud(){
+function limpiarFiltrosHistorial(){
+  historyFilter = 'all';
+  historyMonthFilter = 'all';
+  historyDeviceFilter = 'all';
+  const buscador = document.getElementById('historySearch');
+  if(buscador) buscador.value = '';
+  renderHistoryModal();
+}
+
+// `manual` distingue la recarga que pide el usuario con el botón de la que se
+// hace sola al abrir: la manual avisa aunque no haya novedades.
+async function refreshActivityFromCloud(manual = false){
   const badge = document.getElementById('historySyncState');
+  const btn = document.getElementById('historyReloadBtn');
   if(!isCloudEnabled()){
     if(badge){
       badge.textContent = 'Sin sesión: sólo se ve la actividad de este dispositivo';
       badge.className = 'hist-sync';
     }
+    if(manual) toast('Inicia sesión en la nube para traer el historial de otros dispositivos');
     return;
   }
   if(badge){ badge.textContent = 'Buscando cambios de otros dispositivos…'; badge.className = 'hist-sync is-loading'; }
+  if(btn){ btn.disabled = true; btn.classList.add('is-busy'); }
   try{
     const nuevos = await mergeRemoteActivityIntoLocal();
     if(nuevos > 0){
@@ -3142,9 +3420,17 @@ async function refreshActivityFromCloud(){
         : 'Historial al día con la nube';
       badge.className = 'hist-sync' + (nuevos > 0 ? ' is-new' : ' is-ok');
     }
+    if(manual){
+      toast(nuevos > 0
+        ? `Se trajeron ${nuevos} registro(s) de la nube`
+        : 'No hay registros nuevos en la nube');
+    }
   }catch(e){
     console.warn('refreshActivityFromCloud:', e);
     if(badge){ badge.textContent = 'No se pudo consultar la nube'; badge.className = 'hist-sync is-error'; }
+    if(manual) toast('No se pudo consultar la nube');
+  }finally{
+    if(btn){ btn.disabled = false; btn.classList.remove('is-busy'); }
   }
 }
 function closeHistoryModal(){ document.getElementById('historyModal')?.classList.remove('active'); }
@@ -3160,10 +3446,112 @@ const HISTORY_GROUPS = {
   import:   { label:'Importación', types:['excel-import','image-import','pdf-import','restore'] }
 };
 let historyFilter = 'all';
+// Filtros combinables: tipo (chips) + mes + dispositivo + búsqueda libre.
+let historyMonthFilter = 'all';
+let historyDeviceFilter = 'all';
 
 function setHistoryFilter(key){
   historyFilter = key;
   renderHistoryModal();
+}
+function setHistoryMonthFilter(value){
+  historyMonthFilter = value || 'all';
+  renderHistoryModal();
+}
+function setHistoryDeviceFilter(value){
+  historyDeviceFilter = value || 'all';
+  renderHistoryModal();
+}
+// Incluir en la vista los registros antiguos que ya salieron del tope activo.
+let historyIncludeArchive = false;
+function toggleHistoryArchive(){
+  historyIncludeArchive = !historyIncludeArchive;
+  renderHistoryModal();
+}
+
+// Clave de mes de una entrada: "2026-08". Se saca del ISO para no depender
+// de la zona horaria al agrupar.
+function entryMonthKey(entry){
+  const at = String((entry && entry.at) || '');
+  return /^\d{4}-\d{2}/.test(at) ? at.slice(0, 7) : '';
+}
+function monthKeyLabel(key){
+  const [y, m] = key.split('-');
+  const nombre = MONTHS[parseInt(m, 10) - 1] || m;
+  return `${nombre} ${y}`;
+}
+// Identidad de dispositivo para agrupar. Las entradas antiguas no la traen.
+function entryDeviceKey(entry){
+  return (entry && entry.dev) ? entry.dev : 'sin-origen';
+}
+
+// Rellena los desplegables con lo que realmente hay en la bitácora,
+// conservando la selección actual si sigue existiendo.
+function syncHistorySelectors(entries){
+  const myDevice = getDeviceId();
+
+  // Tipo de cambio: antes eran chips sueltos que se amontonaban en varios
+  // renglones; ahora es un desplegable más, con su conteo.
+  const tipoSel = document.getElementById('historyType');
+  if(tipoSel){
+    tipoSel.innerHTML = Object.keys(HISTORY_GROUPS).map(key => {
+      const g = HISTORY_GROUPS[key];
+      const n = g.types ? entries.filter(e => g.types.includes(e.type)).length : entries.length;
+      return `<option value="${key}">${escapeHTML(g.label)} (${n})</option>`;
+    }).join('');
+    tipoSel.value = historyFilter;
+    tipoSel.classList.toggle('is-active', historyFilter !== 'all');
+  }
+
+  const meses = new Map();
+  const dispositivos = new Map();
+  entries.forEach(e => {
+    const mk = entryMonthKey(e);
+    if(mk) meses.set(mk, (meses.get(mk) || 0) + 1);
+    const dk = entryDeviceKey(e);
+    if(!dispositivos.has(dk)){
+      dispositivos.set(dk, {
+        n: 0,
+        label: dk === 'sin-origen' ? 'Origen no registrado'
+             : dk === myDevice     ? `Este dispositivo (${getDeviceName()})`
+             : (e.devName || 'Otro dispositivo')
+      });
+    }
+    dispositivos.get(dk).n++;
+  });
+
+  const mesSel = document.getElementById('historyMonth');
+  if(mesSel){
+    const orden = [...meses.keys()].sort().reverse();
+    if(historyMonthFilter !== 'all' && !meses.has(historyMonthFilter)) historyMonthFilter = 'all';
+    mesSel.innerHTML = `<option value="all">Todos los meses (${entries.length})</option>`
+      + orden.map(k => `<option value="${k}">${escapeHTML(monthKeyLabel(k))} (${meses.get(k)})</option>`).join('');
+    mesSel.value = historyMonthFilter;
+    mesSel.classList.toggle('is-active', historyMonthFilter !== 'all');
+  }
+
+  const devSel = document.getElementById('historyDevice');
+  if(devSel){
+    // El propio dispositivo primero; el resto por número de registros.
+    const orden = [...dispositivos.keys()].sort((a, b) => {
+      if(a === myDevice) return -1;
+      if(b === myDevice) return 1;
+      return dispositivos.get(b).n - dispositivos.get(a).n;
+    });
+    if(historyDeviceFilter !== 'all' && !dispositivos.has(historyDeviceFilter)) historyDeviceFilter = 'all';
+    devSel.innerHTML = `<option value="all">Todos los dispositivos (${dispositivos.size})</option>`
+      + orden.map(k => `<option value="${escapeHTML(k)}">${escapeHTML(dispositivos.get(k).label)} (${dispositivos.get(k).n})</option>`).join('');
+    devSel.value = historyDeviceFilter;
+    devSel.classList.toggle('is-active', historyDeviceFilter !== 'all');
+  }
+
+  // "Quitar filtros" sólo cuando hay alguno puesto.
+  const clearBtn = document.getElementById('historyClearBtn');
+  if(clearBtn){
+    const q = (document.getElementById('historySearch')?.value || '').trim();
+    const hayFiltro = !!q || historyFilter !== 'all' || historyMonthFilter !== 'all' || historyDeviceFilter !== 'all';
+    clearBtn.classList.toggle('hidden', !hayFiltro);
+  }
 }
 
 // ---------------------------------------------------------
@@ -3239,17 +3627,22 @@ function renderHistoryModal(){
   const historyBox = document.getElementById('historyList');
   const backupBox = document.getElementById('importBackupsList');
 
-  // Chips de filtro
-  const filterBox = document.getElementById('historyFilters');
-  const allEntries = getActivityLog();
-  if(filterBox){
-    filterBox.innerHTML = Object.keys(HISTORY_GROUPS).map(key => {
-      const g = HISTORY_GROUPS[key];
-      const n = g.types ? allEntries.filter(e => g.types.includes(e.type)).length : allEntries.length;
-      const on = historyFilter === key;
-      return `<button onclick="setHistoryFilter('${key}')" class="px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wide border transition-colors ${on ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}">${g.label} ${n ? `<span class="opacity-60">${n}</span>` : ''}</button>`;
-    }).join('');
+  const archivadas = getActivityArchive();
+  const allEntries = historyIncludeArchive
+    ? unirRegistros(getActivityLog(), archivadas)
+    : getActivityLog();
+
+  // El acceso al archivo sólo aparece si de verdad hay algo archivado.
+  const archiveBtn = document.getElementById('historyArchiveBtn');
+  if(archiveBtn){
+    archiveBtn.classList.toggle('hidden', archivadas.length === 0);
+    archiveBtn.classList.toggle('is-on', historyIncludeArchive);
+    archiveBtn.textContent = historyIncludeArchive
+      ? `✓ Mostrando también ${archivadas.length} registro(s) antiguo(s)`
+      : `+ Ver ${archivadas.length} registro(s) antiguo(s) de este dispositivo`;
   }
+
+  syncHistorySelectors(allEntries);
 
   if(historyBox){
     const q = (document.getElementById('historySearch')?.value || '').trim().toLowerCase();
@@ -3257,8 +3650,11 @@ function renderHistoryModal(){
 
     const myDevice = getDeviceId();
 
+    // Los cuatro filtros son acumulativos: tipo, mes, dispositivo y texto.
     const entries = allEntries.filter(e => {
       if(group.types && !group.types.includes(e.type)) return false;
+      if(historyMonthFilter !== 'all' && entryMonthKey(e) !== historyMonthFilter) return false;
+      if(historyDeviceFilter !== 'all' && entryDeviceKey(e) !== historyDeviceFilter) return false;
       if(!q) return true;
       const hay = `${e.title || ''} ${e.detail || ''} ${e.type || ''} ${(e.meta && e.meta.profile) || ''} ${e.devName || ''} ${(e.meta && e.meta.changes || []).map(c => c.text).join(' ')}`.toLowerCase();
       return hay.includes(q);
@@ -3318,7 +3714,14 @@ function renderHistoryModal(){
         ${changeRows}
         ${undoBtn ? `<div class="hist-actions">${undoBtn}</div>` : ''}
       </div>`;
-    }).join('') : `<div class="rounded-2xl border border-dashed border-slate-300 p-5 text-center text-[10px] font-bold text-slate-500">${q || historyFilter !== 'all' ? 'Sin resultados para este filtro.' : 'Todavía no hay ajustes registrados.'}</div>`;
+    }).join('') : (() => {
+      const hayFiltro = q || historyFilter !== 'all' || historyMonthFilter !== 'all' || historyDeviceFilter !== 'all';
+      return `<div class="rounded-2xl border border-dashed border-slate-300 p-5 text-center text-[10px] font-bold text-slate-500">${
+        hayFiltro
+          ? 'Sin resultados para estos filtros.<br><button onclick="limpiarFiltrosHistorial()" class="mt-2 underline text-slate-700">Quitar filtros</button>'
+          : 'Todavía no hay ajustes registrados.'
+      }</div>`;
+    })();
 
     const countEl = document.getElementById('historyCount');
     if(countEl){
@@ -3353,16 +3756,24 @@ function promptRenameDevice(){
 }
 
 function exportActivityLog(){
-  const payload = { app:'Shifter Pro', version:APP_VERSION, exportedAt:new Date().toISOString(), activity:getActivityLog(), importBackups:getImportBackups().map(b => ({id:b.id,createdAt:b.createdAt,target:b.target,profiles:(b.profiles||[]).map(p=>p.name)})) };
+  // La exportación incluye el archivo antiguo: es el respaldo completo.
+  const payload = { app:'Shifter Pro', version:APP_VERSION, exportedAt:new Date().toISOString(),
+    device:{ id:getDeviceId(), name:getDeviceName() },
+    activity:unirRegistros(getActivityLog(), getActivityArchive()),
+    importBackups:getImportBackups().map(b => ({id:b.id,createdAt:b.createdAt,target:b.target,profiles:(b.profiles||[]).map(p=>p.name)})) };
   const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url = URL.createObjectURL(blob); const a = document.createElement('a');
   a.href = url; a.download = `shifter_historial_${new Date().toISOString().slice(0,10)}.json`; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function clearActivityLog(){
-  if(!confirm('¿Vaciar la bitácora de actividad?\n\nSe vaciará también en los demás dispositivos al sincronizar. Los respaldos de importación se conservarán.')) return;
+  if(!confirm('¿Vaciar la bitácora de actividad?\n\nSe borrará también el historial antiguo archivado, y se vaciará en los demás dispositivos al sincronizar. Los respaldos de importación se conservarán.')) return;
   db._activity = [];
-  try{ localStorage.removeItem(SHIFTER_ACTIVITY_KEY); }catch(_e){}
+  historyIncludeArchive = false;
+  try{
+    localStorage.removeItem(SHIFTER_ACTIVITY_KEY);
+    localStorage.removeItem(SHIFTER_ACTIVITY_ARCHIVE_KEY);
+  }catch(_e){}
   saveDB();   // sí propaga: vaciar es una decisión que debe viajar a la nube
   renderHistoryModal();
 }
@@ -4138,6 +4549,48 @@ function updateMonthDisplay(){
   const yearSelect = document.getElementById('selectYear');
   if (monthSelect) monthSelect.value = m;
   if (yearSelect) yearSelect.value = y;
+
+  // "Hoy" sólo cuando sirve de algo: si ya estás en el mes actual, sobra.
+  const todayBtn = document.getElementById('monthTodayBtn');
+  if (todayBtn) {
+    const ahora = new Date();
+    const enMesActual = y === ahora.getFullYear() && m === ahora.getMonth();
+    todayBtn.classList.toggle('is-hidden', enMesActual);
+  }
+
+  fitMonthTitle();
+}
+
+// Ajusta el cuerpo del título al ancho realmente disponible. Los nombres
+// largos ("Septiembre") no caben a tamaño completo en pantallas estrechas y
+// se montaban sobre el botón de ir al mes actual. Se mide el elemento real
+// en lugar de estimar por número de caracteres.
+function fitMonthTitle(){
+  const row = document.querySelector('.month-year-row');
+  const caja = row && row.parentElement;
+  const label = document.getElementById('currentMonthLabel');
+  if (!row || !caja || !label) return;
+
+  // Se mide con el nombre MÁS LARGO del año, no con el mes en pantalla: si el
+  // cuerpo se recalculara para cada mes, el título encogería y crecería al
+  // navegar y se vería inestable. Así se elige una vez el tamaño que sirve
+  // para los doce.
+  const original = label.textContent;
+  label.textContent = MONTHS.reduce((a, b) => (b.length > a.length ? b : a), '');
+
+  const d = document.documentElement;
+  const MAX = 20, MIN = 13;
+  let size = MAX;
+  d.style.setProperty('--month-title-size', size + 'px');
+
+  // 2px de aire para que nunca quede pegado al botón contiguo.
+  let guard = 0;
+  while (guard++ < 16 && size > MIN && row.scrollWidth > caja.clientWidth - 2) {
+    size -= 0.5;
+    d.style.setProperty('--month-title-size', size + 'px');
+  }
+
+  label.textContent = original;
 }
 
 function changeMonth(v){ 
@@ -4220,6 +4673,10 @@ function showView(view){
   if (target === 'calendar') {
     requestAnimationFrame(() => {
       if (typeof fitCalendarToViewport === 'function') fitCalendarToViewport();
+    });
+  } else if (target === 'summary') {
+    requestAnimationFrame(() => {
+      if (typeof fitSummaryToViewport === 'function') fitSummaryToViewport();
     });
   }
 }
@@ -4491,7 +4948,13 @@ function enableCalendarSwipe(){
 let _fitRaf = null;
 function scheduleCalendarFit(){
   if(_fitRaf) cancelAnimationFrame(_fitRaf);
-  _fitRaf = requestAnimationFrame(() => { _fitRaf = null; fitCalendarToViewport(); });
+  _fitRaf = requestAnimationFrame(() => {
+    _fitRaf = null;
+    // El ancho disponible para el título también cambia al girar o
+    // redimensionar, así que se recalcula junto con la rejilla.
+    fitMonthTitle();
+    fitCalendarToViewport();
+  });
 }
 window.addEventListener('resize', scheduleCalendarFit);
 window.addEventListener('orientationchange', scheduleCalendarFit);
@@ -4522,6 +4985,12 @@ function fitCalendarToViewport(){
   const totalCells = grid.children.length;
   const rows = Math.max(1, Math.ceil(totalCells / 7));
 
+  const d = document.documentElement;
+  // Único dato que necesita la rejilla: cuántas filas tiene este mes. El alto
+  // de cada una lo reparte el CSS con minmax(0,1fr), así que no hay píxeles
+  // calculados que puedan quedar desfasados.
+  d.style.setProperty('--cal-rows', String(rows));
+
   const viewH = view.clientHeight;
   const weekHeaderH = weekHeader.getBoundingClientRect().height || 0;
   const available = Math.floor(viewH - weekHeaderH - 2);
@@ -4529,13 +4998,9 @@ function fitCalendarToViewport(){
 
   const rowGap = 2;
   const totalGaps = Math.max(0, rows - 1) * rowGap;
-  // Mínimo bajo para que 6 semanas quepan incluso en pantallas pequeñas
-  const rowHeight = Math.max(38, Math.floor((available - totalGaps) / rows));
-  const gridHeight = rows * rowHeight + totalGaps;
-
-  const d = document.documentElement;
-  d.style.setProperty('--calendar-row-height', rowHeight + 'px');
-  d.style.setProperty('--calendar-grid-height', gridHeight + 'px');
+  // Alto real de fila, sólo para escalar tipografía y espaciados (la
+  // "densidad"). Ya no dimensiona nada.
+  const rowHeight = Math.max(1, Math.floor((available - totalGaps) / rows));
 
   // ---- Densidad adaptativa ----
   // Interpola entre una celda compacta (~46px) y una amplia (~130px)
@@ -4564,6 +5029,67 @@ function fitCalendarToViewport(){
   fitNotesOneLine();
   enableCalendarSwipe();
 }
+
+// =========================================================
+// Densidad adaptativa del Resumen
+// Busca la vista más amplia que quepa entera en pantalla. Si ni
+// con la densidad mínima cabe (muchas categorías), queda el
+// scroll normal: comprimir más haría el texto ilegible.
+// =========================================================
+function fitSummaryToViewport(){
+  const view = document.getElementById('view-summary');
+  if(!view || !view.classList.contains('view-active')) return;
+
+  const d = document.documentElement;
+  // t = 1 → amplio; t = 0 → compacto.
+  const aplicar = t => {
+    const lerp = (min, max) => Math.round((min + (max - min) * t) * 10) / 10;
+    d.style.setProperty('--sum-outer',      lerp(7,   16)  + 'px');
+    d.style.setProperty('--sum-gap',        lerp(5,   16)  + 'px');
+    d.style.setProperty('--sum-gap-sm',     lerp(5,   12)  + 'px');
+    d.style.setProperty('--sum-pad',        lerp(7,   16)  + 'px');
+    d.style.setProperty('--sum-card-gap',   lerp(1,   4)   + 'px');
+    d.style.setProperty('--sum-radius',     lerp(12,  20)  + 'px');
+    d.style.setProperty('--sum-radius-sm',  lerp(10,  16)  + 'px');
+    d.style.setProperty('--sum-value',      lerp(15,  26)  + 'px');
+    d.style.setProperty('--sum-label',      lerp(8.5, 10)  + 'px');
+    d.style.setProperty('--sum-sub',        lerp(9,   11)  + 'px');
+    d.style.setProperty('--sum-bar-h',      lerp(4,   6)   + 'px');
+    d.style.setProperty('--sum-bar-mt',     lerp(3,   6)   + 'px');
+    d.style.setProperty('--sum-cat-pad-y',  lerp(5,   11)  + 'px');
+    d.style.setProperty('--sum-cat-pad-x',  lerp(9,   14)  + 'px');
+    d.style.setProperty('--sum-icon',       lerp(19,  28)  + 'px');
+    d.style.setProperty('--sum-hrs',        lerp(13,  17)  + 'px');
+    d.style.setProperty('--sum-dist-h',     lerp(9,   15)  + 'px');
+    d.style.setProperty('--sum-legend-mt',  lerp(5,   10)  + 'px');
+    d.style.setProperty('--sum-legend-gap', lerp(3,   6)   + 'px');
+    d.style.setProperty('--sum-legend-size',lerp(9,   10)  + 'px');
+    d.style.setProperty('--sum-inner-gap',  lerp(4,   10)  + 'px');
+  };
+  const cabe = () => view.scrollHeight <= view.clientHeight + 1;
+
+  // Lo normal es que quepa amplio: se prueba primero y se sale.
+  aplicar(1);
+  if(cabe()) return;
+
+  // Si no, se busca el t más alto que quepa. Ocho pasos dan margen de
+  // sobra para acertar dentro de un píxel en este rango.
+  let lo = 0, hi = 1, mejor = 0;
+  for(let i = 0; i < 8; i++){
+    const mid = (lo + hi) / 2;
+    aplicar(mid);
+    if(cabe()){ mejor = mid; lo = mid; } else { hi = mid; }
+  }
+  aplicar(mejor);
+}
+
+let _sumRaf = null;
+function scheduleSummaryFit(){
+  if(_sumRaf) cancelAnimationFrame(_sumRaf);
+  _sumRaf = requestAnimationFrame(() => { _sumRaf = null; fitSummaryToViewport(); });
+}
+window.addEventListener('resize', scheduleSummaryFit);
+window.addEventListener('orientationchange', scheduleSummaryFit);
 
 // Por defecto el horario va en UNA línea (formato compacto "6–14"). Se
 // reduce el tamaño sólo si hiciera falta para que quepa sin cortarse.
@@ -4690,6 +5216,12 @@ function render(){
   }
 
   grid.replaceChildren(fragment);
+  // El número de filas se fija AQUÍ, en el mismo cuadro en que se pintan las
+  // celdas. Si se dejara al ajuste diferido, un mes de 6 semanas se pintaría
+  // un instante con el reparto de 5 y la última fila se vería desplazada.
+  document.documentElement.style.setProperty(
+    '--cal-rows', String(Math.max(1, Math.ceil(grid.children.length / 7)))
+  );
   grid.setAttribute('aria-busy','false');
   applyDisplayPrefs();
   requestAnimationFrame(fitCalendarToViewport);
@@ -5072,6 +5604,9 @@ function calcSummary(){
   setCard('statCardVac',     vacDays,              vacDays === 1 ? '1 día de vacaciones' : `${vacDays} días de vacaciones`);
 
   renderMonthDistribution(catDays, catHours, categories);
+  // El contenido acaba de cambiar (otro mes, otro perfil): recalcular cuánto
+  // se puede mostrar sin obligar a desplazarse.
+  scheduleSummaryFit();
 }
 
 // Barra apilada + leyenda con el reparto de días del mes por categoría.
