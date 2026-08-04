@@ -1000,42 +1000,6 @@
     .hist-arrow{color:#94a3b8;font-weight:1000}
     .hist-to{color:#15803d;background:#f0fdf4;border-radius:6px;padding:1px 6px}
     .hist-more{font-size:9px;font-weight:900;color:#64748b;padding-top:2px}
-
-    /* --- Origen de cada registro (qué dispositivo lo hizo) --- */
-    .hist-meta-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px}
-    .hist-meta-row .hist-who{margin-left:0}
-    .hist-device{
-      display:inline-flex;align-items:center;gap:4px;
-      font-size:9px;font-weight:900;border-radius:999px;padding:2px 8px;
-      border:1px solid transparent;white-space:nowrap;
-    }
-    .hist-device-mine{color:#166534;background:#f0fdf4;border-color:#bbf7d0}
-    .hist-device-other{color:#9a3412;background:#fff7ed;border-color:#fed7aa}
-    .hist-device-unknown{color:#64748b;background:#f1f5f9;border-color:#e2e8f0}
-    /* Los cambios de otro dispositivo llevan un filo lateral para localizarlos
-       de un vistazo al recorrer la lista. */
-    .history-entry.is-remote{border-left:3px solid #fb923c}
-
-    /* Barra "Este dispositivo" + estado de la consulta a la nube */
-    .hist-device-bar{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      background:#fff;border:1px solid #e2e8f0;border-radius:14px;
-      padding:9px 12px;margin-bottom:8px;
-    }
-    .hist-device-label{font-size:8.5px;font-weight:1000;text-transform:uppercase;letter-spacing:.09em;color:#94a3b8}
-    .hist-device-name{font-size:11.5px;font-weight:1000;color:#0f172a;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .hist-device-btn{
-      flex:0 0 auto;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;
-      color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;
-      border-radius:10px;padding:7px 11px;cursor:pointer;transition:background .15s;
-    }
-    .hist-device-btn:hover{background:#dbeafe}
-    .hist-sync{font-size:9px;font-weight:900;color:#64748b;margin-bottom:8px;min-height:12px}
-    .hist-sync:empty{display:none}
-    .hist-sync.is-loading{color:#64748b}
-    .hist-sync.is-ok{color:#15803d}
-    .hist-sync.is-new{color:#9a3412}
-    .hist-sync.is-error{color:#b91c1c}
     /* Tarjeta compacta de categoría (vista Resumen) */
     .cat-card{
       display:flex;align-items:center;gap:10px;min-width:0;
@@ -1288,27 +1252,14 @@
     }
     .day-cell.day-off-month .day-number{ color:#94a3b8!important; }
 
-    /* Hoy: anillo ROJO por encima del color del turno.
-       No se puede usar `outline` ni `border` en la celda: el color del turno
-       lo pinta .day-bg, que es un absoluto a inset:0 y se dibuja ENCIMA de la
-       decoración de la propia celda, tapándolo por completo. Por eso el anillo
-       va en un pseudo-elemento con z-index propio (ver .today::after). */
+    /* Hoy: anillo ROJO sólido por encima de todo (outline) para que el borde
+       completo se vea y no quede detrás del color. Número en NEGRO. */
     .today{
       border:0!important;
       box-shadow:none!important;
-      outline:0!important;
+      outline:3px solid #ef4444!important;
+      outline-offset:-3px!important;
       z-index:6;
-    }
-    .today::after{
-      content:'';
-      position:absolute;
-      inset:0;
-      border:2.5px solid #ef4444;
-      border-radius:8px;
-      /* Encima del color (.day-bg z-index:0) y de las notas (z-index:1),
-         debajo del número del día (z-index:22) y del asueto (z-index:20). */
-      z-index:15;
-      pointer-events:none;
     }
     .today .day-number{
       background:transparent!important;
@@ -1340,9 +1291,8 @@
       text-transform:uppercase;
       border-bottom:1px solid #e8edf4;
     }
-    /* Fin de semana (la regla gris de arriba los estaba pisando):
-       sábado AZUL, domingo ROJO. */
-    #weekHeader .wday-sat{ color:#2563eb!important; }
+    /* Fin de semana en ROJO (la regla gris de arriba los estaba pisando). */
+    #weekHeader .wday-sat,
     #weekHeader .wday-sun{ color:#dc2626!important; }
 
     .calendar-grid{ background:#e6ebf3!important; }
@@ -1442,21 +1392,14 @@
     /* --- Modos de visualización del calendario --- */
     /* Ocultar la nota "LIBRE" en días libres */
     .calendar-grid.hide-libre .day-cell.is-libre .note-text{ display:none!important; }
-    /* Número del día del fin de semana: sábado AZUL, domingo ROJO.
-       Se aplica siempre (no depende de "resaltar fines de semana"), porque es
-       la señal principal para distinguirlos de un vistazo. */
-    .day-cell.saturday:not(.day-off-month):not(.today) .day-number{ color:#2563eb!important; }
-    .day-cell.sunday:not(.day-off-month):not(.today)   .day-number{ color:#dc2626!important; }
-
-    /* Resaltar fines de semana: velo de color por encima del fondo del turno
+    /* Resaltar fines de semana: velo azul suave por encima del color de fondo
        (el fondo lo pinta .day-bg, así que un `background` en la celda no se
-       vería). Opacidad deliberadamente MUY baja —un 25% menos que antes— para
-       que se lea como "fin de semana" y no se confunda con un color de turno. */
-    .calendar-grid.mark-weekend .day-cell.saturday:not(.day-off-month) .day-bg::after{
-      content:''; position:absolute; inset:0; background:rgba(37,99,235,.0525);
+       vería). Y número en azul. */
+    .calendar-grid.mark-weekend .day-cell.weekend:not(.day-off-month) .day-bg::after{
+      content:''; position:absolute; inset:0; background:rgba(220,38,38,.07);
     }
-    .calendar-grid.mark-weekend .day-cell.sunday:not(.day-off-month) .day-bg::after{
-      content:''; position:absolute; inset:0; background:rgba(220,38,38,.0525);
+    .calendar-grid.mark-weekend .day-cell.weekend:not(.day-off-month):not(.today) .day-number{
+      color:#dc2626!important;
     }
 
     #view-settings h3{
@@ -1654,9 +1597,7 @@
   </button>
   <button class="btab" id="btab-settings" onclick="showView('settings')">
     <span class="btab-icon" aria-hidden="true">
-      <!-- Engranaje de 8 dientes, trazado con arcos regulares alrededor del
-           centro. El path anterior estaba mal cerrado y se veía deforme. -->
-      <svg viewBox="0 0 24 24" fill="none"><path d="M10.18 2.17A10 10 0 0 1 13.82 2.17L13.81 4.72A7.5 7.5 0 0 1 15.86 5.57L17.66 3.76A10 10 0 0 1 20.24 6.34L18.43 8.14A7.5 7.5 0 0 1 19.28 10.19L21.83 10.18A10 10 0 0 1 21.83 13.82L19.28 13.81A7.5 7.5 0 0 1 18.43 15.86L20.24 17.66A10 10 0 0 1 17.66 20.24L15.86 18.43A7.5 7.5 0 0 1 13.81 19.28L13.82 21.83A10 10 0 0 1 10.18 21.83L10.19 19.28A7.5 7.5 0 0 1 8.14 18.43L6.34 20.24A10 10 0 0 1 3.76 17.66L5.57 15.86A7.5 7.5 0 0 1 4.72 13.81L2.17 13.82A10 10 0 0 1 2.17 10.18L4.72 10.19A7.5 7.5 0 0 1 5.57 8.14L3.76 6.34A10 10 0 0 1 6.34 3.76L8.14 5.57A7.5 7.5 0 0 1 10.19 4.72L10.18 2.17Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.1" stroke="currentColor" stroke-width="1.7"/></svg>
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 8.7a3.3 3.3 0 1 0 0 6.6 3.3 3.3 0 0 0 0-6.6Z" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.2a1 1 0 0 0 .2 1.1l.1.1a1.9 1.9 0 0 1-2.7 2.7l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V18a1.9 1.9 0 1 1-3.8 0v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.9 1.9 0 0 1-2.7-2.7l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H6a1.9 1.9 0 1 1 0-3.8h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.9 1.9 0 0 1 2.7-2.7l.1.1a1 1 0 0 0 1.1.2h.1a1 1 0 0 0 .5-.9V6a1.9 1.9 0 1 1 3.8 0v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.9 1.9 0 1 1 2.7 2.7l-.1.1a1 1 0 0 0-.2 1.1v.1a1 1 0 0 0 .9.5h.2a1.9 1.9 0 1 1 0 3.8h-.2a1 1 0 0 0-.9.6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
     </span>
     <span>Ajustes</span>
     <span class="btab-line" aria-hidden="true"></span>
@@ -1964,7 +1905,7 @@
         <label class="pref-row">
           <div>
             <div class="pref-title">Resaltar fines de semana</div>
-            <div class="pref-sub">Añade un fondo muy tenue —azul en sábado, rojo en domingo— para ubicarlos de un vistazo sin tapar el color del turno.</div>
+            <div class="pref-sub">Da un fondo suave a sábados y domingos para ubicarlos de un vistazo.</div>
           </div>
           <input type="checkbox" id="prefHighlightWeekend" class="pref-switch" onchange="setDisplayPref('highlightWeekend', this.checked)">
         </label>
@@ -2271,7 +2212,7 @@
       <div>
         <div class="text-[10px] uppercase tracking-[.18em] font-black text-blue-200">Control y trazabilidad</div>
         <h3 class="text-lg font-black mt-1">Historial, respaldos y registro de cambios</h3>
-        <p class="text-[10px] font-bold text-white/70 mt-1">La bitácora se sincroniza con tu cuenta: incluye los cambios hechos desde tus otros dispositivos. Los respaldos de importación sí quedan solo en este dispositivo.</p>
+        <p class="text-[10px] font-bold text-white/70 mt-1">La bitácora y los respaldos automáticos se guardan localmente en este dispositivo.</p>
       </div>
       <button onclick="closeHistoryModal()" class="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 text-xl flex-shrink-0" aria-label="Cerrar">✕</button>
     </div>
@@ -2294,17 +2235,8 @@
           </div>
         </div>
 
-        <div class="hist-device-bar">
-          <div class="min-w-0">
-            <div class="hist-device-label">Este dispositivo</div>
-            <div id="historyDeviceName" class="hist-device-name">—</div>
-          </div>
-          <button onclick="promptRenameDevice()" class="hist-device-btn">Renombrar</button>
-        </div>
-        <div id="historySyncState" class="hist-sync"></div>
-
         <input id="historySearch" type="search" oninput="renderHistoryModal()"
-          placeholder="Buscar (turno, color, día, perfil, dispositivo…)"
+          placeholder="Buscar (turno, color, día, perfil…)"
           class="w-full mb-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-800"/>
 
         <div id="historyFilters" class="flex flex-wrap gap-1.5 mb-3"></div>
@@ -2702,19 +2634,12 @@ function migrateLegacyShiftPropertyEntriesAllUsers(){
 ensureCanonicalCoreShiftsAllUsers();
 migrateLegacyShiftPropertyEntriesAllUsers();
 
-// Guardado local puro, sin efectos de nube. Más abajo saveDB se reemplaza por
-// una versión que además programa el push; esta función conserva el guardado
-// simple para quien sólo necesita persistir (por ejemplo la bitácora).
-function saveDBQuiet(){
+function saveDB(){ 
   try {
     localStorage.setItem('shifter_v23', JSON.stringify(db));
   } catch (e) {
     console.error('Error guardando DB:', e);
   }
-}
-
-function saveDB(){
-  saveDBQuiet();
 }
 
 // =========================================================
@@ -2755,9 +2680,7 @@ let importContext = null;
 const APP_VERSION = '24.0';
 const SHIFTER_ACTIVITY_KEY = 'shifter_v24_activity_log';
 const SHIFTER_IMPORT_BACKUP_KEY = 'shifter_v24_import_backups';
-// Con varios dispositivos la bitácora se llena más rápido (se fusionan las
-// entradas de todos), así que hay algo más de holgura que antes.
-const MAX_ACTIVITY_ENTRIES = 300;
+const MAX_ACTIVITY_ENTRIES = 200;
 const MAX_IMPORT_BACKUPS = 5;
 const LIBRARY_URLS = {
   xlsx: [
@@ -2833,120 +2756,18 @@ function ensureXLSXLoaded(){ return loadScriptOnce('xlsx','XLSX'); }
 function ensureTesseractLoaded(){ return loadScriptOnce('tesseract','Tesseract'); }
 function ensureHtml2CanvasLoaded(){ return loadScriptOnce('html2canvas','html2canvas'); }
 
-// =========================================================
-// Bitácora de actividad
-// Vive DENTRO de `db` (en db._activity) y no en una clave suelta de
-// localStorage. Esa es la razón por la que ahora los cambios hechos desde
-// otro dispositivo con la misma cuenta también aparecen: db es justo lo que
-// se sube y se baja de Supabase, así que la bitácora viaja con él.
-// Cada entrada anota qué dispositivo la generó y cuándo.
-// =========================================================
-const SHIFTER_DEVICE_NAME_KEY = 'shifter_device_name';
-
-// Nombre legible del dispositivo. Se deduce del navegador la primera vez y
-// el usuario lo puede renombrar desde el historial.
-function detectDeviceName(){
-  try{
-    const ua = navigator.userAgent || '';
-    const so = /Android/i.test(ua) ? 'Android'
-             : /iPhone/i.test(ua) ? 'iPhone'
-             : /iPad/i.test(ua) ? 'iPad'
-             : /Windows/i.test(ua) ? 'Windows'
-             : /Macintosh|Mac OS X/i.test(ua) ? 'Mac'
-             : /Linux/i.test(ua) ? 'Linux'
-             : 'Dispositivo';
-    const nav = /Edg\//i.test(ua) ? 'Edge'
-              : /OPR\/|Opera/i.test(ua) ? 'Opera'
-              : /SamsungBrowser/i.test(ua) ? 'Samsung Internet'
-              : /Firefox/i.test(ua) ? 'Firefox'
-              : /Chrome\//i.test(ua) ? 'Chrome'
-              : /Safari/i.test(ua) ? 'Safari'
-              : '';
-    const app = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ? ' (app)' : '';
-    return (nav ? `${so} · ${nav}` : so) + app;
-  }catch(_e){ return 'Dispositivo'; }
-}
-function getDeviceName(){
-  try{
-    let v = localStorage.getItem(SHIFTER_DEVICE_NAME_KEY);
-    if(!v){ v = detectDeviceName(); localStorage.setItem(SHIFTER_DEVICE_NAME_KEY, v); }
-    return v;
-  }catch(_e){ return detectDeviceName(); }
-}
-function setDeviceName(name){
-  const clean = String(name || '').trim().slice(0, 40);
-  if(!clean) return false;
-  try{ localStorage.setItem(SHIFTER_DEVICE_NAME_KEY, clean); }catch(_e){}
-  // Reetiquetar las entradas propias para que el nombre nuevo sea coherente
-  // en todo el historial, también en los demás dispositivos.
-  const myId = getDeviceId();
-  ensureActivityStore().forEach(e => { if(e.dev === myId) e.devName = clean; });
-  persistActivity();
-  return true;
-}
-
-// db._activity es la fuente de verdad. Lo que hubiera quedado en la clave
-// antigua de localStorage se migra una sola vez para no perder historial.
-function ensureActivityStore(){
-  if(!db || typeof db !== 'object') return [];
-  if(!Array.isArray(db._activity)){
-    const legacy = safeParseJSON(localStorage.getItem(SHIFTER_ACTIVITY_KEY), []);
-    db._activity = Array.isArray(legacy) ? legacy.map(stampLegacyEntry) : [];
-  }
-  return db._activity;
-}
-// Las entradas anteriores a este cambio no traen dispositivo: por definición
-// son de este, que es donde estaban guardadas.
-function stampLegacyEntry(e){
-  if(e && typeof e === 'object' && !e.dev){
-    e.dev = getDeviceId();
-    e.devName = getDeviceName();
-  }
-  return e;
-}
-// Persiste SIN disparar push a la nube: quien produjo el cambio ya llama a
-// saveDB(), y ese push sube el db completo con la bitácora ya dentro. Así
-// registrar actividad nunca provoca por sí solo un aviso de "cambios
-// pendientes de subir".
-function persistActivity(){
-  saveDBQuiet();
-}
-
 function getActivityLog(){
-  return ensureActivityStore();
+  return safeParseJSON(localStorage.getItem(SHIFTER_ACTIVITY_KEY), []);
 }
 function addActivityLog(type, title, detail = '', meta = {}, level = 'info'){
   try{
-    const entries = ensureActivityStore();
+    const entries = getActivityLog();
     entries.unshift({
       id: `log_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
-      at: new Date().toISOString(), type, title, detail, meta, level, version: APP_VERSION,
-      dev: getDeviceId(), devName: getDeviceName()
+      at: new Date().toISOString(), type, title, detail, meta, level, version: APP_VERSION
     });
-    db._activity = entries.slice(0, MAX_ACTIVITY_ENTRIES);
-    persistActivity();
+    localStorage.setItem(SHIFTER_ACTIVITY_KEY, JSON.stringify(entries.slice(0, MAX_ACTIVITY_ENTRIES)));
   }catch(e){ console.warn('No se pudo registrar actividad', e); }
-}
-
-// Une dos bitácoras sin perder nada: deduplica por id y ordena de la más
-// reciente a la más antigua. Es lo que permite que convivan los registros de
-// varios dispositivos cuando ambos escribieron entre dos sincronizaciones.
-function mergeActivityLogs(a, b){
-  const out = new Map();
-  const add = list => {
-    (Array.isArray(list) ? list : []).forEach(e => {
-      if(!e || !e.id) return;
-      const prev = out.get(e.id);
-      // Si el mismo registro llega por los dos lados, gana el que ya está
-      // deshecho: es el estado más avanzado de esa entrada.
-      if(!prev || (e.undone && !prev.undone)) out.set(e.id, e);
-    });
-  };
-  add(a);
-  add(b);
-  return [...out.values()]
-    .sort((x, y) => String(y.at || '').localeCompare(String(x.at || '')))
-    .slice(0, MAX_ACTIVITY_ENTRIES);
 }
 // ---------------------------------------------------------
 // Bitácora de AJUSTES DEL USUARIO
@@ -3113,39 +2934,6 @@ function restoreImportBackup(id){
 function openHistoryModal(){
   renderHistoryModal();
   document.getElementById('historyModal')?.classList.add('active');
-  // Traer lo que hayan registrado los demás dispositivos. Sólo lee la
-  // bitácora, no toca los datos del calendario, así que puede hacerse sin
-  // preguntar nada ni arriesgar un conflicto.
-  refreshActivityFromCloud();
-}
-
-// Refresca la bitácora desde la nube sin tocar el resto de los datos.
-async function refreshActivityFromCloud(){
-  const badge = document.getElementById('historySyncState');
-  if(!isCloudEnabled()){
-    if(badge){
-      badge.textContent = 'Sin sesión: sólo se ve la actividad de este dispositivo';
-      badge.className = 'hist-sync';
-    }
-    return;
-  }
-  if(badge){ badge.textContent = 'Buscando cambios de otros dispositivos…'; badge.className = 'hist-sync is-loading'; }
-  try{
-    const nuevos = await mergeRemoteActivityIntoLocal();
-    if(nuevos > 0){
-      persistActivity();
-      renderHistoryModal();
-    }
-    if(badge){
-      badge.textContent = nuevos > 0
-        ? `${nuevos} registro(s) nuevo(s) de otros dispositivos`
-        : 'Historial al día con la nube';
-      badge.className = 'hist-sync' + (nuevos > 0 ? ' is-new' : ' is-ok');
-    }
-  }catch(e){
-    console.warn('refreshActivityFromCloud:', e);
-    if(badge){ badge.textContent = 'No se pudo consultar la nube'; badge.className = 'hist-sync is-error'; }
-  }
 }
 function closeHistoryModal(){ document.getElementById('historyModal')?.classList.remove('active'); }
 // Grupos de filtro para el historial de ajustes
@@ -3214,13 +3002,9 @@ function undoActivityEntry(id){
     resumen = ids.join(', ');
   }
 
-  // Marcar el registro como deshecho (no se borra: queda la traza).
-  // `entries` es el array vivo de db._activity, así que basta con persistir.
+  // Marcar el registro como deshecho (no se borra: queda la traza)
   entry.undone = true;
-  entry.undoneBy = getDeviceId();
-  entry.undoneByName = getDeviceName();
-  entry.undoneAt = new Date().toISOString();
-  persistActivity();
+  try{ localStorage.setItem(SHIFTER_ACTIVITY_KEY, JSON.stringify(entries)); }catch(_e){}
 
   addActivityLog('undo','Cambio deshecho',`Se revirtió: ${entry.title} — ${resumen}`,
     {undoneId:id, undoneType:entry.type},'warning');
@@ -3255,34 +3039,19 @@ function renderHistoryModal(){
     const q = (document.getElementById('historySearch')?.value || '').trim().toLowerCase();
     const group = HISTORY_GROUPS[historyFilter] || HISTORY_GROUPS.all;
 
-    const myDevice = getDeviceId();
-
     const entries = allEntries.filter(e => {
       if(group.types && !group.types.includes(e.type)) return false;
       if(!q) return true;
-      const hay = `${e.title || ''} ${e.detail || ''} ${e.type || ''} ${(e.meta && e.meta.profile) || ''} ${e.devName || ''} ${(e.meta && e.meta.changes || []).map(c => c.text).join(' ')}`.toLowerCase();
+      const hay = `${e.title || ''} ${e.detail || ''} ${e.type || ''} ${(e.meta && e.meta.profile) || ''} ${(e.meta && e.meta.changes || []).map(c => c.text).join(' ')}`.toLowerCase();
       return hay.includes(q);
     });
 
     historyBox.innerHTML = entries.length ? entries.slice(0,120).map(entry => {
       const date = new Date(entry.at);
-      // Fecha y hora completas: con varios dispositivos importa saber el
-      // cuándo exacto, no sólo el día.
-      const when = Number.isNaN(date.getTime())
-        ? entry.at
-        : date.toLocaleString('es-SV',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      const when = Number.isNaN(date.getTime()) ? entry.at : date.toLocaleString('es-SV',{dateStyle:'short',timeStyle:'short'});
       const levelClass = entry.level === 'error' ? 'danger' : entry.level === 'warning' ? 'warn' : 'safe';
       const changes = (entry.meta && Array.isArray(entry.meta.changes)) ? entry.meta.changes : [];
       const who = (entry.meta && entry.meta.profile) ? `<span class="hist-who">${escapeHTML(entry.meta.profile)}</span>` : '';
-
-      // De dónde vino el cambio. Sin `dev` es una entrada anterior a la
-      // sincronización de bitácora, así que no se afirma nada.
-      const esPropio = entry.dev && entry.dev === myDevice;
-      const deviceChip = !entry.dev
-        ? `<span class="hist-device hist-device-unknown" title="Registro anterior a la sincronización de bitácora">Origen no registrado</span>`
-        : esPropio
-          ? `<span class="hist-device hist-device-mine">Este dispositivo</span>`
-          : `<span class="hist-device hist-device-other" title="Cambio hecho en otro dispositivo de tu cuenta">Otro dispositivo · ${escapeHTML(entry.devName || 'sin nombre')}</span>`;
 
       const changeRows = changes.length ? `
         <div class="hist-changes">
@@ -3303,17 +3072,12 @@ function renderHistoryModal(){
         ? `<span class="hist-undone-tag">deshecho</span>`
         : '';
 
-      const esRemoto = !!entry.dev && !esPropio;
-      return `<div class="history-entry${entry.undone ? ' is-undone' : ''}${esRemoto ? ' is-remote' : ''}">
+      return `<div class="history-entry${entry.undone ? ' is-undone' : ''}">
         <div class="flex items-start justify-between gap-3">
           <div class="history-title">${escapeHTML(entry.title || entry.type || 'Actividad')}${undoneTag}</div>
           <span class="status-chip ${levelClass}">${escapeHTML(entry.type || 'evento')}</span>
         </div>
-        <div class="hist-meta-row">
-          <time>${escapeHTML(when)}</time>
-          ${deviceChip}
-          ${who}
-        </div>
+        <time>${escapeHTML(when)}</time> ${who}
         ${entry.detail ? `<div class="history-detail">${escapeHTML(entry.detail)}</div>` : ''}
         ${changeRows}
         ${undoBtn ? `<div class="hist-actions">${undoBtn}</div>` : ''}
@@ -3321,15 +3085,8 @@ function renderHistoryModal(){
     }).join('') : `<div class="rounded-2xl border border-dashed border-slate-300 p-5 text-center text-[10px] font-bold text-slate-500">${q || historyFilter !== 'all' ? 'Sin resultados para este filtro.' : 'Todavía no hay ajustes registrados.'}</div>`;
 
     const countEl = document.getElementById('historyCount');
-    if(countEl){
-      const deOtros = allEntries.filter(e => e.dev && e.dev !== myDevice).length;
-      countEl.textContent = `${entries.length} de ${allEntries.length} registro(s)`
-        + (deOtros ? ` · ${deOtros} de otros dispositivos` : '');
-    }
+    if(countEl) countEl.textContent = `${entries.length} de ${allEntries.length} registro(s)`;
   }
-
-  const nameEl = document.getElementById('historyDeviceName');
-  if(nameEl) nameEl.textContent = getDeviceName();
   if(backupBox){
     const backups = getImportBackups();
     backupBox.innerHTML = backups.length ? backups.map(b => {
@@ -3340,18 +3097,6 @@ function renderHistoryModal(){
     }).join('') : '<div class="rounded-2xl border border-dashed border-slate-300 p-5 text-center text-[10px] font-bold text-slate-500">Los respaldos se crearán automáticamente antes de importar.</div>';
   }
 }
-// Renombrar este dispositivo. El nombre es lo que verá el usuario en los
-// registros cuando los lea desde otro aparato, así que conviene que sea
-// reconocible ("Celular", "Tablet del trabajo"…).
-function promptRenameDevice(){
-  const actual = getDeviceName();
-  const nuevo = prompt('¿Cómo quieres que se llame este dispositivo en el historial?\n\nEs el nombre que verás desde tus otros dispositivos.', actual);
-  if(nuevo === null) return;
-  if(!setDeviceName(nuevo)) return toast('El nombre no puede quedar vacío');
-  renderHistoryModal();
-  toast('Dispositivo renombrado');
-}
-
 function exportActivityLog(){
   const payload = { app:'Shifter Pro', version:APP_VERSION, exportedAt:new Date().toISOString(), activity:getActivityLog(), importBackups:getImportBackups().map(b => ({id:b.id,createdAt:b.createdAt,target:b.target,profiles:(b.profiles||[]).map(p=>p.name)})) };
   const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
@@ -3360,11 +3105,8 @@ function exportActivityLog(){
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function clearActivityLog(){
-  if(!confirm('¿Vaciar la bitácora de actividad?\n\nSe vaciará también en los demás dispositivos al sincronizar. Los respaldos de importación se conservarán.')) return;
-  db._activity = [];
-  try{ localStorage.removeItem(SHIFTER_ACTIVITY_KEY); }catch(_e){}
-  saveDB();   // sí propaga: vaciar es una decisión que debe viajar a la nube
-  renderHistoryModal();
+  if(!confirm('¿Vaciar la bitácora de actividad? Los respaldos de importación se conservarán.')) return;
+  localStorage.removeItem(SHIFTER_ACTIVITY_KEY); renderHistoryModal();
 }
 function ensureVersionLog(){
   const key = `shifter_version_logged_${APP_VERSION}`;
@@ -4707,10 +4449,6 @@ let suppressClickUntil = 0;
   const date = new Date(key.replace(/-/g, '/'));
   const dow = date.getDay();
   if (dow === 0 || dow === 6) classes += ' weekend';
-  // Sábado y domingo se distinguen aparte: el sábado se pinta azul y el
-  // domingo rojo (número y velo de resaltado).
-  if (dow === 6) classes += ' saturday';
-  if (dow === 0) classes += ' sunday';
   if (isToday) classes += ' today';
   const primaryShift = getDayPrimaryShiftKey(info);
   if(!isEffectivelyEmptyDayData(info)) classes += ' has-data';
@@ -8905,12 +8643,7 @@ function hasMeaningfulLocalData(snapshot){
 }
 
 function applyCloudDb(newDb, {clearRemotePending=true, cloudTS=null} = {}){
-  // La bitácora NUNCA se reemplaza, se fusiona: aunque el usuario elija
-  // "usar la versión de la nube" para los datos, el registro de lo que pasó
-  // en este dispositivo tiene que seguir ahí. Se calcula antes de pisar `db`.
-  const mergedActivity = mergeActivityLogs(ensureActivityStore(), (newDb && newDb._activity) || []);
   db = JSON.parse(JSON.stringify(newDb || db));
-  db._activity = mergedActivity;
   // Alinear _meta con el TS reconocido para que al recargar local === nube
   if(cloudTS){
     db._meta = db._meta || {};
@@ -9185,37 +8918,8 @@ async function pullFromCloud(){
   return data || null;
 }
 
-// Trae sólo la bitácora remota y la funde con la local. Se llama justo antes
-// de subir: el push manda el blob entero, así que sin esto se borrarían los
-// registros que otro dispositivo escribió mientras tanto. El historial es
-// acumulativo — aquí nunca "gana" un lado.
-// Devuelve cuántos registros nuevos entraron. Lanza si la consulta falla,
-// para que quien la use decida si eso importa.
-async function mergeRemoteActivityIntoLocal(){
-  const {data, error} = await sb
-    .from('shifter_state')
-    .select('act:data->_activity')
-    .eq('user_id', sbUser.id)
-    .maybeSingle();
-  if(error) throw error;
-  const remote = (data && Array.isArray(data.act)) ? data.act : [];
-  if(!remote.length) return 0;
-
-  const locales = ensureActivityStore();
-  const idsAntes = new Set(locales.map(e => e && e.id));
-  const fusion = mergeActivityLogs(locales, remote);
-  db._activity = fusion;
-  // Se cuenta por id y no por longitud: con la bitácora en su tope, entrar
-  // registros nuevos no cambia el total.
-  return fusion.filter(e => !idsAntes.has(e.id)).length;
-}
-
 async function pushToCloud(){
   if(!isCloudEnabled()) throw new Error("No hay sesión en la nube.");
-  // Si la lectura falla se sube igual: no poder consultar el historial remoto
-  // no debe impedir guardar los datos del calendario.
-  try{ await mergeRemoteActivityIntoLocal(); }
-  catch(e){ console.warn('No se pudo fusionar la bitácora remota antes de subir:', e); }
   // Un solo timestamp para _meta Y para la columna → nunca quedan desfasados
   const now = new Date().toISOString();
   db._meta = db._meta || {};
@@ -9247,11 +8951,6 @@ function mergeSmartPull(cloudDb, localDb){
 
     const merged = JSON.parse(JSON.stringify(cloudDb || localDb));
     if(!merged.users) merged.users = {};
-    // Bitácora: unión de ambos lados, nunca uno u otro.
-    merged._activity = mergeActivityLogs(
-      (localDb && localDb._activity) || [],
-      (cloudDb && cloudDb._activity) || []
-    );
 
     // Para cada usuario local, conservar datos de meses pasados
     if(localDb && localDb.users){
